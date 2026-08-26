@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from '@tanstack/react-router';
 import { useAppState } from '@/myt/lib/app-context';
 import { teamMembers, zones } from '@/myt/lib/mock-data';
 import { Booking, AgreementStatus } from '@/myt/lib/types';
@@ -6,8 +7,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Plus, IndianRupee, FileCheck, Home } from 'lucide-react';
+import { Plus, IndianRupee, FileCheck, Home, Link2, Copy, ExternalLink, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useCribBookings } from '@/cribbooking/store';
+import { blankDraft, cribLink, cribMessage, type CribDraft } from '@/cribbooking/types';
+
 
 const properties = [
   'Prestige Lakeside','Brigade Meadows','Sobha Dream Acres','Godrej Splendour',
@@ -22,6 +26,38 @@ export default function Bookings() {
     leadName: '', phone: '', propertyName: '', area: '',
     rentValue: '12000', viaTour: true, closedBy: '',
   });
+
+  // ---- Crib Booking bridge: every booking can generate its own crib page ----
+  const { rows: cribRows, create: createCrib } = useCribBookings();
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const digits = (p: string) => (p || '').replace(/\D/g, '').slice(-10);
+  const cribFor = (b: Booking) =>
+    cribRows.find(r => digits(r.tenant_phone) === digits(b.phone) && (r.property_name ?? '') === b.propertyName)
+    ?? cribRows.find(r => digits(r.tenant_phone) === digits(b.phone));
+
+  const draftFor = (b: Booking): CribDraft => ({
+    ...blankDraft(),
+    property_id: b.propertyName,
+    property_name: b.propertyName,
+    tenant_name: b.leadName,
+    tenant_phone: digits(b.phone),
+    monthly_rent: b.rentValue,
+    security_deposit: b.rentValue * 2,
+    status: b.agreementStatus === 'pending' ? 'sent' : 'signed',
+    notes: `${b.area || ''}${b.area ? ' · ' : ''}Closed by ${b.closedByName}`,
+  });
+
+  const generateCrib = async (b: Booking) => {
+    setBusyId(b.id);
+    const res = await createCrib(draftFor(b));
+    setBusyId(null);
+    if (!res.ok) { toast.error(res.error); return; }
+    const url = cribLink(res.row.token);
+    void navigator.clipboard.writeText(url);
+    toast.success('Crib page generated — link copied');
+    window.open(url, '_blank');
+  };
+
 
   const totalRent = bookings.reduce((s, b) => s + b.rentValue, 0);
   const signed = bookings.filter(b => b.agreementStatus === 'signed' || b.agreementStatus === 'moved-in').length;
@@ -64,15 +100,21 @@ export default function Bookings() {
 
   return (
     <div className="space-y-4 animate-slide-up">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-2">
         <div>
           <h1 className="text-xl md:text-2xl font-heading font-bold text-foreground">Bookings</h1>
-          <p className="text-xs text-muted-foreground">Track commitments & revenue</p>
+          <p className="text-xs text-muted-foreground">Track commitments, revenue & crib pages</p>
         </div>
-        <Button size="sm" onClick={() => setShowForm(!showForm)} className="h-8 text-xs gap-1">
-          <Plus className="h-3.5 w-3.5" /> Log Booking
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button size="sm" variant="outline" asChild className="h-8 text-xs gap-1">
+            <Link to="/cribbooking"><Link2 className="h-3.5 w-3.5" /> Crib Booking</Link>
+          </Button>
+          <Button size="sm" onClick={() => setShowForm(!showForm)} className="h-8 text-xs gap-1">
+            <Plus className="h-3.5 w-3.5" /> Log Booking
+          </Button>
+        </div>
       </div>
+
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         <div className="glass-card p-3">
@@ -169,17 +211,49 @@ export default function Bookings() {
               <span className="text-muted-foreground">{b.viaTour ? '🏠 Via Tour' : '📞 Direct'}</span>
               <span className="text-muted-foreground">Closed by: {b.closedByName}</span>
             </div>
-            {b.agreementStatus !== 'moved-in' && (
-              <div className="flex gap-2">
-                {b.agreementStatus === 'pending' && (
-                  <Button size="sm" variant="outline" onClick={() => updateStatus(b.id, 'signed')} className="h-7 text-[10px]">Mark Signed</Button>
-                )}
-                {b.agreementStatus === 'signed' && (
-                  <Button size="sm" variant="outline" onClick={() => updateStatus(b.id, 'moved-in')} className="h-7 text-[10px]">Mark Moved In</Button>
-                )}
-              </div>
-            )}
+            <div className="flex flex-wrap gap-2">
+              {b.agreementStatus === 'pending' && (
+                <Button size="sm" variant="outline" onClick={() => updateStatus(b.id, 'signed')} className="h-7 text-[10px]">Mark Signed</Button>
+              )}
+              {b.agreementStatus === 'signed' && (
+                <Button size="sm" variant="outline" onClick={() => updateStatus(b.id, 'moved-in')} className="h-7 text-[10px]">Mark Moved In</Button>
+              )}
+              {(() => {
+                const crib = cribFor(b);
+                if (!crib) {
+                  return (
+                    <Button size="sm" onClick={() => void generateCrib(b)} disabled={busyId === b.id} className="h-7 text-[10px] gap-1">
+                      <Link2 className="h-3 w-3" /> {busyId === b.id ? 'Generating…' : 'Generate crib page'}
+                    </Button>
+                  );
+                }
+                const url = cribLink(crib.token);
+                return (
+                  <>
+                    <Button size="sm" variant="outline" asChild className="h-7 text-[10px] gap-1">
+                      <a href={url} target="_blank" rel="noreferrer"><ExternalLink className="h-3 w-3" /> Open crib page</a>
+                    </Button>
+                    <Button
+                      size="sm" variant="outline" className="h-7 text-[10px] gap-1"
+                      onClick={() => { void navigator.clipboard.writeText(url); toast.success('Link copied'); }}
+                    >
+                      <Copy className="h-3 w-3" /> Copy link
+                    </Button>
+                    <Button
+                      size="sm" variant="outline" className="h-7 text-[10px] gap-1"
+                      onClick={() => {
+                        void navigator.clipboard.writeText(cribMessage(crib, crib.token));
+                        toast.success('Booking message copied');
+                      }}
+                    >
+                      <MessageSquare className="h-3 w-3" /> Copy message
+                    </Button>
+                  </>
+                );
+              })()}
+            </div>
           </div>
+
         ))}
       </div>
     </div>
