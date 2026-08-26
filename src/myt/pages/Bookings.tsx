@@ -27,6 +27,38 @@ export default function Bookings() {
     rentValue: '12000', viaTour: true, closedBy: '',
   });
 
+  // ---- Crib Booking bridge: every booking can generate its own crib page ----
+  const { rows: cribRows, create: createCrib } = useCribBookings();
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const digits = (p: string) => (p || '').replace(/\D/g, '').slice(-10);
+  const cribFor = (b: Booking) =>
+    cribRows.find(r => digits(r.tenant_phone) === digits(b.phone) && (r.property_name ?? '') === b.propertyName)
+    ?? cribRows.find(r => digits(r.tenant_phone) === digits(b.phone));
+
+  const draftFor = (b: Booking): CribDraft => ({
+    ...blankDraft(),
+    property_id: b.propertyName,
+    property_name: b.propertyName,
+    tenant_name: b.leadName,
+    tenant_phone: digits(b.phone),
+    monthly_rent: b.rentValue,
+    security_deposit: b.rentValue * 2,
+    status: b.agreementStatus === 'pending' ? 'sent' : 'signed',
+    notes: `${b.area || ''}${b.area ? ' · ' : ''}Closed by ${b.closedByName}`,
+  });
+
+  const generateCrib = async (b: Booking) => {
+    setBusyId(b.id);
+    const res = await createCrib(draftFor(b));
+    setBusyId(null);
+    if (!res.ok) { toast.error(res.error); return; }
+    const url = cribLink(res.row.token);
+    void navigator.clipboard.writeText(url);
+    toast.success('Crib page generated — link copied');
+    window.open(url, '_blank');
+  };
+
+
   const totalRent = bookings.reduce((s, b) => s + b.rentValue, 0);
   const signed = bookings.filter(b => b.agreementStatus === 'signed' || b.agreementStatus === 'moved-in').length;
   const movedIn = bookings.filter(b => b.agreementStatus === 'moved-in').length;
