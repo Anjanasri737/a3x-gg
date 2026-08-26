@@ -110,8 +110,11 @@ export default function Bookings() {
             <Link to="/cribbooking"><Link2 className="h-3.5 w-3.5" /> Crib Booking</Link>
           </Button>
           <Button size="sm" onClick={() => setShowForm(!showForm)} className="h-8 text-xs gap-1">
-
+            <Plus className="h-3.5 w-3.5" /> Log Booking
+          </Button>
+        </div>
       </div>
+
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
         <div className="glass-card p-3">
