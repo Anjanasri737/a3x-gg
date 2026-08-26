@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from '@tanstack/react-router';
 import { useAppState } from '@/myt/lib/app-context';
 import { teamMembers, zones } from '@/myt/lib/mock-data';
 import { Booking, AgreementStatus } from '@/myt/lib/types';
@@ -6,8 +7,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Plus, IndianRupee, FileCheck, Home } from 'lucide-react';
+import { Plus, IndianRupee, FileCheck, Home, Link2, Copy, ExternalLink, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useCribBookings } from '@/cribbooking/store';
+import { blankDraft, cribLink, cribMessage, type CribDraft } from '@/cribbooking/types';
+
 
 const properties = [
   'Prestige Lakeside','Brigade Meadows','Sobha Dream Acres','Godrej Splendour',
