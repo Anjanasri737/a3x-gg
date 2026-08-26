@@ -205,17 +205,49 @@ export default function Bookings() {
               <span className="text-muted-foreground">{b.viaTour ? '🏠 Via Tour' : '📞 Direct'}</span>
               <span className="text-muted-foreground">Closed by: {b.closedByName}</span>
             </div>
-            {b.agreementStatus !== 'moved-in' && (
-              <div className="flex gap-2">
-                {b.agreementStatus === 'pending' && (
-                  <Button size="sm" variant="outline" onClick={() => updateStatus(b.id, 'signed')} className="h-7 text-[10px]">Mark Signed</Button>
-                )}
-                {b.agreementStatus === 'signed' && (
-                  <Button size="sm" variant="outline" onClick={() => updateStatus(b.id, 'moved-in')} className="h-7 text-[10px]">Mark Moved In</Button>
-                )}
-              </div>
-            )}
+            <div className="flex flex-wrap gap-2">
+              {b.agreementStatus === 'pending' && (
+                <Button size="sm" variant="outline" onClick={() => updateStatus(b.id, 'signed')} className="h-7 text-[10px]">Mark Signed</Button>
+              )}
+              {b.agreementStatus === 'signed' && (
+                <Button size="sm" variant="outline" onClick={() => updateStatus(b.id, 'moved-in')} className="h-7 text-[10px]">Mark Moved In</Button>
+              )}
+              {(() => {
+                const crib = cribFor(b);
+                if (!crib) {
+                  return (
+                    <Button size="sm" onClick={() => void generateCrib(b)} disabled={busyId === b.id} className="h-7 text-[10px] gap-1">
+                      <Link2 className="h-3 w-3" /> {busyId === b.id ? 'Generating…' : 'Generate crib page'}
+                    </Button>
+                  );
+                }
+                const url = cribLink(crib.token);
+                return (
+                  <>
+                    <Button size="sm" variant="outline" asChild className="h-7 text-[10px] gap-1">
+                      <a href={url} target="_blank" rel="noreferrer"><ExternalLink className="h-3 w-3" /> Open crib page</a>
+                    </Button>
+                    <Button
+                      size="sm" variant="outline" className="h-7 text-[10px] gap-1"
+                      onClick={() => { void navigator.clipboard.writeText(url); toast.success('Link copied'); }}
+                    >
+                      <Copy className="h-3 w-3" /> Copy link
+                    </Button>
+                    <Button
+                      size="sm" variant="outline" className="h-7 text-[10px] gap-1"
+                      onClick={() => {
+                        void navigator.clipboard.writeText(cribMessage(crib, crib.token));
+                        toast.success('Booking message copied');
+                      }}
+                    >
+                      <MessageSquare className="h-3 w-3" /> Copy message
+                    </Button>
+                  </>
+                );
+              })()}
+            </div>
           </div>
+
         ))}
       </div>
     </div>
