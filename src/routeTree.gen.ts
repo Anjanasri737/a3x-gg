@@ -99,6 +99,7 @@ import { Route as MytDraftsRouteImport } from './routes/myt/drafts'
 import { Route as MytCalendarRouteImport } from './routes/myt/calendar'
 import { Route as MytBookingsRouteImport } from './routes/myt/bookings'
 import { Route as LeadsAddRouteImport } from './routes/leads.add'
+import { Route as CribbookingTokenRouteImport } from './routes/cribbooking/$token'
 import { Route as AdminWatchtowerRouteImport } from './routes/admin.watchtower'
 import { Route as AdminWarRoomRouteImport } from './routes/admin.war-room'
 import { Route as AdminSimulatorRouteImport } from './routes/admin.simulator'
@@ -571,6 +572,11 @@ const LeadsAddRoute = LeadsAddRouteImport.update({
   path: '/add',
   getParentRoute: () => LeadsRoute,
 } as any)
+const CribbookingTokenRoute = CribbookingTokenRouteImport.update({
+  id: '/cribbooking/$token',
+  path: '/cribbooking/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AdminWatchtowerRoute = AdminWatchtowerRouteImport.update({
   id: '/watchtower',
   path: '/watchtower',
@@ -725,6 +731,7 @@ export interface FileRoutesByFullPath {
   '/admin/simulator': typeof AdminSimulatorRoute
   '/admin/war-room': typeof AdminWarRoomRoute
   '/admin/watchtower': typeof AdminWatchtowerRoute
+  '/cribbooking/$token': typeof CribbookingTokenRoute
   '/leads/add': typeof LeadsAddRoute
   '/myt/bookings': typeof MytBookingsRoute
   '/myt/calendar': typeof MytCalendarRoute
@@ -836,6 +843,7 @@ export interface FileRoutesByTo {
   '/admin/simulator': typeof AdminSimulatorRoute
   '/admin/war-room': typeof AdminWarRoomRoute
   '/admin/watchtower': typeof AdminWatchtowerRoute
+  '/cribbooking/$token': typeof CribbookingTokenRoute
   '/leads/add': typeof LeadsAddRoute
   '/myt/bookings': typeof MytBookingsRoute
   '/myt/calendar': typeof MytCalendarRoute
@@ -950,6 +958,7 @@ export interface FileRoutesById {
   '/admin/simulator': typeof AdminSimulatorRoute
   '/admin/war-room': typeof AdminWarRoomRoute
   '/admin/watchtower': typeof AdminWatchtowerRoute
+  '/cribbooking/$token': typeof CribbookingTokenRoute
   '/leads/add': typeof LeadsAddRoute
   '/myt/bookings': typeof MytBookingsRoute
   '/myt/calendar': typeof MytCalendarRoute
@@ -1065,6 +1074,7 @@ export interface FileRouteTypes {
     | '/admin/simulator'
     | '/admin/war-room'
     | '/admin/watchtower'
+    | '/cribbooking/$token'
     | '/leads/add'
     | '/myt/bookings'
     | '/myt/calendar'
@@ -1176,6 +1186,7 @@ export interface FileRouteTypes {
     | '/admin/simulator'
     | '/admin/war-room'
     | '/admin/watchtower'
+    | '/cribbooking/$token'
     | '/leads/add'
     | '/myt/bookings'
     | '/myt/calendar'
@@ -1289,6 +1300,7 @@ export interface FileRouteTypes {
     | '/admin/simulator'
     | '/admin/war-room'
     | '/admin/watchtower'
+    | '/cribbooking/$token'
     | '/leads/add'
     | '/myt/bookings'
     | '/myt/calendar'
@@ -1391,6 +1403,7 @@ export interface RootRouteChildren {
   TowerRoute: typeof TowerRouteWithChildren
   ZoneBrainRoute: typeof ZoneBrainRoute
   ZonesRoute: typeof ZonesRoute
+  CribbookingTokenRoute: typeof CribbookingTokenRoute
   MytBookingsRoute: typeof MytBookingsRoute
   MytCalendarRoute: typeof MytCalendarRoute
   MytDraftsRoute: typeof MytDraftsRoute
@@ -2067,6 +2080,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LeadsAddRouteImport
       parentRoute: typeof LeadsRoute
     }
+    '/cribbooking/$token': {
+      id: '/cribbooking/$token'
+      path: '/cribbooking/$token'
+      fullPath: '/cribbooking/$token'
+      preLoaderRoute: typeof CribbookingTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/admin/watchtower': {
       id: '/admin/watchtower'
       path: '/watchtower'
@@ -2364,6 +2384,7 @@ const rootRouteChildren: RootRouteChildren = {
   TowerRoute: TowerRouteWithChildren,
   ZoneBrainRoute: ZoneBrainRoute,
   ZonesRoute: ZonesRoute,
+  CribbookingTokenRoute: CribbookingTokenRoute,
   MytBookingsRoute: MytBookingsRoute,
   MytCalendarRoute: MytCalendarRoute,
   MytDraftsRoute: MytDraftsRoute,
