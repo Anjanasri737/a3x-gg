@@ -18,7 +18,8 @@ import {
 import { PropertyCommandCenter } from "@/supply-hub/components/PropertyCommandCenter";
 import {
   VERDICT_LABEL, VERDICT_TONE, applyTowerFilter, towerStats, truthBlock, truthRow,
-  type PGX, type TowerFilter, type TruthRow,
+  AVAIL_CLASS_LABEL, AVAIL_CLASS_TONE, propertyGate, verifyAllSections,
+  type AvailClass, type PGX, type TowerFilter, type TruthRow,
 } from "@/supply-hub/lib/truth";
 
 export const Route = createFileRoute("/supply-hub/admin")({
@@ -52,6 +53,10 @@ function SupplyAdmin() {
   const [msgFor, setMsgFor] = useState<PG | null>(null);
   const [cmdKey, setCmdKey] = useState<string | null>(null);
   const [tower, setTower] = useState<TowerFilter>("all");
+  const [vFilter, setVFilter] = useState<"all" | "verified" | "unverified">("all");
+  const [aFilter, setAFilter] = useState<"all" | AvailClass>("all");
+  const [sel, setSel] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
 
   const areas = useMemo(
     () => ["All", ...Array.from(new Set(items.map((i) => i.pg.area).filter(Boolean))).sort()],
@@ -75,13 +80,16 @@ function SupplyAdmin() {
         if (status === "enabled" && !i.enabled) return false;
         if (status === "disabled" && i.enabled) return false;
         if (area !== "All" && i.pg.area !== area) return false;
+        if (vFilter === "verified" && !i.truth.verify.mandatoryOk) return false;
+        if (vFilter === "unverified" && i.truth.verify.mandatoryOk) return false;
+        if (aFilter !== "all" && i.truth.avail !== aFilter) return false;
         if (zone !== "All" && zoneOfPG(i.pg) !== zone) return false;
         if (onlyGaps && i.gap.missing.length === 0) return false;
         if (!needle) return true;
         return [i.pg.name, i.pg.actualName, i.pg.area, i.pg.locality].join(" ").toLowerCase().includes(needle);
       })
       .sort((a, b) => b.truth.health - a.truth.health);
-  }, [truth, q, status, area, zone, onlyGaps, zones, tower]);
+  }, [truth, q, status, area, zone, onlyGaps, zones, tower, vFilter, aFilter]);
 
   const cmd = useMemo(() => items.find((i) => i.pg.name === cmdKey) ?? null, [items, cmdKey]);
 
@@ -101,6 +109,32 @@ function SupplyAdmin() {
     }
     if (failed) toast.error(`${failed} of ${targets.length} could not update`);
     else toast.success(`${targets.length} properties ${v ? "enabled" : "disabled"} in ${z}`);
+  };
+
+  const toggleSel = (name: string) =>
+    setSel((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name); else next.add(name);
+      return next;
+    });
+
+  const bulkVerify = async () => {
+    const targets = items.filter((i) => sel.has(i.pg.name));
+    if (!targets.length) return;
+    setBulkBusy(true);
+    let done = 0;
+    const blocked: string[] = [];
+    for (const t of targets) {
+      const doc = t.pg as PGX;
+      const gate = propertyGate(doc);
+      if (!gate.ok) { blocked.push(`${t.pg.name}: ${gate.issues[0]}`); continue; }
+      const res = await saveDoc(verifyAllSections(doc, "Admin", "manager") as unknown as PG, { enabled: t.enabled });
+      if (res.ok) done += 1; else blocked.push(`${t.pg.name}: ${res.error ?? "save failed"}`);
+    }
+    setBulkBusy(false);
+    setSel(new Set());
+    if (done) toast.success(`${done} propert${done === 1 ? "y" : "ies"} fully verified`);
+    if (blocked.length) toast.error(`${blocked.length} blocked`, { description: blocked.slice(0, 4).join(" · ") });
   };
 
   const exportGaps = () => {
@@ -223,10 +257,42 @@ function SupplyAdmin() {
           <select value={area} onChange={(e) => setArea(e.target.value)} className="rounded-md border border-border bg-background px-2 py-1.5 text-sm">
             {areas.map((a) => <option key={a} value={a}>{a}</option>)}
           </select>
+          <select value={vFilter} onChange={(e) => setVFilter(e.target.value as typeof vFilter)} className="rounded-md border border-border bg-background px-2 py-1.5 text-sm">
+            <option value="all">Verified: any</option>
+            <option value="verified">Verified only</option>
+            <option value="unverified">Unverified only</option>
+          </select>
+          <select value={aFilter} onChange={(e) => setAFilter(e.target.value as typeof aFilter)} className="rounded-md border border-border bg-background px-2 py-1.5 text-sm">
+            <option value="all">Availability: any</option>
+            <option value="available">Available</option>
+            <option value="limited">Limited</option>
+            <option value="waitlist">Waitlist</option>
+            <option value="full">Full</option>
+          </select>
           <label className="inline-flex items-center gap-2 text-xs">
             <input type="checkbox" checked={onlyGaps} onChange={(e) => setOnlyGaps(e.target.checked)} /> Only missing info
           </label>
           <div className="ml-auto text-xs text-muted-foreground">{loading ? "Syncing…" : `${rows.length} shown`}</div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          <label className="inline-flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={rows.length > 0 && rows.every((r) => sel.has(r.pg.name))}
+              onChange={(e) => setSel(e.target.checked ? new Set(rows.map((r) => r.pg.name)) : new Set())}
+            />
+            Select all shown
+          </label>
+          <span className="text-muted-foreground">{sel.size} selected</span>
+          <button
+            disabled={!sel.size || bulkBusy}
+            onClick={() => void bulkVerify()}
+            className="inline-flex items-center gap-1 rounded-md border border-emerald-400/50 px-2.5 py-1 font-semibold text-emerald-400 hover:bg-emerald-400/10 disabled:opacity-40"
+          >
+            <ShieldCheck className="h-3.5 w-3.5" /> {bulkBusy ? "Verifying…" : "Verify all sections"}
+          </button>
+          <button disabled={!sel.size} onClick={() => setSel(new Set())} className="rounded-md border border-border px-2.5 py-1 hover:bg-muted disabled:opacity-40">Clear</button>
         </div>
 
         <div className="rounded-lg border bg-card divide-y">
@@ -234,6 +300,8 @@ function SupplyAdmin() {
             <PropertyRow
               key={item.pg.id || item.pg.name}
               item={item}
+              selected={sel.has(item.pg.name)}
+              onSelect={() => toggleSel(item.pg.name)}
               onToggle={async (v) => {
                 const res = await setEnabled(item.pg, v);
                 if (!res.ok) toast.error(res.error ?? "Could not update");
@@ -331,6 +399,8 @@ function SupplyAdmin() {
 
 function PropertyRow({
   item,
+  selected,
+  onSelect,
   onToggle,
   onEdit,
   onVerify,
@@ -339,6 +409,8 @@ function PropertyRow({
   onZone,
 }: {
   item: SupplyItem & { gap: ReturnType<typeof gapReport>; truth: TruthRow };
+  selected: boolean;
+  onSelect: () => void;
   onToggle: (v: boolean) => void;
   onEdit: () => void;
   onVerify: () => void;
@@ -351,6 +423,7 @@ function PropertyRow({
   const cheap = inv.fromPrice || [pg.prices.triple, pg.prices.double, pg.prices.single].filter((x) => x > 0).sort((a, b) => a - b)[0];
   return (
     <div className={cn("p-3 flex flex-wrap items-center gap-3", !item.enabled && "opacity-60")}>
+      <input type="checkbox" checked={selected} onChange={onSelect} className="shrink-0" aria-label={`Select ${pg.name}`} />
       <div className="min-w-[220px] flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <span className="font-semibold text-sm truncate">{pg.name}</span>
@@ -363,7 +436,10 @@ function PropertyRow({
           </span>
           <span className={cn("rounded px-1 py-0.5 text-[9px] uppercase tracking-wider",
             truth.verify.mandatoryOk ? "bg-emerald-400/10 text-emerald-400" : "bg-amber-400/10 text-amber-400")}>
-            {truth.verify.mandatoryOk ? "✓ Verified" : `Verify ${truth.verify.pct}%`}
+            {truth.verify.mandatoryOk ? "✓ Verified" : `Verify ${truth.verify.pct}%`} · {truth.verify.verified}/{truth.verify.total}
+          </span>
+          <span className={cn("rounded border px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider", AVAIL_CLASS_TONE[truth.avail])}>
+            {AVAIL_CLASS_LABEL[truth.avail]}
           </span>
           {item.source === "admin" && <span className="rounded bg-accent/10 text-accent px-1 py-0.5 text-[9px] uppercase tracking-wider">New</span>}
           {!item.enabled && <span className="rounded bg-rose-400/10 text-rose-400 px-1 py-0.5 text-[9px] uppercase tracking-wider">Disabled</span>}
