@@ -13,6 +13,8 @@ import {
   SECTION_STATE_LABEL, SECTION_STATE_TONE, VERDICT_LABEL, VERDICT_TONE,
   ago, invSummary, nextDue, priceBand, priceConflict, pushHistory, sectionHash,
   sectionState, seedInventory, sellability, healthScore, truthBlock, truthRow, verifySummary,
+  auditDiff, pushHistoryMany, sectionGate, propertyGate, verifyAllSections,
+  AVAIL_CLASS_LABEL, AVAIL_CLASS_TONE,
   type Bed, type BedState, type EvidenceSource, type InvRoom, type PGX,
 } from "@/supply-hub/lib/truth";
 
@@ -59,8 +61,9 @@ export function PropertyCommandCenter({
 
   const persist = async (next: PGX, msg: string) => {
     setBusy(true);
-    setDraft(next);
-    const res = await onSave(next);
+    const audited = pushHistoryMany(next, auditDiff(pg, next, verifier));
+    setDraft(audited);
+    const res = await onSave(audited);
     setBusy(false);
     if (res.ok) toast.success(msg);
     else toast.error(res.error ?? "Could not save");
@@ -70,6 +73,11 @@ export function PropertyCommandCenter({
     void persist(pushHistory(draft, { by: verifier, what: `${what} edited` }), "Saved");
 
   const verifySection = (id: string, label: string) => {
+    const gate = sectionGate(draft, id);
+    if (!gate.ok) {
+      toast.error(`Cannot verify ${label}`, { description: gate.issues.slice(0, 4).join(" · ") });
+      return;
+    }
     const now = new Date().toISOString();
     const sections = {
       ...(draft.verification?.sections ?? {}),
@@ -92,13 +100,12 @@ export function PropertyCommandCenter({
   };
 
   const verifyAll = () => {
-    const now = new Date().toISOString();
-    const sections: Record<string, { at: string; by: string; source: EvidenceSource; hash: string }> = {};
-    for (const s of VERIFY_SECTIONS) sections[s.id] = { at: now, by: verifier, source, hash: sectionHash(draft, s.id) };
-    void persist(
-      pushHistory({ ...draft, verification: { sections, verifiedAt: now, verifiedBy: verifier } }, { by: verifier, what: "Full property verified", to: source }),
-      "Property verified end-to-end",
-    );
+    const gate = propertyGate(draft);
+    if (!gate.ok) {
+      toast.error("Cannot verify this property yet", { description: gate.issues.slice(0, 5).join(" · ") });
+      return;
+    }
+    void persist(verifyAllSections(draft, verifier, source), "Property verified end-to-end");
   };
 
   const setInv = (rooms: InvRoom[], note?: string) =>
