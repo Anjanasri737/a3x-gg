@@ -58,6 +58,7 @@ export function PropertyCommandCenter({
   const v = row.verify;
   const inv = row.inv;
   const sell = row.sell;
+  const gate = useMemo(() => propertyGate(draft), [draft]);
 
   const persist = async (next: PGX, msg: string) => {
     setBusy(true);
@@ -131,6 +132,9 @@ export function PropertyCommandCenter({
           <span className={cn("rounded-md border px-2 py-0.5 text-[11px] font-bold tracking-wider", VERDICT_TONE[sell.verdict])}>
             {VERDICT_LABEL[sell.verdict]}
           </span>
+          <span className={cn("rounded-md border px-2 py-0.5 text-[11px] font-bold tracking-wider", AVAIL_CLASS_TONE[row.avail])}>
+            {AVAIL_CLASS_LABEL[row.avail].toUpperCase()}
+          </span>
           <div className="ml-auto flex items-center gap-2">
             <CopyButton text={truthBlock(row)} label="Copy status" />
             <span className="text-[11px] text-muted-foreground">Enabled</span>
@@ -169,6 +173,13 @@ export function PropertyCommandCenter({
             </span>
           ))}
         </div>
+
+        {gate.issues.length > 0 && (
+          <div className="rounded-md border border-amber-400/40 bg-amber-400/5 p-2 text-[11px] text-amber-300">
+            <b>Blocking verification ({gate.issues.length}):</b> {gate.issues.slice(0, 6).join(" · ")}
+            {gate.issues.length > 6 ? ` · +${gate.issues.length - 6} more` : ""}
+          </div>
+        )}
 
         <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-border">
           <label className="text-[11px] text-muted-foreground inline-flex items-center gap-1.5">
