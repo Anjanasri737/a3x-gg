@@ -15,11 +15,11 @@ import {
   zoneOfPG, zoneCounts, zoneMeta, zonePlan, useZones, UNMAPPED, ZONE_ACCENTS,
   type ZoneDef,
 } from "@/supply-hub/lib/zones";
-import { VerifySheet } from "@/supply-hub/components/VerifySheet";
+import { PropertyCommandCenter } from "@/supply-hub/components/PropertyCommandCenter";
 import {
-  AVAIL_LABEL, AVAIL_TONE, VERIFY_SECTIONS, availabilityLine, verifiedSectionCount,
-  type PGDoc,
-} from "@/supply-hub/lib/verify";
+  VERDICT_LABEL, VERDICT_TONE, applyTowerFilter, towerStats, truthBlock, truthRow,
+  type PGX, type TowerFilter, type TruthRow,
+} from "@/supply-hub/lib/truth";
 
 export const Route = createFileRoute("/supply-hub/admin")({
   head: () => ({
@@ -50,17 +50,28 @@ function SupplyAdmin() {
   const zoneIds = useMemo(() => [...zones.map((z) => z.id), UNMAPPED], [zones]);
   const [editing, setEditing] = useState<PG | null>(null);
   const [msgFor, setMsgFor] = useState<PG | null>(null);
+  const [cmdKey, setCmdKey] = useState<string | null>(null);
+  const [tower, setTower] = useState<TowerFilter>("all");
 
   const areas = useMemo(
     () => ["All", ...Array.from(new Set(items.map((i) => i.pg.area).filter(Boolean))).sort()],
     [items],
   );
 
+  const truth = useMemo(
+    () => items.map((i) => ({ item: i, truth: truthRow(i.pg as PGX, i.enabled), gap: gapReport(i.pg) })),
+    [items],
+  );
+
+  const stats = useMemo(() => towerStats(truth.map((t) => t.truth)), [truth]);
+
   const rows = useMemo(() => {
     const needle = q.trim().toLowerCase();
-    return items
-      .map((i) => ({ ...i, gap: gapReport(i.pg) }))
+    const keep = new Set(applyTowerFilter(truth.map((t) => t.truth), tower).map((r) => r.pg.name));
+    return truth
+      .map((t) => ({ ...t.item, gap: t.gap, truth: t.truth }))
       .filter((i) => {
+        if (!keep.has(i.pg.name)) return false;
         if (status === "enabled" && !i.enabled) return false;
         if (status === "disabled" && i.enabled) return false;
         if (area !== "All" && i.pg.area !== area) return false;
@@ -69,17 +80,10 @@ function SupplyAdmin() {
         if (!needle) return true;
         return [i.pg.name, i.pg.actualName, i.pg.area, i.pg.locality].join(" ").toLowerCase().includes(needle);
       })
-      .sort((a, b) => a.gap.score - b.gap.score);
-  }, [items, q, status, area, zone, onlyGaps, zones]);
+      .sort((a, b) => b.truth.health - a.truth.health);
+  }, [truth, q, status, area, zone, onlyGaps, zones, tower]);
 
-  const stats = useMemo(() => {
-    const total = items.length;
-    const disabled = items.filter((i) => !i.enabled).length;
-    const added = items.filter((i) => i.source === "admin").length;
-    const gaps = items.filter((i) => gapReport(i.pg).missing.length > 0).length;
-    const avg = total ? Math.round(items.reduce((s, i) => s + gapReport(i.pg).score, 0) / total) : 0;
-    return { total, disabled, added, gaps, avg, live: total - disabled };
-  }, [items]);
+  const cmd = useMemo(() => items.find((i) => i.pg.name === cmdKey) ?? null, [items, cmdKey]);
 
   const zoneRows = useMemo(() => {
     const all = zoneCounts(items.map((i) => i.pg));
@@ -169,21 +173,33 @@ function SupplyAdmin() {
           </div>
         </section>
 
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-          {[
-            { label: "Properties", value: stats.total, sub: "In the hub" },
-            { label: "Live", value: stats.live, sub: "Sellable now" },
-            { label: "Disabled", value: stats.disabled, sub: "Sold out / paused" },
-            { label: "Added by admin", value: stats.added, sub: "New documents" },
-            { label: "Avg completeness", value: `${stats.avg}%`, sub: `${stats.gaps} need info` },
-          ].map((s) => (
-            <div key={s.label} className="rounded-lg border bg-card p-4">
-              <div className="text-[10px] uppercase tracking-wider text-muted-foreground">{s.label}</div>
-              <div className="mt-1 font-display text-2xl font-semibold">{s.value}</div>
-              <div className="text-xs text-muted-foreground mt-0.5">{s.sub}</div>
-            </div>
-          ))}
-        </div>
+        <section className="space-y-2">
+          <div className="flex items-center gap-2">
+            <h2 className="text-sm font-semibold inline-flex items-center gap-1.5"><ShieldCheck className="h-4 w-4 text-accent" /> Control tower</h2>
+            <span className="text-[11px] text-muted-foreground">Every number is clickable — it filters the list below.</span>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-2">
+            {([
+              { f: "all", label: "Properties", value: stats.properties, tone: "" },
+              { f: "verified", label: "Verified", value: stats.verified, tone: "text-emerald-400" },
+              { f: "sellable", label: "Sellable now", value: stats.sellable, tone: "text-emerald-400" },
+              { f: "beds", label: "Beds available", value: stats.beds, tone: "text-sky-400" },
+              { f: "expired", label: "Verification expired", value: stats.expired, tone: "text-amber-400" },
+              { f: "price_conflicts", label: "Price conflicts", value: stats.priceConflicts, tone: "text-rose-400" },
+              { f: "inventory_conflicts", label: "Inventory stale", value: stats.inventoryConflicts, tone: "text-amber-400" },
+              { f: "disabled", label: "Disabled", value: stats.disabled, tone: "text-muted-foreground" },
+            ] as { f: TowerFilter; label: string; value: number; tone: string }[]).map((s) => (
+              <button
+                key={s.f}
+                onClick={() => setTower(tower === s.f ? "all" : s.f)}
+                className={cn("rounded-lg border bg-card p-3 text-left hover:bg-muted/50", tower === s.f && "border-accent ring-1 ring-accent/30")}
+              >
+                <div className={cn("font-display text-2xl font-semibold", s.tone)}>{s.value}</div>
+                <div className="text-[10px] uppercase tracking-wider text-muted-foreground mt-0.5">{s.label}</div>
+              </button>
+            ))}
+          </div>
+        </section>
 
         <div className="rounded-lg border bg-card p-3 flex flex-wrap items-center gap-3">
           <div className="relative flex-1 min-w-[240px]">
@@ -224,6 +240,7 @@ function SupplyAdmin() {
                 else toast.success(`${item.pg.name} ${v ? "enabled" : "disabled"}`);
               }}
               onEdit={() => setEditing(item.pg)}
+              onVerify={() => setCmdKey(item.pg.name)}
               onMessages={() => setMsgFor(item.pg)}
               zoneIds={zoneIds}
               onZone={(z) => { setZoneOverride(item.pg, z); toast.success(z ? `${item.pg.name} → ${z}` : `${item.pg.name} → auto zone`); }}
@@ -286,6 +303,28 @@ function SupplyAdmin() {
           {msgFor && <div className="mt-4"><MessageKitPanel pg={msgFor} compact /></div>}
         </SheetContent>
       </Sheet>
+
+      <Sheet open={!!cmd} onOpenChange={(o) => !o && setCmdKey(null)}>
+        <SheetContent side="right" className="w-full sm:max-w-5xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>{cmd?.pg.name} — Property Command Center</SheetTitle>
+          </SheetHeader>
+          {cmd && (
+            <div className="mt-4">
+              <PropertyCommandCenter
+                pg={cmd.pg as PGX}
+                enabled={cmd.enabled}
+                onSave={async (next) => saveDoc(next as unknown as PG, { enabled: cmd.enabled })}
+                onToggle={async (v) => {
+                  const res = await setEnabled(cmd.pg, v);
+                  if (!res.ok) toast.error(res.error ?? "Could not update");
+                  else toast.success(`${cmd.pg.name} ${v ? "enabled" : "disabled"}`);
+                }}
+              />
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
     </AppShell>
   );
 }
@@ -294,26 +333,44 @@ function PropertyRow({
   item,
   onToggle,
   onEdit,
+  onVerify,
   onMessages,
   zoneIds,
   onZone,
 }: {
-  item: SupplyItem & { gap: ReturnType<typeof gapReport> };
+  item: SupplyItem & { gap: ReturnType<typeof gapReport>; truth: TruthRow };
   onToggle: (v: boolean) => void;
   onEdit: () => void;
+  onVerify: () => void;
   onMessages: () => void;
   zoneIds: string[];
   onZone: (zoneId: string | null) => void;
 }) {
-  const { pg, gap } = item;
-  const cheap = [pg.prices.triple, pg.prices.double, pg.prices.single].filter((x) => x > 0).sort((a, b) => a - b)[0];
+  const { pg, gap, truth } = item;
+  const inv = truth.inv;
+  const cheap = inv.fromPrice || [pg.prices.triple, pg.prices.double, pg.prices.single].filter((x) => x > 0).sort((a, b) => a - b)[0];
   return (
     <div className={cn("p-3 flex flex-wrap items-center gap-3", !item.enabled && "opacity-60")}>
       <div className="min-w-[220px] flex-1">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <span className="font-semibold text-sm truncate">{pg.name}</span>
+          <span className={cn("rounded border px-1.5 py-0.5 text-[10px] font-bold",
+            truth.health >= 85 ? "border-emerald-400/50 text-emerald-400 bg-emerald-400/10"
+              : truth.health >= 60 ? "border-amber-400/50 text-amber-400 bg-amber-400/10"
+                : "border-rose-400/50 text-rose-400 bg-rose-400/10")}>{truth.health}</span>
+          <span className={cn("rounded border px-1.5 py-0.5 text-[9px] font-bold tracking-wider", VERDICT_TONE[truth.sell.verdict])}>
+            {VERDICT_LABEL[truth.sell.verdict]}
+          </span>
+          <span className={cn("rounded px-1 py-0.5 text-[9px] uppercase tracking-wider",
+            truth.verify.mandatoryOk ? "bg-emerald-400/10 text-emerald-400" : "bg-amber-400/10 text-amber-400")}>
+            {truth.verify.mandatoryOk ? "✓ Verified" : `Verify ${truth.verify.pct}%`}
+          </span>
           {item.source === "admin" && <span className="rounded bg-accent/10 text-accent px-1 py-0.5 text-[9px] uppercase tracking-wider">New</span>}
           {!item.enabled && <span className="rounded bg-rose-400/10 text-rose-400 px-1 py-0.5 text-[9px] uppercase tracking-wider">Disabled</span>}
+        </div>
+        <div className="mt-0.5 text-[11px] text-muted-foreground">
+          {inv.availableNow} beds now · {inv.next7} in 7d{inv.earliest ? ` · earliest ${inv.earliest}` : ""}
+          {inv.floorPrice ? ` · floor ₹${inv.floorPrice.toLocaleString("en-IN")}` : ""} · inventory {inv.checkedAgo}
         </div>
         <div className="mt-0.5 flex items-center gap-1.5">
           <select
@@ -351,8 +408,12 @@ function PropertyRow({
       </div>
 
       <div className="flex items-center gap-2 ml-auto">
+        <button onClick={onVerify} className="inline-flex items-center gap-1 rounded-md border border-emerald-400/50 px-2 py-1 text-[11px] font-semibold text-emerald-400 hover:bg-emerald-400/10">
+          <BadgeCheck className="h-3 w-3" /> Verify
+        </button>
+        <button onClick={onVerify} className="rounded-md border border-border px-2 py-1 text-[11px] font-medium hover:bg-muted">Inventory</button>
         <button onClick={onMessages} className="rounded-md border border-border px-2 py-1 text-[11px] font-medium hover:bg-muted">Messages</button>
-        <CopyButton text={pg.mapsLink || pg.locality} label="Maps" />
+        <CopyButton text={truthBlock(truth)} label="Status" />
         <button onClick={onEdit} className="inline-flex items-center gap-1 rounded-md border border-border px-2 py-1 text-[11px] font-medium hover:bg-muted">
           <Pencil className="h-3 w-3" /> Edit
         </button>
