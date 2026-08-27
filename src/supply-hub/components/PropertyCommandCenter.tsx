@@ -13,6 +13,8 @@ import {
   SECTION_STATE_LABEL, SECTION_STATE_TONE, VERDICT_LABEL, VERDICT_TONE,
   ago, invSummary, nextDue, priceBand, priceConflict, pushHistory, sectionHash,
   sectionState, seedInventory, sellability, healthScore, truthBlock, truthRow, verifySummary,
+  auditDiff, pushHistoryMany, sectionGate, propertyGate, verifyAllSections,
+  AVAIL_CLASS_LABEL, AVAIL_CLASS_TONE,
   type Bed, type BedState, type EvidenceSource, type InvRoom, type PGX,
 } from "@/supply-hub/lib/truth";
 
@@ -56,11 +58,13 @@ export function PropertyCommandCenter({
   const v = row.verify;
   const inv = row.inv;
   const sell = row.sell;
+  const gate = useMemo(() => propertyGate(draft), [draft]);
 
   const persist = async (next: PGX, msg: string) => {
     setBusy(true);
-    setDraft(next);
-    const res = await onSave(next);
+    const audited = pushHistoryMany(next, auditDiff(pg, next, verifier));
+    setDraft(audited);
+    const res = await onSave(audited);
     setBusy(false);
     if (res.ok) toast.success(msg);
     else toast.error(res.error ?? "Could not save");
@@ -70,6 +74,11 @@ export function PropertyCommandCenter({
     void persist(pushHistory(draft, { by: verifier, what: `${what} edited` }), "Saved");
 
   const verifySection = (id: string, label: string) => {
+    const gate = sectionGate(draft, id);
+    if (!gate.ok) {
+      toast.error(`Cannot verify ${label}`, { description: gate.issues.slice(0, 4).join(" · ") });
+      return;
+    }
     const now = new Date().toISOString();
     const sections = {
       ...(draft.verification?.sections ?? {}),
@@ -92,13 +101,12 @@ export function PropertyCommandCenter({
   };
 
   const verifyAll = () => {
-    const now = new Date().toISOString();
-    const sections: Record<string, { at: string; by: string; source: EvidenceSource; hash: string }> = {};
-    for (const s of VERIFY_SECTIONS) sections[s.id] = { at: now, by: verifier, source, hash: sectionHash(draft, s.id) };
-    void persist(
-      pushHistory({ ...draft, verification: { sections, verifiedAt: now, verifiedBy: verifier } }, { by: verifier, what: "Full property verified", to: source }),
-      "Property verified end-to-end",
-    );
+    const gate = propertyGate(draft);
+    if (!gate.ok) {
+      toast.error("Cannot verify this property yet", { description: gate.issues.slice(0, 5).join(" · ") });
+      return;
+    }
+    void persist(verifyAllSections(draft, verifier, source), "Property verified end-to-end");
   };
 
   const setInv = (rooms: InvRoom[], note?: string) =>
@@ -123,6 +131,9 @@ export function PropertyCommandCenter({
           </span>
           <span className={cn("rounded-md border px-2 py-0.5 text-[11px] font-bold tracking-wider", VERDICT_TONE[sell.verdict])}>
             {VERDICT_LABEL[sell.verdict]}
+          </span>
+          <span className={cn("rounded-md border px-2 py-0.5 text-[11px] font-bold tracking-wider", AVAIL_CLASS_TONE[row.avail])}>
+            {AVAIL_CLASS_LABEL[row.avail].toUpperCase()}
           </span>
           <div className="ml-auto flex items-center gap-2">
             <CopyButton text={truthBlock(row)} label="Copy status" />
@@ -162,6 +173,13 @@ export function PropertyCommandCenter({
             </span>
           ))}
         </div>
+
+        {gate.issues.length > 0 && (
+          <div className="rounded-md border border-amber-400/40 bg-amber-400/5 p-2 text-[11px] text-amber-300">
+            <b>Blocking verification ({gate.issues.length}):</b> {gate.issues.slice(0, 6).join(" · ")}
+            {gate.issues.length > 6 ? ` · +${gate.issues.length - 6} more` : ""}
+          </div>
+        )}
 
         <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-border">
           <label className="text-[11px] text-muted-foreground inline-flex items-center gap-1.5">

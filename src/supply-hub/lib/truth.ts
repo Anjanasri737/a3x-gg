@@ -416,14 +416,17 @@ export interface TruthRow {
   inv: InvSummary;
   sell: Sellability;
   health: number;
+  avail: AvailClass;
 }
 
 export function truthRow(pg: PGX, enabled: boolean): TruthRow {
+  const inv = invSummary(pg);
   return {
     pg,
     enabled,
     verify: verifySummary(pg),
-    inv: invSummary(pg),
+    inv,
+    avail: availClass(inv),
     sell: sellability(pg, enabled),
     health: healthScore(pg, enabled),
   };
@@ -468,9 +471,152 @@ export function applyTowerFilter(rows: TruthRow[], f: TowerFilter): TruthRow[] {
 /* ------------------------------------------------------------- history */
 
 export function pushHistory(pg: PGX, entry: Omit<ChangeLog, "at">): PGX {
-  const history = [{ at: new Date().toISOString(), ...entry }, ...(pg.history ?? [])].slice(0, 80);
+  const history = [{ at: new Date().toISOString(), ...entry }, ...(pg.history ?? [])].slice(0, 200);
   return { ...pg, history };
 }
+
+export function pushHistoryMany(pg: PGX, entries: Omit<ChangeLog, "at">[]): PGX {
+  if (!entries.length) return pg;
+  const at = new Date().toISOString();
+  const history = [...entries.map((e) => ({ at, ...e })), ...(pg.history ?? [])].slice(0, 200);
+  return { ...pg, history };
+}
+
+/* --------------------------------------------------- availability class */
+
+export type AvailClass = "available" | "limited" | "waitlist" | "full";
+
+export const AVAIL_CLASS_LABEL: Record<AvailClass, string> = {
+  available: "Available",
+  limited: "Limited",
+  waitlist: "Waitlist",
+  full: "Full",
+};
+
+export const AVAIL_CLASS_TONE: Record<AvailClass, string> = {
+  available: "border-emerald-400/40 bg-emerald-400/10 text-emerald-400",
+  limited: "border-amber-400/40 bg-amber-400/10 text-amber-400",
+  waitlist: "border-sky-400/40 bg-sky-400/10 text-sky-400",
+  full: "border-rose-400/40 bg-rose-400/10 text-rose-400",
+};
+
+/** Derive the four availability buckets straight from the bed grid. */
+export function availClass(inv: InvSummary): AvailClass {
+  if (inv.availableNow >= 3) return "available";
+  if (inv.availableNow > 0) return "limited";
+  if (inv.next30 > 0) return "waitlist";
+  return "full";
+}
+
+/* -------------------------------------------------------- verify gates */
+
+export interface Gate {
+  ok: boolean;
+  issues: string[];
+}
+
+/**
+ * A property cannot be verified until every room has a complete, consistent
+ * availability date and a last-best (floor) price per bed.
+ */
+export function inventoryGate(pg: PGX): Gate {
+  const rooms = pg.inventory?.rooms ?? [];
+  const issues: string[] = [];
+  if (rooms.length === 0) issues.push("No room/bed inventory — seed it from the price list first");
+  for (const r of rooms) {
+    const where = `${r.floor ? `F${r.floor} ` : ""}${r.room || r.type || "room"}`;
+    if (r.beds.length === 0) issues.push(`${where}: no beds added`);
+    for (const b of r.beds) {
+      const at = `${where} · ${b.label}`;
+      if (b.state !== "occupied" && b.state !== "blocked" && !b.from) issues.push(`${at}: available-from date missing`);
+      if (b.asking <= 0) issues.push(`${at}: asking price missing`);
+      if (b.floor <= 0) issues.push(`${at}: last best price (floor) missing`);
+      else if (b.target <= 0) issues.push(`${at}: target price missing`);
+      else if (b.floor > b.target || b.target > b.asking) issues.push(`${at}: price ladder inconsistent (asking ≥ target ≥ floor)`);
+    }
+  }
+  return { ok: issues.length === 0, issues };
+}
+
+/** Gate applied before a given section can be stamped verified. */
+export function sectionGate(pg: PGX, sectionId: string): Gate {
+  if (sectionId === "pricing") return inventoryGate(pg);
+  if (!sectionFilled(pg, sectionId)) return { ok: false, issues: ["Section has no data yet — fill it before verifying"] };
+  return { ok: true, issues: [] };
+}
+
+/** Gate applied before the whole property can be verified in one shot. */
+export function propertyGate(pg: PGX): Gate {
+  const issues = [...inventoryGate(pg).issues];
+  for (const id of MANDATORY_SECTIONS) {
+    if (!sectionFilled(pg, id)) {
+      const label = VERIFY_SECTIONS.find((s) => s.id === id)?.label ?? id;
+      issues.push(`${label}: no data on file`);
+    }
+  }
+  return { ok: issues.length === 0, issues };
+}
+
+/* ----------------------------------------------------------- audit log */
+
+const money = (n: number) => `₹${(n || 0).toLocaleString("en-IN")}`;
+
+/** Diff two property docs and produce audit entries for price + availability moves. */
+export function auditDiff(prev: PGX, next: PGX, by: string): Omit<ChangeLog, "at">[] {
+  const out: Omit<ChangeLog, "at">[] = [];
+  const index = (p: PGX) => {
+    const m = new Map<string, { bed: Bed; where: string }>();
+    for (const r of p.inventory?.rooms ?? []) {
+      for (const b of r.beds) m.set(b.id, { bed: b, where: `${r.room || r.type} ${b.label}` });
+    }
+    return m;
+  };
+  const a = index(prev);
+  const b = index(next);
+  for (const [id, cur] of b) {
+    const old = a.get(id);
+    if (!old) { out.push({ by, what: `Bed added · ${cur.where}`, to: BED_STATE_LABEL[cur.bed.state] }); continue; }
+    if (old.bed.state !== cur.bed.state || old.bed.from !== cur.bed.from) {
+      out.push({
+        by,
+        what: `Availability changed · ${cur.where}`,
+        from: `${BED_STATE_LABEL[old.bed.state]}${old.bed.from ? ` ${old.bed.from}` : ""}`,
+        to: `${BED_STATE_LABEL[cur.bed.state]}${cur.bed.from ? ` ${cur.bed.from}` : ""}`,
+      });
+    }
+    if (old.bed.asking !== cur.bed.asking || old.bed.target !== cur.bed.target || old.bed.floor !== cur.bed.floor) {
+      out.push({
+        by,
+        what: `Price changed · ${cur.where}`,
+        from: `${money(old.bed.asking)} → ${money(old.bed.target)} → ${money(old.bed.floor)}`,
+        to: `${money(cur.bed.asking)} → ${money(cur.bed.target)} → ${money(cur.bed.floor)}`,
+      });
+    }
+  }
+  for (const [id, old] of a) if (!b.has(id)) out.push({ by, what: `Bed removed · ${old.where}` });
+
+  const ca = availClass(invSummary(prev));
+  const cb = availClass(invSummary(next));
+  if (ca !== cb) out.push({ by, what: "Availability status", from: AVAIL_CLASS_LABEL[ca], to: AVAIL_CLASS_LABEL[cb] });
+  return out;
+}
+
+/** Stamp every section verified (used by the row + bulk actions). */
+export function verifyAllSections(pg: PGX, by: string, source: EvidenceSource): PGX {
+  const now = new Date().toISOString();
+  const sections: Record<string, Stamp> = { ...(pg.verification?.sections ?? {}) } as Record<string, Stamp>;
+  for (const s of VERIFY_SECTIONS) {
+    if (!sectionFilled(pg, s.id)) continue;
+    sections[s.id] = { at: now, by, source, hash: sectionHash(pg, s.id) };
+  }
+  const withInv: PGX = {
+    ...pg,
+    verification: { ...pg.verification, sections, verifiedAt: now, verifiedBy: by },
+    inventory: { ...(pg.inventory ?? { rooms: [] }), lastCheckedAt: now, lastCheckedBy: by, source },
+  };
+  return pushHistory(withInv, { by, what: "All sections verified", to: source });
+}
+
 
 /* ------------------------------------------------------- WhatsApp block */
 

@@ -18,7 +18,8 @@ import {
 import { PropertyCommandCenter } from "@/supply-hub/components/PropertyCommandCenter";
 import {
   VERDICT_LABEL, VERDICT_TONE, applyTowerFilter, towerStats, truthBlock, truthRow,
-  type PGX, type TowerFilter, type TruthRow,
+  AVAIL_CLASS_LABEL, AVAIL_CLASS_TONE, propertyGate, verifyAllSections, seedInventory,
+  type AvailClass, type PGX, type TowerFilter, type TruthRow,
 } from "@/supply-hub/lib/truth";
 
 export const Route = createFileRoute("/supply-hub/admin")({
@@ -52,6 +53,11 @@ function SupplyAdmin() {
   const [msgFor, setMsgFor] = useState<PG | null>(null);
   const [cmdKey, setCmdKey] = useState<string | null>(null);
   const [tower, setTower] = useState<TowerFilter>("all");
+  const [vFilter, setVFilter] = useState<"all" | "verified" | "unverified">("all");
+  const [aFilter, setAFilter] = useState<"all" | AvailClass>("all");
+  const [sel, setSel] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [auditOpen, setAuditOpen] = useState(false);
 
   const areas = useMemo(
     () => ["All", ...Array.from(new Set(items.map((i) => i.pg.area).filter(Boolean))).sort()],
@@ -75,13 +81,16 @@ function SupplyAdmin() {
         if (status === "enabled" && !i.enabled) return false;
         if (status === "disabled" && i.enabled) return false;
         if (area !== "All" && i.pg.area !== area) return false;
+        if (vFilter === "verified" && !i.truth.verify.mandatoryOk) return false;
+        if (vFilter === "unverified" && i.truth.verify.mandatoryOk) return false;
+        if (aFilter !== "all" && i.truth.avail !== aFilter) return false;
         if (zone !== "All" && zoneOfPG(i.pg) !== zone) return false;
         if (onlyGaps && i.gap.missing.length === 0) return false;
         if (!needle) return true;
         return [i.pg.name, i.pg.actualName, i.pg.area, i.pg.locality].join(" ").toLowerCase().includes(needle);
       })
       .sort((a, b) => b.truth.health - a.truth.health);
-  }, [truth, q, status, area, zone, onlyGaps, zones, tower]);
+  }, [truth, q, status, area, zone, onlyGaps, zones, tower, vFilter, aFilter]);
 
   const cmd = useMemo(() => items.find((i) => i.pg.name === cmdKey) ?? null, [items, cmdKey]);
 
@@ -102,6 +111,46 @@ function SupplyAdmin() {
     if (failed) toast.error(`${failed} of ${targets.length} could not update`);
     else toast.success(`${targets.length} properties ${v ? "enabled" : "disabled"} in ${z}`);
   };
+
+  const toggleSel = (name: string) =>
+    setSel((prev) => {
+      const next = new Set(prev);
+      if (next.has(name)) next.delete(name); else next.add(name);
+      return next;
+    });
+
+  const bulkVerify = async () => {
+    const targets = items.filter((i) => sel.has(i.pg.name));
+    if (!targets.length) return;
+    setBulkBusy(true);
+    let done = 0;
+    const blocked: string[] = [];
+    let seeded = 0;
+    for (const t of targets) {
+      let doc = t.pg as PGX;
+      if (!(doc.inventory?.rooms?.length)) {
+        const inv = seedInventory(doc);
+        if (inv.rooms.length) { doc = { ...doc, inventory: inv }; seeded += 1; }
+      }
+      const gate = propertyGate(doc);
+      if (!gate.ok) { blocked.push(`${t.pg.name}: ${gate.issues[0]}`); continue; }
+      const res = await saveDoc(verifyAllSections(doc, "Admin", "manager") as unknown as PG, { enabled: t.enabled });
+      if (res.ok) done += 1; else blocked.push(`${t.pg.name}: ${res.error ?? "save failed"}`);
+    }
+    setBulkBusy(false);
+    setSel(new Set());
+    if (done) toast.success(`${done} propert${done === 1 ? "y" : "ies"} fully verified`, { description: seeded ? `${seeded} bed grid${seeded === 1 ? "" : "s"} seeded from the price list — review beds & dates` : undefined });
+    if (blocked.length) toast.error(`${blocked.length} blocked`, { description: blocked.slice(0, 4).join(" · ") });
+  };
+
+  const audit = useMemo(
+    () =>
+      items
+        .flatMap((i) => ((i.pg as PGX).history ?? []).map((h) => ({ ...h, property: i.pg.name })))
+        .sort((a, b) => Date.parse(b.at) - Date.parse(a.at))
+        .slice(0, 300),
+    [items],
+  );
 
   const exportGaps = () => {
     const csv = gapsCsv(gapReports(items.map((i) => i.pg)));
@@ -127,6 +176,9 @@ function SupplyAdmin() {
             </p>
           </div>
           <div className="flex gap-2">
+            <button onClick={() => setAuditOpen(true)} className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-muted">
+              <CalendarClock className="h-4 w-4" /> Audit log
+            </button>
             <button onClick={exportGaps} className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-muted">
               <Download className="h-4 w-4" /> Missing-info sheet
             </button>
@@ -223,10 +275,42 @@ function SupplyAdmin() {
           <select value={area} onChange={(e) => setArea(e.target.value)} className="rounded-md border border-border bg-background px-2 py-1.5 text-sm">
             {areas.map((a) => <option key={a} value={a}>{a}</option>)}
           </select>
+          <select value={vFilter} onChange={(e) => setVFilter(e.target.value as typeof vFilter)} className="rounded-md border border-border bg-background px-2 py-1.5 text-sm">
+            <option value="all">Verified: any</option>
+            <option value="verified">Verified only</option>
+            <option value="unverified">Unverified only</option>
+          </select>
+          <select value={aFilter} onChange={(e) => setAFilter(e.target.value as typeof aFilter)} className="rounded-md border border-border bg-background px-2 py-1.5 text-sm">
+            <option value="all">Availability: any</option>
+            <option value="available">Available</option>
+            <option value="limited">Limited</option>
+            <option value="waitlist">Waitlist</option>
+            <option value="full">Full</option>
+          </select>
           <label className="inline-flex items-center gap-2 text-xs">
             <input type="checkbox" checked={onlyGaps} onChange={(e) => setOnlyGaps(e.target.checked)} /> Only missing info
           </label>
           <div className="ml-auto text-xs text-muted-foreground">{loading ? "Syncing…" : `${rows.length} shown`}</div>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2 text-xs">
+          <label className="inline-flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={rows.length > 0 && rows.every((r) => sel.has(r.pg.name))}
+              onChange={(e) => setSel(e.target.checked ? new Set(rows.map((r) => r.pg.name)) : new Set())}
+            />
+            Select all shown
+          </label>
+          <span className="text-muted-foreground">{sel.size} selected</span>
+          <button
+            disabled={!sel.size || bulkBusy}
+            onClick={() => void bulkVerify()}
+            className="inline-flex items-center gap-1 rounded-md border border-emerald-400/50 px-2.5 py-1 font-semibold text-emerald-400 hover:bg-emerald-400/10 disabled:opacity-40"
+          >
+            <ShieldCheck className="h-3.5 w-3.5" /> {bulkBusy ? "Verifying…" : "Verify all sections"}
+          </button>
+          <button disabled={!sel.size} onClick={() => setSel(new Set())} className="rounded-md border border-border px-2.5 py-1 hover:bg-muted disabled:opacity-40">Clear</button>
         </div>
 
         <div className="rounded-lg border bg-card divide-y">
@@ -234,6 +318,8 @@ function SupplyAdmin() {
             <PropertyRow
               key={item.pg.id || item.pg.name}
               item={item}
+              selected={sel.has(item.pg.name)}
+              onSelect={() => toggleSel(item.pg.name)}
               onToggle={async (v) => {
                 const res = await setEnabled(item.pg, v);
                 if (!res.ok) toast.error(res.error ?? "Could not update");
@@ -249,6 +335,25 @@ function SupplyAdmin() {
           {rows.length === 0 && !loading && <div className="p-8 text-center text-sm text-muted-foreground">No properties match these filters.</div>}
         </div>
       </div>
+
+      <Dialog open={auditOpen} onOpenChange={setAuditOpen}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Audit log — verification, availability & pricing</DialogTitle></DialogHeader>
+          <div className="space-y-1">
+            {audit.length === 0 && <div className="text-sm text-muted-foreground">Nothing recorded yet. Verify a property or change a bed price to start the trail.</div>}
+            {audit.map((e, i) => (
+              <div key={`${e.at}-${i}`} className="flex flex-wrap items-center gap-2 border-b border-border/60 py-1 text-[11px]">
+                <BadgeCheck className="h-3 w-3 text-accent shrink-0" />
+                <span className="font-semibold">{e.property}</span>
+                <span>{e.what}</span>
+                {e.from && <span className="text-muted-foreground">{e.from} →</span>}
+                {e.to && <span className="text-muted-foreground">{e.to}</span>}
+                <span className="ml-auto text-muted-foreground">{new Date(e.at).toLocaleString("en-IN")}{e.by ? ` · ${e.by}` : ""}</span>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={zoneMgr} onOpenChange={setZoneMgr}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
@@ -331,6 +436,8 @@ function SupplyAdmin() {
 
 function PropertyRow({
   item,
+  selected,
+  onSelect,
   onToggle,
   onEdit,
   onVerify,
@@ -339,6 +446,8 @@ function PropertyRow({
   onZone,
 }: {
   item: SupplyItem & { gap: ReturnType<typeof gapReport>; truth: TruthRow };
+  selected: boolean;
+  onSelect: () => void;
   onToggle: (v: boolean) => void;
   onEdit: () => void;
   onVerify: () => void;
@@ -351,6 +460,7 @@ function PropertyRow({
   const cheap = inv.fromPrice || [pg.prices.triple, pg.prices.double, pg.prices.single].filter((x) => x > 0).sort((a, b) => a - b)[0];
   return (
     <div className={cn("p-3 flex flex-wrap items-center gap-3", !item.enabled && "opacity-60")}>
+      <input type="checkbox" checked={selected} onChange={onSelect} className="shrink-0" aria-label={`Select ${pg.name}`} />
       <div className="min-w-[220px] flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <span className="font-semibold text-sm truncate">{pg.name}</span>
@@ -363,7 +473,10 @@ function PropertyRow({
           </span>
           <span className={cn("rounded px-1 py-0.5 text-[9px] uppercase tracking-wider",
             truth.verify.mandatoryOk ? "bg-emerald-400/10 text-emerald-400" : "bg-amber-400/10 text-amber-400")}>
-            {truth.verify.mandatoryOk ? "✓ Verified" : `Verify ${truth.verify.pct}%`}
+            {truth.verify.mandatoryOk ? "✓ Verified" : `Verify ${truth.verify.pct}%`} · {truth.verify.verified}/{truth.verify.total}
+          </span>
+          <span className={cn("rounded border px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider", AVAIL_CLASS_TONE[truth.avail])}>
+            {AVAIL_CLASS_LABEL[truth.avail]}
           </span>
           {item.source === "admin" && <span className="rounded bg-accent/10 text-accent px-1 py-0.5 text-[9px] uppercase tracking-wider">New</span>}
           {!item.enabled && <span className="rounded bg-rose-400/10 text-rose-400 px-1 py-0.5 text-[9px] uppercase tracking-wider">Disabled</span>}
