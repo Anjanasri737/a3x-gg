@@ -416,14 +416,17 @@ export interface TruthRow {
   inv: InvSummary;
   sell: Sellability;
   health: number;
+  avail: AvailClass;
 }
 
 export function truthRow(pg: PGX, enabled: boolean): TruthRow {
+  const inv = invSummary(pg);
   return {
     pg,
     enabled,
     verify: verifySummary(pg),
-    inv: invSummary(pg),
+    inv,
+    avail: availClass(inv),
     sell: sellability(pg, enabled),
     health: healthScore(pg, enabled),
   };
