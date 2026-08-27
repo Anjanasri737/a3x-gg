@@ -57,6 +57,7 @@ function SupplyAdmin() {
   const [aFilter, setAFilter] = useState<"all" | AvailClass>("all");
   const [sel, setSel] = useState<Set<string>>(new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
+  const [auditOpen, setAuditOpen] = useState(false);
 
   const areas = useMemo(
     () => ["All", ...Array.from(new Set(items.map((i) => i.pg.area).filter(Boolean))).sort()],
@@ -137,6 +138,15 @@ function SupplyAdmin() {
     if (blocked.length) toast.error(`${blocked.length} blocked`, { description: blocked.slice(0, 4).join(" · ") });
   };
 
+  const audit = useMemo(
+    () =>
+      items
+        .flatMap((i) => ((i.pg as PGX).history ?? []).map((h) => ({ ...h, property: i.pg.name })))
+        .sort((a, b) => Date.parse(b.at) - Date.parse(a.at))
+        .slice(0, 300),
+    [items],
+  );
+
   const exportGaps = () => {
     const csv = gapsCsv(gapReports(items.map((i) => i.pg)));
     const url = URL.createObjectURL(new Blob([csv], { type: "text/csv;charset=utf-8" }));
@@ -161,6 +171,9 @@ function SupplyAdmin() {
             </p>
           </div>
           <div className="flex gap-2">
+            <button onClick={() => setAuditOpen(true)} className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-muted">
+              <CalendarClock className="h-4 w-4" /> Audit log
+            </button>
             <button onClick={exportGaps} className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-muted">
               <Download className="h-4 w-4" /> Missing-info sheet
             </button>
@@ -317,6 +330,25 @@ function SupplyAdmin() {
           {rows.length === 0 && !loading && <div className="p-8 text-center text-sm text-muted-foreground">No properties match these filters.</div>}
         </div>
       </div>
+
+      <Dialog open={auditOpen} onOpenChange={setAuditOpen}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>Audit log — verification, availability & pricing</DialogTitle></DialogHeader>
+          <div className="space-y-1">
+            {audit.length === 0 && <div className="text-sm text-muted-foreground">Nothing recorded yet. Verify a property or change a bed price to start the trail.</div>}
+            {audit.map((e, i) => (
+              <div key={`${e.at}-${i}`} className="flex flex-wrap items-center gap-2 border-b border-border/60 py-1 text-[11px]">
+                <BadgeCheck className="h-3 w-3 text-accent shrink-0" />
+                <span className="font-semibold">{e.property}</span>
+                <span>{e.what}</span>
+                {e.from && <span className="text-muted-foreground">{e.from} →</span>}
+                {e.to && <span className="text-muted-foreground">{e.to}</span>}
+                <span className="ml-auto text-muted-foreground">{new Date(e.at).toLocaleString("en-IN")}{e.by ? ` · ${e.by}` : ""}</span>
+              </div>
+            ))}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={zoneMgr} onOpenChange={setZoneMgr}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
