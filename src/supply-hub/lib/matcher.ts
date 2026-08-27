@@ -80,11 +80,11 @@ function pickBedPrice(pg: PG, occ: Lead["occupancy"]): { price: number | null; l
   return { price: cheapest, label: `${which} ₹${(cheapest / 1000).toFixed(0)}k` };
 }
 
-export function matchLead(lead: Lead): MatchResult[] {
+export function matchLead(lead: Lead, pool?: PG[]): MatchResult[] {
   const results: MatchResult[] = [];
   const wantArea = norm(lead.area);
 
-  for (const pg of PGS) {
+  for (const pg of pool ?? PGS) {
     const parts: MatchResult["parts"] = [];
     let total = 0;
     let dq: string | undefined;

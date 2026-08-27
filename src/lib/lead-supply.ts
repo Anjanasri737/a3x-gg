@@ -1,5 +1,6 @@
 import type { Lead as AppLead } from "@/lib/types";
 import { matchLead, type Lead as SupplyLead } from "@/supply-hub/lib/matcher";
+import type { PG } from "@/supply-hub/data/types";
 
 export interface InlineLeadMatch {
   propertyId: string;
@@ -39,8 +40,9 @@ export function toSupplyLead(lead: AppLead): SupplyLead {
   };
 }
 
-export function bestMatchesForLead(lead: AppLead, limit = 5): InlineLeadMatch[] {
-  return matchLead(toSupplyLead(lead))
+/** `pool` should be the verified + available + enabled supply (see useSellableSupply). */
+export function bestMatchesForLead(lead: AppLead, limit = 5, pool?: PG[]): InlineLeadMatch[] {
+  return matchLead(toSupplyLead(lead), pool)
     .filter((m) => !m.disqualified && m.total > 0)
     .slice(0, limit)
     .map((m) => ({
