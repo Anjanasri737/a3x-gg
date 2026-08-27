@@ -10,11 +10,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { Search, Plus, Download, AlertTriangle, Database, Power, Pencil, Map, Settings2, ArrowUp, ArrowDown, Trash2, RotateCcw, Merge } from "lucide-react";
+import { Search, Plus, Download, AlertTriangle, Database, Power, Pencil, Map, Settings2, ArrowUp, ArrowDown, Trash2, RotateCcw, Merge, BadgeCheck, ShieldCheck, CalendarClock } from "lucide-react";
 import {
   zoneOfPG, zoneCounts, zoneMeta, zonePlan, useZones, UNMAPPED, ZONE_ACCENTS,
   type ZoneDef,
 } from "@/supply-hub/lib/zones";
+import { VerifySheet } from "@/supply-hub/components/VerifySheet";
+import {
+  AVAIL_LABEL, AVAIL_TONE, VERIFY_SECTIONS, availabilityLine, verifiedSectionCount,
+  type PGDoc,
+} from "@/supply-hub/lib/verify";
 
 export const Route = createFileRoute("/supply-hub/admin")({
   head: () => ({
