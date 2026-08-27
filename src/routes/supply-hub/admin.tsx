@@ -18,7 +18,7 @@ import {
 import { PropertyCommandCenter } from "@/supply-hub/components/PropertyCommandCenter";
 import {
   VERDICT_LABEL, VERDICT_TONE, applyTowerFilter, towerStats, truthBlock, truthRow,
-  AVAIL_CLASS_LABEL, AVAIL_CLASS_TONE, propertyGate, verifyAllSections,
+  AVAIL_CLASS_LABEL, AVAIL_CLASS_TONE, propertyGate, verifyAllSections, seedInventory,
   type AvailClass, type PGX, type TowerFilter, type TruthRow,
 } from "@/supply-hub/lib/truth";
 
@@ -125,8 +125,13 @@ function SupplyAdmin() {
     setBulkBusy(true);
     let done = 0;
     const blocked: string[] = [];
+    let seeded = 0;
     for (const t of targets) {
-      const doc = t.pg as PGX;
+      let doc = t.pg as PGX;
+      if (!(doc.inventory?.rooms?.length)) {
+        const inv = seedInventory(doc);
+        if (inv.rooms.length) { doc = { ...doc, inventory: inv }; seeded += 1; }
+      }
       const gate = propertyGate(doc);
       if (!gate.ok) { blocked.push(`${t.pg.name}: ${gate.issues[0]}`); continue; }
       const res = await saveDoc(verifyAllSections(doc, "Admin", "manager") as unknown as PG, { enabled: t.enabled });
@@ -134,7 +139,7 @@ function SupplyAdmin() {
     }
     setBulkBusy(false);
     setSel(new Set());
-    if (done) toast.success(`${done} propert${done === 1 ? "y" : "ies"} fully verified`);
+    if (done) toast.success(`${done} propert${done === 1 ? "y" : "ies"} fully verified`, { description: seeded ? `${seeded} bed grid${seeded === 1 ? "" : "s"} seeded from the price list — review beds & dates` : undefined });
     if (blocked.length) toast.error(`${blocked.length} blocked`, { description: blocked.slice(0, 4).join(" · ") });
   };
 
