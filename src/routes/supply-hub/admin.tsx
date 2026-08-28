@@ -314,10 +314,12 @@ function SupplyAdmin() {
         </div>
 
         <div className="rounded-lg border bg-card divide-y">
-          {rows.slice(0, 120).map((item) => (
+          {rows.slice(0, 120).map((item, idx) => (
             <PropertyRow
               key={item.pg.id || item.pg.name}
               item={item}
+              serial={idx + 1}
+              rank={rankOf.get(item.pg.name) ?? 0}
               selected={sel.has(item.pg.name)}
               onSelect={() => toggleSel(item.pg.name)}
               onToggle={async (v) => {
