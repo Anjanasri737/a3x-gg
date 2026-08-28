@@ -423,6 +423,7 @@ function SupplyAdmin() {
           {editing && (
             <PropertyForm
               initial={editing}
+              allNames={items.map((i) => i.pg.name).filter(Boolean).sort()}
               onCancel={() => setEditing(null)}
               onDelete={
                 items.find((i) => docKey(i.pg.name) === docKey(editing.name))?.source === "admin"
@@ -591,11 +592,13 @@ function PropertyRow({
 
 function PropertyForm({
   initial,
+  allNames,
   onSave,
   onCancel,
   onDelete,
 }: {
   initial: PG;
+  allNames: string[];
   onSave: (pg: PG) => void | Promise<void>;
   onCancel: () => void;
   onDelete?: () => void | Promise<void>;
@@ -656,6 +659,12 @@ function PropertyForm({
       <Area label="Location message (sent verbatim)" value={pg.location_card} onChange={(v) => set("location_card", v)} rows={5} />
       <Area label="Pricing message (sent verbatim)" value={pg.wa_card} onChange={(v) => set("wa_card", v)} rows={5} />
 
+      <AlternatesEditor
+        value={((pg as PGX).upgrades ?? []) as string[]}
+        allNames={allNames.filter((n) => n !== pg.name)}
+        onChange={(next) => setPg((p) => ({ ...(p as PGX), upgrades: next }) as unknown as PG)}
+      />
+
       <div className="flex items-center gap-2 pt-2">
         <button onClick={submit} className="rounded-md bg-accent px-3 py-2 text-sm font-medium text-accent-foreground hover:opacity-90">Save property</button>
         <button onClick={onCancel} className="rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-muted">Cancel</button>
@@ -664,6 +673,65 @@ function PropertyForm({
             Delete
           </button>
         )}
+      </div>
+    </div>
+  );
+}
+
+function AlternatesEditor({
+  value,
+  allNames,
+  onChange,
+}: {
+  value: string[];
+  allNames: string[];
+  onChange: (next: string[]) => void;
+}) {
+  const [pick, setPick] = useState("");
+  const add = () => {
+    const n = pick.trim();
+    if (!n) return;
+    if (value.some((v) => v.toLowerCase() === n.toLowerCase())) { toast.info("Already an alternate"); return; }
+    onChange([...value, n]);
+    setPick("");
+  };
+  return (
+    <div className="rounded-md border border-border p-3 space-y-2">
+      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Alternate / upgrade properties</div>
+      <p className="text-[11px] text-muted-foreground">Shown to sales when this PG is full, over budget or rejected. Order = priority.</p>
+      <div className="flex flex-wrap gap-1.5">
+        {value.map((n, i) => (
+          <span key={`${n}-${i}`} className="inline-flex items-center gap-1 rounded-md border border-border bg-muted/40 px-1.5 py-0.5 text-[11px]">
+            <span className="tabular-nums text-muted-foreground">{i + 1}.</span> {n}
+            <button
+              type="button"
+              onClick={() => onChange(value.filter((_, j) => j !== i))}
+              className="text-muted-foreground hover:text-destructive"
+              aria-label={`Remove ${n}`}
+            >
+              ×
+            </button>
+            {i > 0 && (
+              <button type="button" aria-label="Move up" onClick={() => {
+                const next = [...value];
+                const tmp = next[i - 1]!; next[i - 1] = next[i]!; next[i] = tmp;
+                onChange(next);
+              }} className="text-muted-foreground hover:text-accent">↑</button>
+            )}
+          </span>
+        ))}
+        {value.length === 0 && <span className="text-[11px] text-muted-foreground">No alternates set yet.</span>}
+      </div>
+      <div className="flex gap-2">
+        <input
+          list="supply-all-names"
+          value={pick}
+          onChange={(e) => setPick(e.target.value)}
+          placeholder="Search a property to add as alternate"
+          className="flex-1 rounded-md border border-border bg-background px-2 py-1.5 text-sm"
+        />
+        <datalist id="supply-all-names">{allNames.map((n) => <option key={n} value={n} />)}</datalist>
+        <button type="button" onClick={add} className="rounded-md border border-border px-3 py-1.5 text-sm font-medium hover:bg-muted">Add</button>
       </div>
     </div>
   );
