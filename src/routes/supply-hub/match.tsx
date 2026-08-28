@@ -3,6 +3,7 @@ import { AppShell } from "@/components/AppShell";
 import { useApp } from "@/lib/store";
 import { useEffect, useMemo, useState } from "react";
 import { matchLead, rating, type Lead } from "@/supply-hub/lib/matcher";
+import { useSellableSupply } from "@/supply-hub/lib/sellable";
 import { perDayLabel, scarcity } from "@/supply-hub/lib/intel";
 import { Sparkles, Target, ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -28,7 +29,11 @@ function SupplyHubMatch() {
   });
   const [submitted, setSubmitted] = useState(false);
 
-  const results = useMemo(() => (submitted ? matchLead(lead).slice(0, 12) : []), [lead, submitted]);
+  const { matchablePGs } = useSellableSupply();
+  const results = useMemo(
+    () => (submitted ? matchLead(lead, matchablePGs).slice(0, 12) : []),
+    [lead, submitted, matchablePGs],
+  );
 
   if (role === "owner") return null;
 
