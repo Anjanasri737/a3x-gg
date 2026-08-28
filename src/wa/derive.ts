@@ -177,7 +177,7 @@ export interface ManagerCounters {
 
 export function deriveCounters(allLeads: UnifiedLead[], opts: DeriveOpts): ManagerCounters {
   const { wa, now, meId } = opts;
-  let unclaimed = 0, claimedByMe = 0, claimedByTeam = 0, claimExpired = 0;
+  let unclaimed = 0, claimedByMe = 0, claimedByTeam = 0, claimExpiredCount = 0;
   let overdueNextActions = 0, hotToday = 0, unreadTotal = 0, archived = 0;
   const todayStart = new Date(now);
   todayStart.setHours(0, 0, 0, 0);
@@ -188,7 +188,7 @@ export function deriveCounters(allLeads: UnifiedLead[], opts: DeriveOpts): Manag
     if (!claim) unclaimed++;
     else if (claim.ownerId === meId) claimedByMe++;
     else claimedByTeam++;
-    if (claim && claimExpired(claim, wa.claimSlaMins, now)) claimExpired++;
+    if (claim && claimExpired(claim, wa.claimSlaMins, now)) claimExpiredCount++;
     const na = wa.nextActions[lead.ulid];
     if (na && +new Date(na.dueAt) <= now) overdueNextActions++;
     if (lead.priority === "super-hot" || lead.priority === "hot") {
