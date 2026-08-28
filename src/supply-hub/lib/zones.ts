@@ -401,6 +401,7 @@ export function useZones() {
     upsertZone,
     removeZone,
     moveZone,
+    reorderZones,
     resetZones,
     renameZone,
     mergeZones,
