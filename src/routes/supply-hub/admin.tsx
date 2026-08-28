@@ -50,7 +50,7 @@ function SupplyAdmin() {
   const [onlyGaps, setOnlyGaps] = useState(false);
   const [zone, setZone] = useState<string>("All");
   const [zoneMgr, setZoneMgr] = useState(false);
-  const { zones, addZone, upsertZone, removeZone, moveZone, resetZones, renameZone, mergeZones, setZoneOverride } = useZones();
+  const { zones, addZone, upsertZone, removeZone, moveZone, reorderZones, resetZones, renameZone, mergeZones, setZoneOverride } = useZones();
   const zoneIds = useMemo(() => [...zones.map((z) => z.id), UNMAPPED], [zones]);
   const [editing, setEditing] = useState<PG | null>(null);
   const [msgFor, setMsgFor] = useState<PG | null>(null);
@@ -409,6 +409,7 @@ function SupplyAdmin() {
             onSave={upsertZone}
             onRemove={removeZone}
             onMove={moveZone}
+            onReorder={reorderZones}
             onReset={resetZones}
             onRename={renameZone}
             onMerge={mergeZones}
@@ -780,6 +781,7 @@ function ZoneManager({
   onSave,
   onRemove,
   onMove,
+  onReorder,
   onReset,
   onRename,
   onMerge,
@@ -789,6 +791,7 @@ function ZoneManager({
   onSave: (z: ZoneDef) => void;
   onRemove: (id: string) => void;
   onMove: (id: string, dir: -1 | 1) => void;
+  onReorder: (from: number, to: number) => void;
   onReset: () => void;
   onRename: (oldId: string, next: { id: string; label?: string; short?: string }) => { ok: boolean; error?: string };
   onMerge: (
@@ -866,19 +869,25 @@ function ZoneManager({
         </div>
       </div>
 
-      <div className="rounded-lg border divide-y">
-        {zones.map((z, i) => (
-          <ZoneRow
-            key={z.id}
-            zone={z}
-            first={i === 0}
-            last={i === zones.length - 1}
-            onSave={onSave}
-            onRemove={onRemove}
-            onMove={onMove}
-            onRename={onRename}
-          />
-        ))}
+      <div className="space-y-1">
+        <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Drag to reorder zones</div>
+        <DragList
+          items={zones}
+          keyOf={(z) => z.id}
+          onReorder={onReorder}
+          itemClassName="items-start py-2"
+          render={(z, i) => (
+            <ZoneRow
+              zone={z}
+              first={i === 0}
+              last={i === zones.length - 1}
+              onSave={onSave}
+              onRemove={onRemove}
+              onMove={onMove}
+              onRename={onRename}
+            />
+          )}
+        />
       </div>
     </div>
   );

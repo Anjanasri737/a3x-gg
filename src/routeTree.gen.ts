@@ -64,6 +64,7 @@ import { Route as TowerCaptureRouteImport } from './routes/tower.capture'
 import { Route as TowerAnalyticsRouteImport } from './routes/tower.analytics'
 import { Route as TowerAdminRouteImport } from './routes/tower.admin'
 import { Route as TowerAccessRouteImport } from './routes/tower.access'
+import { Route as SupplyHubVerifyRouteImport } from './routes/supply-hub/verify'
 import { Route as SupplyHubMatchRouteImport } from './routes/supply-hub/match'
 import { Route as SupplyHubHeatmapRouteImport } from './routes/supply-hub/heatmap'
 import { Route as SupplyHubDemandRouteImport } from './routes/supply-hub/demand'
@@ -396,6 +397,11 @@ const TowerAccessRoute = TowerAccessRouteImport.update({
   id: '/access',
   path: '/access',
   getParentRoute: () => TowerRoute,
+} as any)
+const SupplyHubVerifyRoute = SupplyHubVerifyRouteImport.update({
+  id: '/supply-hub/verify',
+  path: '/supply-hub/verify',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const SupplyHubMatchRoute = SupplyHubMatchRouteImport.update({
   id: '/supply-hub/match',
@@ -767,6 +773,7 @@ export interface FileRoutesByFullPath {
   '/supply-hub/demand': typeof SupplyHubDemandRoute
   '/supply-hub/heatmap': typeof SupplyHubHeatmapRoute
   '/supply-hub/match': typeof SupplyHubMatchRoute
+  '/supply-hub/verify': typeof SupplyHubVerifyRoute
   '/tower/access': typeof TowerAccessRoute
   '/tower/admin': typeof TowerAdminRoute
   '/tower/analytics': typeof TowerAnalyticsRoute
@@ -879,6 +886,7 @@ export interface FileRoutesByTo {
   '/supply-hub/demand': typeof SupplyHubDemandRoute
   '/supply-hub/heatmap': typeof SupplyHubHeatmapRoute
   '/supply-hub/match': typeof SupplyHubMatchRoute
+  '/supply-hub/verify': typeof SupplyHubVerifyRoute
   '/tower/access': typeof TowerAccessRoute
   '/tower/admin': typeof TowerAdminRoute
   '/tower/analytics': typeof TowerAnalyticsRoute
@@ -994,6 +1002,7 @@ export interface FileRoutesById {
   '/supply-hub/demand': typeof SupplyHubDemandRoute
   '/supply-hub/heatmap': typeof SupplyHubHeatmapRoute
   '/supply-hub/match': typeof SupplyHubMatchRoute
+  '/supply-hub/verify': typeof SupplyHubVerifyRoute
   '/tower/access': typeof TowerAccessRoute
   '/tower/admin': typeof TowerAdminRoute
   '/tower/analytics': typeof TowerAnalyticsRoute
@@ -1110,6 +1119,7 @@ export interface FileRouteTypes {
     | '/supply-hub/demand'
     | '/supply-hub/heatmap'
     | '/supply-hub/match'
+    | '/supply-hub/verify'
     | '/tower/access'
     | '/tower/admin'
     | '/tower/analytics'
@@ -1222,6 +1232,7 @@ export interface FileRouteTypes {
     | '/supply-hub/demand'
     | '/supply-hub/heatmap'
     | '/supply-hub/match'
+    | '/supply-hub/verify'
     | '/tower/access'
     | '/tower/admin'
     | '/tower/analytics'
@@ -1336,6 +1347,7 @@ export interface FileRouteTypes {
     | '/supply-hub/demand'
     | '/supply-hub/heatmap'
     | '/supply-hub/match'
+    | '/supply-hub/verify'
     | '/tower/access'
     | '/tower/admin'
     | '/tower/analytics'
@@ -1438,6 +1450,7 @@ export interface RootRouteChildren {
   SupplyHubDemandRoute: typeof SupplyHubDemandRoute
   SupplyHubHeatmapRoute: typeof SupplyHubHeatmapRoute
   SupplyHubMatchRoute: typeof SupplyHubMatchRoute
+  SupplyHubVerifyRoute: typeof SupplyHubVerifyRoute
   CribbookingIndexRoute: typeof CribbookingIndexRoute
   MytIndexRoute: typeof MytIndexRoute
   OwnerIndexRoute: typeof OwnerIndexRoute
@@ -1834,6 +1847,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/tower/access'
       preLoaderRoute: typeof TowerAccessRouteImport
       parentRoute: typeof TowerRoute
+    }
+    '/supply-hub/verify': {
+      id: '/supply-hub/verify'
+      path: '/supply-hub/verify'
+      fullPath: '/supply-hub/verify'
+      preLoaderRoute: typeof SupplyHubVerifyRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/supply-hub/match': {
       id: '/supply-hub/match'
@@ -2419,6 +2439,7 @@ const rootRouteChildren: RootRouteChildren = {
   SupplyHubDemandRoute: SupplyHubDemandRoute,
   SupplyHubHeatmapRoute: SupplyHubHeatmapRoute,
   SupplyHubMatchRoute: SupplyHubMatchRoute,
+  SupplyHubVerifyRoute: SupplyHubVerifyRoute,
   CribbookingIndexRoute: CribbookingIndexRoute,
   MytIndexRoute: MytIndexRoute,
   OwnerIndexRoute: OwnerIndexRoute,
