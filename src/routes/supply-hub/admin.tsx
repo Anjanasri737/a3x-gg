@@ -94,6 +94,17 @@ function SupplyAdmin() {
 
   const cmd = useMemo(() => items.find((i) => i.pg.name === cmdKey) ?? null, [items, cmdKey]);
 
+  /** Global rank across the whole hub — health first, then beds available. */
+  const ranked = useMemo(
+    () =>
+      [...truth]
+        .sort((a, b) => b.truth.health - a.truth.health || b.truth.inv.availableNow - a.truth.inv.availableNow)
+        .map((t, i) => ({ ...t, rank: i + 1 })),
+    [truth],
+  );
+  const rankOf = useMemo(() => new Map(ranked.map((r) => [r.item.pg.name, r.rank])), [ranked]);
+  const top10 = useMemo(() => ranked.slice(0, 10), [ranked]);
+
   const zoneRows = useMemo(() => {
     const all = zoneCounts(items.map((i) => i.pg));
     const live = zoneCounts(items.filter((i) => i.enabled).map((i) => i.pg));
