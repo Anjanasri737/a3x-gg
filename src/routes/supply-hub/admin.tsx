@@ -15,6 +15,7 @@ import {
   zoneOfPG, zoneCounts, zoneMeta, zonePlan, useZones, UNMAPPED, ZONE_ACCENTS,
   type ZoneDef,
 } from "@/supply-hub/lib/zones";
+import { propertyCode, serialNo } from "@/supply-hub/lib/ids";
 import { PropertyCommandCenter } from "@/supply-hub/components/PropertyCommandCenter";
 import {
   VERDICT_LABEL, VERDICT_TONE, applyTowerFilter, towerStats, truthBlock, truthRow,
@@ -93,6 +94,21 @@ function SupplyAdmin() {
   }, [truth, q, status, area, zone, onlyGaps, zones, tower, vFilter, aFilter]);
 
   const cmd = useMemo(() => items.find((i) => i.pg.name === cmdKey) ?? null, [items, cmdKey]);
+
+  /** Global rank across the whole hub — health first, then beds available. */
+  const ranked = useMemo(
+    () =>
+      [...truth]
+        .sort((a, b) => b.truth.health - a.truth.health || b.truth.inv.availableNow - a.truth.inv.availableNow)
+        .map((t, i) => ({ ...t, rank: i + 1 })),
+    [truth],
+  );
+  const rankOf = useMemo(() => {
+    const m: Record<string, number> = {};
+    for (const r of ranked) m[r.item.pg.name] = r.rank;
+    return m;
+  }, [ranked]);
+  const top10 = useMemo(() => ranked.slice(0, 10), [ranked]);
 
   const zoneRows = useMemo(() => {
     const all = zoneCounts(items.map((i) => i.pg));
@@ -253,6 +269,31 @@ function SupplyAdmin() {
           </div>
         </section>
 
+        <section className="space-y-2">
+          <div className="flex items-center gap-2">
+            <h2 className="text-sm font-semibold inline-flex items-center gap-1.5"><BadgeCheck className="h-4 w-4 text-accent" /> Top 10 properties by rank</h2>
+            <span className="text-[11px] text-muted-foreground">Ranked on data health, then beds available now.</span>
+          </div>
+          <div className="rounded-lg border bg-card divide-y">
+            {top10.map((r) => (
+              <button
+                key={r.item.pg.name}
+                onClick={() => setCmdKey(r.item.pg.name)}
+                className="w-full flex flex-wrap items-center gap-3 p-2.5 text-left hover:bg-muted/50"
+              >
+                <span className="w-8 text-center font-display text-lg font-semibold tabular-nums">{r.rank}</span>
+                <span className="font-semibold text-sm truncate">{r.item.pg.name}</span>
+                <span className="rounded border border-border px-1 py-0.5 text-[9px] font-mono tracking-wider text-muted-foreground">{propertyCode(r.item.pg)}</span>
+                <span className={cn("rounded-md border px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider", zoneMeta(zoneOfPG(r.item.pg)).accent)}>{zoneMeta(zoneOfPG(r.item.pg)).short}</span>
+                <span className="text-[11px] text-muted-foreground truncate">{[r.item.pg.area, r.item.pg.gender, r.item.pg.tier].filter(Boolean).join(" · ")}</span>
+                <span className="ml-auto text-[11px] text-muted-foreground">{r.truth.inv.availableNow} beds now</span>
+                <span className={cn("rounded border px-1.5 py-0.5 text-[10px] font-bold", r.truth.health >= 85 ? "border-emerald-400/50 text-emerald-400 bg-emerald-400/10" : r.truth.health >= 60 ? "border-amber-400/50 text-amber-400 bg-amber-400/10" : "border-rose-400/50 text-rose-400 bg-rose-400/10")}>{r.truth.health}</span>
+              </button>
+            ))}
+            {top10.length === 0 && <div className="p-6 text-center text-sm text-muted-foreground">No properties yet.</div>}
+          </div>
+        </section>
+
         <div className="rounded-lg border bg-card p-3 flex flex-wrap items-center gap-3">
           <div className="relative flex-1 min-w-[240px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -314,10 +355,12 @@ function SupplyAdmin() {
         </div>
 
         <div className="rounded-lg border bg-card divide-y">
-          {rows.slice(0, 120).map((item) => (
+          {rows.slice(0, 120).map((item, idx) => (
             <PropertyRow
               key={item.pg.id || item.pg.name}
               item={item}
+              serial={idx + 1}
+              rank={rankOf[item.pg.name] ?? 0}
               selected={sel.has(item.pg.name)}
               onSelect={() => toggleSel(item.pg.name)}
               onToggle={async (v) => {
@@ -380,6 +423,7 @@ function SupplyAdmin() {
           {editing && (
             <PropertyForm
               initial={editing}
+              allNames={items.map((i) => i.pg.name).filter(Boolean).sort()}
               onCancel={() => setEditing(null)}
               onDelete={
                 items.find((i) => docKey(i.pg.name) === docKey(editing.name))?.source === "admin"
@@ -436,6 +480,8 @@ function SupplyAdmin() {
 
 function PropertyRow({
   item,
+  serial,
+  rank,
   selected,
   onSelect,
   onToggle,
@@ -446,6 +492,8 @@ function PropertyRow({
   onZone,
 }: {
   item: SupplyItem & { gap: ReturnType<typeof gapReport>; truth: TruthRow };
+  serial: number;
+  rank: number;
   selected: boolean;
   onSelect: () => void;
   onToggle: (v: boolean) => void;
@@ -461,9 +509,14 @@ function PropertyRow({
   return (
     <div className={cn("p-3 flex flex-wrap items-center gap-3", !item.enabled && "opacity-60")}>
       <input type="checkbox" checked={selected} onChange={onSelect} className="shrink-0" aria-label={`Select ${pg.name}`} />
+      <div className="w-14 shrink-0 text-center">
+        <div className="font-display text-sm font-semibold tabular-nums">#{serialNo(serial)}</div>
+        <div className="text-[9px] uppercase tracking-wider text-muted-foreground">rank {rank || "—"}</div>
+      </div>
       <div className="min-w-[220px] flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <span className="font-semibold text-sm truncate">{pg.name}</span>
+          <span className="rounded border border-border px-1 py-0.5 text-[9px] font-mono tracking-wider text-muted-foreground">{propertyCode(pg)}</span>
           <span className={cn("rounded border px-1.5 py-0.5 text-[10px] font-bold",
             truth.health >= 85 ? "border-emerald-400/50 text-emerald-400 bg-emerald-400/10"
               : truth.health >= 60 ? "border-amber-400/50 text-amber-400 bg-amber-400/10"
@@ -539,11 +592,13 @@ function PropertyRow({
 
 function PropertyForm({
   initial,
+  allNames,
   onSave,
   onCancel,
   onDelete,
 }: {
   initial: PG;
+  allNames: string[];
   onSave: (pg: PG) => void | Promise<void>;
   onCancel: () => void;
   onDelete?: () => void | Promise<void>;
@@ -604,6 +659,12 @@ function PropertyForm({
       <Area label="Location message (sent verbatim)" value={pg.location_card} onChange={(v) => set("location_card", v)} rows={5} />
       <Area label="Pricing message (sent verbatim)" value={pg.wa_card} onChange={(v) => set("wa_card", v)} rows={5} />
 
+      <AlternatesEditor
+        value={((pg as PGX).upgrades ?? []) as string[]}
+        allNames={allNames.filter((n) => n !== pg.name)}
+        onChange={(next) => setPg((p) => ({ ...(p as PGX), upgrades: next }) as unknown as PG)}
+      />
+
       <div className="flex items-center gap-2 pt-2">
         <button onClick={submit} className="rounded-md bg-accent px-3 py-2 text-sm font-medium text-accent-foreground hover:opacity-90">Save property</button>
         <button onClick={onCancel} className="rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-muted">Cancel</button>
@@ -612,6 +673,65 @@ function PropertyForm({
             Delete
           </button>
         )}
+      </div>
+    </div>
+  );
+}
+
+function AlternatesEditor({
+  value,
+  allNames,
+  onChange,
+}: {
+  value: string[];
+  allNames: string[];
+  onChange: (next: string[]) => void;
+}) {
+  const [pick, setPick] = useState("");
+  const add = () => {
+    const n = pick.trim();
+    if (!n) return;
+    if (value.some((v) => v.toLowerCase() === n.toLowerCase())) { toast.info("Already an alternate"); return; }
+    onChange([...value, n]);
+    setPick("");
+  };
+  return (
+    <div className="rounded-md border border-border p-3 space-y-2">
+      <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Alternate / upgrade properties</div>
+      <p className="text-[11px] text-muted-foreground">Shown to sales when this PG is full, over budget or rejected. Order = priority.</p>
+      <div className="flex flex-wrap gap-1.5">
+        {value.map((n, i) => (
+          <span key={`${n}-${i}`} className="inline-flex items-center gap-1 rounded-md border border-border bg-muted/40 px-1.5 py-0.5 text-[11px]">
+            <span className="tabular-nums text-muted-foreground">{i + 1}.</span> {n}
+            <button
+              type="button"
+              onClick={() => onChange(value.filter((_, j) => j !== i))}
+              className="text-muted-foreground hover:text-destructive"
+              aria-label={`Remove ${n}`}
+            >
+              ×
+            </button>
+            {i > 0 && (
+              <button type="button" aria-label="Move up" onClick={() => {
+                const next = [...value];
+                const tmp = next[i - 1]!; next[i - 1] = next[i]!; next[i] = tmp;
+                onChange(next);
+              }} className="text-muted-foreground hover:text-accent">↑</button>
+            )}
+          </span>
+        ))}
+        {value.length === 0 && <span className="text-[11px] text-muted-foreground">No alternates set yet.</span>}
+      </div>
+      <div className="flex gap-2">
+        <input
+          list="supply-all-names"
+          value={pick}
+          onChange={(e) => setPick(e.target.value)}
+          placeholder="Search a property to add as alternate"
+          className="flex-1 rounded-md border border-border bg-background px-2 py-1.5 text-sm"
+        />
+        <datalist id="supply-all-names">{allNames.map((n) => <option key={n} value={n} />)}</datalist>
+        <button type="button" onClick={add} className="rounded-md border border-border px-3 py-1.5 text-sm font-medium hover:bg-muted">Add</button>
       </div>
     </div>
   );

@@ -3,6 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
+import { SupplyAvailabilityAlerts } from "@/components/tower/SupplyAvailabilityAlerts";
 
 export const Route = createFileRoute("/tower/dashboard")({ component: () => <RoleGate module="dashboard"><Dash /></RoleGate> });
 
@@ -36,13 +37,16 @@ function Dash() {
   }, []);
 
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-      {Object.entries(k).map(([label, v]) => (
-        <Card key={label} className="p-3">
-          <div className="text-3xl font-bold tabular-nums">{v}</div>
-          <div className="text-xs text-muted-foreground uppercase tracking-wide">{label}</div>
-        </Card>
-      ))}
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+        {Object.entries(k).map(([label, v]) => (
+          <Card key={label} className="p-3">
+            <div className="text-3xl font-bold tabular-nums">{v}</div>
+            <div className="text-xs text-muted-foreground uppercase tracking-wide">{label}</div>
+          </Card>
+        ))}
+      </div>
+      <SupplyAvailabilityAlerts />
     </div>
   );
 }
