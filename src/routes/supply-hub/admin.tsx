@@ -102,7 +102,11 @@ function SupplyAdmin() {
         .map((t, i) => ({ ...t, rank: i + 1 })),
     [truth],
   );
-  const rankOf = useMemo(() => new Map(ranked.map((r) => [r.item.pg.name, r.rank])), [ranked]);
+  const rankOf = useMemo(() => {
+    const m: Record<string, number> = {};
+    for (const r of ranked) m[r.item.pg.name] = r.rank;
+    return m;
+  }, [ranked]);
   const top10 = useMemo(() => ranked.slice(0, 10), [ranked]);
 
   const zoneRows = useMemo(() => {
