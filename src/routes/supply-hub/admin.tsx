@@ -194,6 +194,9 @@ function SupplyAdmin() {
             </p>
           </div>
           <div className="flex gap-2">
+            <Link to="/supply-hub/verify" className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-muted">
+              <ShieldCheck className="h-4 w-4" /> All Verify
+            </Link>
             <button onClick={() => setAuditOpen(true)} className="inline-flex items-center gap-1.5 rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-muted">
               <CalendarClock className="h-4 w-4" /> Audit log
             </button>

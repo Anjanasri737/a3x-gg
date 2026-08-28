@@ -3,6 +3,7 @@ import { toast } from "sonner";
 import { useIdentityStore } from "@/lib/lead-identity/store";
 import { useWorkflow, type WorkRole } from "@/lib/workflow/store";
 import type { ViolationCode } from "@/lib/workflow/engine";
+import { useSellableSupply } from "@/supply-hub/lib/sellable";
 
 /**
  * Direct actions available from Control Tower and role mission queues.
@@ -12,6 +13,7 @@ import type { ViolationCode } from "@/lib/workflow/engine";
 export function useWorkflowActions() {
   const store = useIdentityStore();
   const wf = useWorkflow();
+  const { guard } = useSellableSupply();
 
   const me = store.currentUser;
 
@@ -41,11 +43,14 @@ export function useWorkflowActions() {
   }, [wf, store]);
 
   const scheduleTour = useCallback((ulid: string, whenIso: string, property?: string) => {
+    const g = guard(property);
+    if (!g.ok) { toast.error(g.reason); return false; }
     store.bookTour(ulid, whenIso, property);
     wf.setWaiting(ulid, null);
     wf.handoff({ ulid, fromRole: "flow-ops", fromUser: me.id, toRole: "tour", toUser: null, trigger: "Tour scheduled" });
     toast.success("Tour scheduled — TCM handoff created");
-  }, [store, wf, me.id]);
+    return true;
+  }, [store, wf, me.id, guard]);
 
   const confirmTour = useCallback((ulid: string) => {
     wf.logAttempt(ulid, me.id, true);
@@ -61,12 +66,15 @@ export function useWorkflowActions() {
     toast.success("Tour completed — Closing handoff created");
   }, [store, wf, me.id]);
 
-  const createQuote = useCallback((ulid: string, amount: number) => {
+  const createQuote = useCallback((ulid: string, amount: number, property?: string) => {
+    const g = guard(property);
+    if (!g.ok) { toast.error(g.reason); return false; }
     wf.createQuote(ulid, amount);
     wf.setWaiting(ulid, new Date(Date.now() + 4 * 3_600_000).toISOString());
     store.logActivity(ulid, "note-added", `Quotation created ₹${amount.toLocaleString("en-IN")}`);
     toast.success("Quotation created — closing follow-up due in 4h");
-  }, [wf, store]);
+    return true;
+  }, [wf, store, guard]);
 
   const markBooked = useCallback((ulid: string, checkInIso?: string) => {
     store.markClosed(ulid, "Workflow Guarantee · paid booking");

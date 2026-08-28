@@ -14,6 +14,7 @@ import { MOVE_IN_LABELS, type MoveInBucket } from "@/lib/tower/scoring";
 import { useTowerAuth } from "@/lib/tower/auth";
 import { toast } from "sonner";
 import { LeadQualityTimeline } from "@/components/tower/LeadQualityTimeline";
+import { SellThisPG } from "@/components/supply/SellThisPG";
 
 export const Route = createFileRoute("/tower/leads/$id")({ component: () => <RoleGate module="my-leads"><LeadDetail /></RoleGate> });
 
@@ -196,6 +197,18 @@ function LeadDetail() {
       </div>
 
       <div className="space-y-4">
+        <SellThisPG
+          leadId={id}
+          leadName={lead?.name ?? undefined}
+          phone={lead?.phone ?? undefined}
+          area={lead?.location_text ?? lead?.zones?.name ?? ""}
+          budgetMin={lead?.budget_min ?? undefined}
+          budgetMax={lead?.budget_max ?? undefined}
+          onInjectMessages={(pitch, pgName) => {
+            setNotes((n) => (n ? `${n}\n\n` : "") + `[${pgName}]\n${pitch}`);
+            toast.success("Pitch added to notes");
+          }}
+        />
         <Card className="p-3">
           <div className="font-semibold mb-2 text-sm">Enquiry cycles</div>
           {cycles.map((c) => (
