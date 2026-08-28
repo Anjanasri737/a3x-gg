@@ -525,7 +525,7 @@ export function RowActions({ row, meId, meName }: { row: WaRow; meId: string; me
       )}
       {row.claim?.ownerId === meId && (
         <Button size="sm" variant="ghost" className="h-7 text-[10px]"
-          onClick={() => wa.release(row.lead.ulid))}>
+          onClick={() => wa.release(row.lead.ulid)}>
           Release
         </Button>
       )}
