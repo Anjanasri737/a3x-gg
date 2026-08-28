@@ -269,6 +269,31 @@ function SupplyAdmin() {
           </div>
         </section>
 
+        <section className="space-y-2">
+          <div className="flex items-center gap-2">
+            <h2 className="text-sm font-semibold inline-flex items-center gap-1.5"><BadgeCheck className="h-4 w-4 text-accent" /> Top 10 properties by rank</h2>
+            <span className="text-[11px] text-muted-foreground">Ranked on data health, then beds available now.</span>
+          </div>
+          <div className="rounded-lg border bg-card divide-y">
+            {top10.map((r) => (
+              <button
+                key={r.item.pg.name}
+                onClick={() => setCmdKey(r.item.pg.name)}
+                className="w-full flex flex-wrap items-center gap-3 p-2.5 text-left hover:bg-muted/50"
+              >
+                <span className="w-8 text-center font-display text-lg font-semibold tabular-nums">{r.rank}</span>
+                <span className="font-semibold text-sm truncate">{r.item.pg.name}</span>
+                <span className="rounded border border-border px-1 py-0.5 text-[9px] font-mono tracking-wider text-muted-foreground">{propertyCode(r.item.pg)}</span>
+                <span className={cn("rounded-md border px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider", zoneMeta(zoneOfPG(r.item.pg)).accent)}>{zoneMeta(zoneOfPG(r.item.pg)).short}</span>
+                <span className="text-[11px] text-muted-foreground truncate">{[r.item.pg.area, r.item.pg.gender, r.item.pg.tier].filter(Boolean).join(" · ")}</span>
+                <span className="ml-auto text-[11px] text-muted-foreground">{r.truth.inv.availableNow} beds now</span>
+                <span className={cn("rounded border px-1.5 py-0.5 text-[10px] font-bold", r.truth.health >= 85 ? "border-emerald-400/50 text-emerald-400 bg-emerald-400/10" : r.truth.health >= 60 ? "border-amber-400/50 text-amber-400 bg-amber-400/10" : "border-rose-400/50 text-rose-400 bg-rose-400/10")}>{r.truth.health}</span>
+              </button>
+            ))}
+            {top10.length === 0 && <div className="p-6 text-center text-sm text-muted-foreground">No properties yet.</div>}
+          </div>
+        </section>
+
         <div className="rounded-lg border bg-card p-3 flex flex-wrap items-center gap-3">
           <div className="relative flex-1 min-w-[240px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
