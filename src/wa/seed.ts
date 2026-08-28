@@ -106,8 +106,8 @@ export function seedWaInbox() {
   }
 
   // Simulate some activity so the chat pane has a timeline.
-  const log = (ulid: string | undefined, kind: any, text: string) => {
-    if (ulid) useIdentityStore.getState().logActivity(ulid, kind, text);
+  const log = (ulid: string | undefined, kind: any, text: string, meta?: Record<string, unknown>) => {
+    if (ulid) useIdentityStore.getState().logActivity(ulid, kind, text, meta);
   };
   if (karthik) {
     log(karthik.ulid, "whatsapp-sent", "Sent 3 Koramangala options with rent + photos");
