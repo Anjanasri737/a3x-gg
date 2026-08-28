@@ -201,7 +201,7 @@ export function deriveCounters(allLeads: UnifiedLead[], opts: DeriveOpts): Manag
   }
 
   return {
-    unclaimed, claimedByMe, claimedByTeam, claimExpired,
+    unclaimed, claimedByMe, claimedByTeam, claimExpired: claimExpiredCount,
     overdueNextActions,
     pendingHandovers: wa.handovers.filter((h) => h.state === "pending").length,
     hotToday, unreadTotal,
