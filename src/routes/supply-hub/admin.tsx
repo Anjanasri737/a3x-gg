@@ -15,6 +15,7 @@ import {
   zoneOfPG, zoneCounts, zoneMeta, zonePlan, useZones, UNMAPPED, ZONE_ACCENTS,
   type ZoneDef,
 } from "@/supply-hub/lib/zones";
+import { propertyCode, serialNo } from "@/supply-hub/lib/ids";
 import { PropertyCommandCenter } from "@/supply-hub/components/PropertyCommandCenter";
 import {
   VERDICT_LABEL, VERDICT_TONE, applyTowerFilter, towerStats, truthBlock, truthRow,
@@ -334,7 +335,7 @@ function SupplyAdmin() {
               key={item.pg.id || item.pg.name}
               item={item}
               serial={idx + 1}
-              rank={rankOf.get(item.pg.name) ?? 0}
+              rank={rankOf[item.pg.name] ?? 0}
               selected={sel.has(item.pg.name)}
               onSelect={() => toggleSel(item.pg.name)}
               onToggle={async (v) => {
@@ -453,6 +454,8 @@ function SupplyAdmin() {
 
 function PropertyRow({
   item,
+  serial,
+  rank,
   selected,
   onSelect,
   onToggle,
@@ -463,6 +466,8 @@ function PropertyRow({
   onZone,
 }: {
   item: SupplyItem & { gap: ReturnType<typeof gapReport>; truth: TruthRow };
+  serial: number;
+  rank: number;
   selected: boolean;
   onSelect: () => void;
   onToggle: (v: boolean) => void;
@@ -478,9 +483,14 @@ function PropertyRow({
   return (
     <div className={cn("p-3 flex flex-wrap items-center gap-3", !item.enabled && "opacity-60")}>
       <input type="checkbox" checked={selected} onChange={onSelect} className="shrink-0" aria-label={`Select ${pg.name}`} />
+      <div className="w-14 shrink-0 text-center">
+        <div className="font-display text-sm font-semibold tabular-nums">#{serialNo(serial)}</div>
+        <div className="text-[9px] uppercase tracking-wider text-muted-foreground">rank {rank || "—"}</div>
+      </div>
       <div className="min-w-[220px] flex-1">
         <div className="flex flex-wrap items-center gap-2">
           <span className="font-semibold text-sm truncate">{pg.name}</span>
+          <span className="rounded border border-border px-1 py-0.5 text-[9px] font-mono tracking-wider text-muted-foreground">{propertyCode(pg)}</span>
           <span className={cn("rounded border px-1.5 py-0.5 text-[10px] font-bold",
             truth.health >= 85 ? "border-emerald-400/50 text-emerald-400 bg-emerald-400/10"
               : truth.health >= 60 ? "border-amber-400/50 text-amber-400 bg-amber-400/10"
