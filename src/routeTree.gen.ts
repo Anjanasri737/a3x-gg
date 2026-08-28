@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ZonesRouteImport } from './routes/zones'
 import { Route as ZoneBrainRouteImport } from './routes/zone-brain'
+import { Route as WaRouteImport } from './routes/wa'
 import { Route as TowerRouteImport } from './routes/tower'
 import { Route as ToursRouteImport } from './routes/tours'
 import { Route as TodayRouteImport } from './routes/today'
@@ -131,6 +132,11 @@ const ZonesRoute = ZonesRouteImport.update({
 const ZoneBrainRoute = ZoneBrainRouteImport.update({
   id: '/zone-brain',
   path: '/zone-brain',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WaRoute = WaRouteImport.update({
+  id: '/wa',
+  path: '/wa',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TowerRoute = TowerRouteImport.update({
@@ -723,6 +729,7 @@ export interface FileRoutesByFullPath {
   '/today': typeof TodayRoute
   '/tours': typeof ToursRoute
   '/tower': typeof TowerRouteWithChildren
+  '/wa': typeof WaRoute
   '/zone-brain': typeof ZoneBrainRoute
   '/zones': typeof ZonesRoute
   '/admin/briefing': typeof AdminBriefingRoute
@@ -836,6 +843,7 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRoute
   '/today': typeof TodayRoute
   '/tours': typeof ToursRoute
+  '/wa': typeof WaRoute
   '/zone-brain': typeof ZoneBrainRoute
   '/zones': typeof ZonesRoute
   '/admin/briefing': typeof AdminBriefingRoute
@@ -952,6 +960,7 @@ export interface FileRoutesById {
   '/today': typeof TodayRoute
   '/tours': typeof ToursRoute
   '/tower': typeof TowerRouteWithChildren
+  '/wa': typeof WaRoute
   '/zone-brain': typeof ZoneBrainRoute
   '/zones': typeof ZonesRoute
   '/admin/briefing': typeof AdminBriefingRoute
@@ -1069,6 +1078,7 @@ export interface FileRouteTypes {
     | '/today'
     | '/tours'
     | '/tower'
+    | '/wa'
     | '/zone-brain'
     | '/zones'
     | '/admin/briefing'
@@ -1182,6 +1192,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/today'
     | '/tours'
+    | '/wa'
     | '/zone-brain'
     | '/zones'
     | '/admin/briefing'
@@ -1297,6 +1308,7 @@ export interface FileRouteTypes {
     | '/today'
     | '/tours'
     | '/tower'
+    | '/wa'
     | '/zone-brain'
     | '/zones'
     | '/admin/briefing'
@@ -1413,6 +1425,7 @@ export interface RootRouteChildren {
   TodayRoute: typeof TodayRoute
   ToursRoute: typeof ToursRoute
   TowerRoute: typeof TowerRouteWithChildren
+  WaRoute: typeof WaRoute
   ZoneBrainRoute: typeof ZoneBrainRoute
   ZonesRoute: typeof ZonesRoute
   CribbookingTokenRoute: typeof CribbookingTokenRoute
@@ -1475,6 +1488,13 @@ declare module '@tanstack/react-router' {
       path: '/zone-brain'
       fullPath: '/zone-brain'
       preLoaderRoute: typeof ZoneBrainRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/wa': {
+      id: '/wa'
+      path: '/wa'
+      fullPath: '/wa'
+      preLoaderRoute: typeof WaRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/tower': {
@@ -2402,6 +2422,7 @@ const rootRouteChildren: RootRouteChildren = {
   TodayRoute: TodayRoute,
   ToursRoute: ToursRoute,
   TowerRoute: TowerRouteWithChildren,
+  WaRoute: WaRoute,
   ZoneBrainRoute: ZoneBrainRoute,
   ZonesRoute: ZonesRoute,
   CribbookingTokenRoute: CribbookingTokenRoute,

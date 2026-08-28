@@ -26,7 +26,7 @@ export const Route = createFileRoute("/wa")({
 
 function WaRoute() {
   return (
-    <AppShell title="WhatsApp CRM">
+    <AppShell>
       <WhatsAppCRM />
     </AppShell>
   );
