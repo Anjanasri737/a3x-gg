@@ -17,6 +17,8 @@ import {
 } from "@/supply-hub/lib/zones";
 import { propertyCode, serialNo } from "@/supply-hub/lib/ids";
 import { PropertyCommandCenter } from "@/supply-hub/components/PropertyCommandCenter";
+import { DragList } from "@/components/ui/drag-list";
+import { Link } from "@tanstack/react-router";
 import {
   VERDICT_LABEL, VERDICT_TONE, applyTowerFilter, towerStats, truthBlock, truthRow,
   AVAIL_CLASS_LABEL, AVAIL_CLASS_TONE, propertyGate, verifyAllSections, seedInventory,
