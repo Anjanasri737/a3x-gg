@@ -17,6 +17,8 @@ import {
 } from "@/supply-hub/lib/zones";
 import { propertyCode, serialNo } from "@/supply-hub/lib/ids";
 import { PropertyCommandCenter } from "@/supply-hub/components/PropertyCommandCenter";
+import { DragList } from "@/components/ui/drag-list";
+import { Link } from "@tanstack/react-router";
 import {
   VERDICT_LABEL, VERDICT_TONE, applyTowerFilter, towerStats, truthBlock, truthRow,
   AVAIL_CLASS_LABEL, AVAIL_CLASS_TONE, propertyGate, verifyAllSections, seedInventory,
@@ -688,21 +690,34 @@ function AlternatesEditor({
   onChange: (next: string[]) => void;
 }) {
   const [pick, setPick] = useState("");
-  const add = () => {
-    const n = pick.trim();
-    if (!n) return;
-    if (value.some((v) => v.toLowerCase() === n.toLowerCase())) { toast.info("Already an alternate"); return; }
-    onChange([...value, n]);
+  const add = (raw?: string) => {
+    const n = (raw ?? pick).trim();
+    if (!n) { toast.error("Pick a property first"); return; }
+    const match = allNames.find((x) => x.toLowerCase() === n.toLowerCase()) ?? n;
+    if (value.some((v) => v.toLowerCase() === match.toLowerCase())) { toast.info("Already an alternate"); return; }
+    onChange([...value, match]);
     setPick("");
+  };
+  const reorder = (from: number, to: number) => {
+    const next = [...value];
+    const [moved] = next.splice(from, 1);
+    if (moved === undefined) return;
+    next.splice(to, 0, moved);
+    onChange(next);
   };
   return (
     <div className="rounded-md border border-border p-3 space-y-2">
       <div className="text-[10px] uppercase tracking-wider text-muted-foreground">Alternate / upgrade properties</div>
-      <p className="text-[11px] text-muted-foreground">Shown to sales when this PG is full, over budget or rejected. Order = priority.</p>
-      <div className="flex flex-wrap gap-1.5">
-        {value.map((n, i) => (
-          <span key={`${n}-${i}`} className="inline-flex items-center gap-1 rounded-md border border-border bg-muted/40 px-1.5 py-0.5 text-[11px]">
-            <span className="tabular-nums text-muted-foreground">{i + 1}.</span> {n}
+      <p className="text-[11px] text-muted-foreground">Shown to sales when this PG is full, over budget or rejected. Drag to set priority.</p>
+      <DragList
+        items={value}
+        inline
+        keyOf={(n, i) => `${n}-${i}`}
+        onReorder={reorder}
+        emptyLabel="No alternates set yet."
+        render={(n, i) => (
+          <span className="inline-flex items-center gap-1.5">
+            <span className="truncate">{n}</span>
             <button
               type="button"
               onClick={() => onChange(value.filter((_, j) => j !== i))}
@@ -711,27 +726,20 @@ function AlternatesEditor({
             >
               ×
             </button>
-            {i > 0 && (
-              <button type="button" aria-label="Move up" onClick={() => {
-                const next = [...value];
-                const tmp = next[i - 1]!; next[i - 1] = next[i]!; next[i] = tmp;
-                onChange(next);
-              }} className="text-muted-foreground hover:text-accent">↑</button>
-            )}
           </span>
-        ))}
-        {value.length === 0 && <span className="text-[11px] text-muted-foreground">No alternates set yet.</span>}
-      </div>
+        )}
+      />
       <div className="flex gap-2">
         <input
           list="supply-all-names"
           value={pick}
           onChange={(e) => setPick(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); add(); } }}
           placeholder="Search a property to add as alternate"
           className="flex-1 rounded-md border border-border bg-background px-2 py-1.5 text-sm"
         />
         <datalist id="supply-all-names">{allNames.map((n) => <option key={n} value={n} />)}</datalist>
-        <button type="button" onClick={add} className="rounded-md border border-border px-3 py-1.5 text-sm font-medium hover:bg-muted">Add</button>
+        <button type="button" onClick={() => add()} className="rounded-md border border-border px-3 py-1.5 text-sm font-medium hover:bg-muted">Add</button>
       </div>
     </div>
   );

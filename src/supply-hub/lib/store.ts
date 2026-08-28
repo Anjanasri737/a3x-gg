@@ -138,13 +138,21 @@ export function useSupplyStore() {
   const setEnabled = useCallback(
     async (pg: PG, enabled: boolean, notes?: string) => {
       const key = docKey(pg.name);
-      const { error: err } = await supabase
+      // PATCH FIRST: an upsert would replace `doc` and silently wipe the saved
+      // verification, inventory and alternate-property data for this property.
+      const patch: { enabled: boolean; notes?: string | null } = { enabled };
+      if (notes !== undefined) patch.notes = notes;
+      const { data, error: err } = await supabase
         .from("supply_properties")
-        .upsert({ key, enabled, notes: notes ?? null, doc: {}, source: "catalog" }, { onConflict: "key", ignoreDuplicates: false })
-        .select();
-      if (err) {
-        // Row may already exist with a doc we must not wipe — patch instead.
-        const { error: err2 } = await supabase.from("supply_properties").update({ enabled, notes: notes ?? null }).eq("key", key);
+        .update(patch)
+        .eq("key", key)
+        .select("key");
+      if (err) return { ok: false, error: err.message };
+      if (!data || data.length === 0) {
+        // No row yet for this catalog property — create one without a doc body.
+        const { error: err2 } = await supabase
+          .from("supply_properties")
+          .insert({ key, enabled, notes: notes ?? null, doc: {}, source: "catalog" });
         if (err2) return { ok: false, error: err2.message };
       }
       await load();
