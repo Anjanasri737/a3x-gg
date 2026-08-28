@@ -40,7 +40,7 @@ export interface WaUnread {
 
 export type WaInboxMode = "mine" | "team" | "unclaimed" | "tower";
 
-interface WaState {
+export interface WaState {
   unread: Record<string, WaUnread>;
   pinned: string[];
   archivedUntil: Record<string, string>;
