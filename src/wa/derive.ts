@@ -46,6 +46,7 @@ export interface WaRow {
   pinned: boolean;
   archived: boolean;
   archivedUntilIso?: string;
+  now: number;
   /** sort weight — higher floats to the top within a bucket */
   weight: number;
 }
