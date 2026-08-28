@@ -11,7 +11,7 @@ import {
 } from "./components";
 
 export function WhatsAppCRM() {
-  const [mode, setMode] = useState<WaInboxMode>("mine");
+  const [mode, setMode] = useState<WaInboxMode>("team");
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
   const [tick, setTick] = useState(() => Date.now());
