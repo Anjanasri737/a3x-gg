@@ -291,6 +291,16 @@ export function moveZone(id: string, dir: -1 | 1) {
   persistZones();
 }
 
+/** Drag-and-drop reorder: move the zone at `from` to index `to`. */
+export function reorderZones(from: number, to: number) {
+  if (from === to || from < 0 || to < 0 || from >= ZONE_LIST.length || to >= ZONE_LIST.length) return;
+  const next = [...ZONE_LIST];
+  const [moved] = next.splice(from, 1);
+  next.splice(to, 0, moved);
+  ZONE_LIST = next;
+  persistZones();
+}
+
 export function resetZones() {
   ZONE_LIST = DEFAULT_ZONES;
   persistZones();
