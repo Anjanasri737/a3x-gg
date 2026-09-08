@@ -1,10 +1,10 @@
 // Every lead activity the CRM can do, expressed as one flat catalog for Final Moment.
 // Each activity applies real Movement OS state changes, so logging here moves the journey.
-import type { useMovement } from "@/movement/store";
+import type { MovementStore } from "@/movement/store";
 import type { MovementState, NextActionKind } from "@/movement/types";
 import type { RoundCounter } from "./store";
 
-type MV = ReturnType<typeof useMovement>;
+type MV = MovementStore;
 
 export type Tone = "positive" | "neutral" | "negative";
 
