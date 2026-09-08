@@ -389,9 +389,31 @@ export function FinalMoment() {
                 fm.startMarkTimer(label);
               }}
               onKeyDown={(e) => {
-                if (e.key === "Enter" && results[0]) addLead(results[0]);
+                if (e.key !== "Enter") return;
+                if (results[0]) addLead(results[0]);
+                else if (typedDigits.length >= 4) addTypedNumber();
               }}
             />
+
+            {/* live parser — the moment 4 digits are typed, offer the add */}
+            {typedDigits.length >= 4 && (
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-primary/40 bg-primary/5 p-2">
+                <div className="min-w-0 text-xs">
+                  <span className="font-mono font-semibold">···{typedDigits.slice(-4)}</span>{" "}
+                  {results.length ? (
+                    <span className="text-muted-foreground">
+                      {results.length} chat{results.length > 1 ? "s" : ""} matched — {results[0].name ?? "Unknown"}
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">no CRM chat — the bridge will create one</span>
+                  )}
+                </div>
+                <Button size="sm" onClick={() => (results[0] ? addLead(results[0]) : addTypedNumber())}>
+                  Add this lead
+                </Button>
+              </div>
+            )}
+
             {!!results.length && (
               <ul className="divide-y rounded-lg border">
                 {results.map((s) => {
