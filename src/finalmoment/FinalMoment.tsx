@@ -12,9 +12,11 @@ import { useMovement } from "@/movement/store";
 import { seedMovement } from "@/movement/seed";
 import { DRAFT_META, type DraftCode, type MovementState } from "@/movement/types";
 import { last4, parseTokens, useFinalMoment, type RoundLabel } from "./store";
+import { LogActivity } from "./LogActivity";
 
 const ROUNDS: RoundLabel[] = ["D1", "D2", "D3", "D4"];
 const DAILY_CONNECT_TARGET = 70;
+const DRAFT_SIZE = 30; // each draft is exactly 30 chats — 30 is the minimum to start
 
 const fmtClock = (secs: number) => {
   const s = Math.max(0, secs);
@@ -103,6 +105,10 @@ export function FinalMoment() {
   /* ------------------------------- marking ------------------------------- */
 
   function addLead(s: MovementState, viaWa = true) {
+    if (fm.picks.length >= DRAFT_SIZE) {
+      toast.error(`One draft holds exactly ${DRAFT_SIZE} chats — lock and work these first`);
+      return;
+    }
     if (fm.picks.includes(s.ulid)) {
       toast.info(`${s.name ?? last4(s.phone)} already in this draft`);
       return;
@@ -142,17 +148,25 @@ export function FinalMoment() {
         continue;
       }
       matched.push(free.ulid);
+      if (fm.picks.length + matched.length >= DRAFT_SIZE) break;
     }
-    fm.pickMany(matched);
+    fm.pickMany(matched.slice(0, Math.max(0, DRAFT_SIZE - fm.picks.length)));
     fm.markWaMany(matched);
     for (const u of matched) mv.markWaDraft(u, label as DraftCode);
     setPaste("");
     toast.success(`Auto-synced ${matched.length} chats${missing.length ? ` · ${missing.length} not found / locked` : ""}`);
   }
 
+  const usedLabels = fm.rounds.map((r) => r.label);
+  const labelUsed = (r: RoundLabel) => usedLabels.includes(r);
+
   function startRound() {
-    if (!fm.picks.length) {
-      toast.error("Mark some chats first");
+    if (labelUsed(label)) {
+      toast.error(`Draft ${label} is already done today — each draft runs once`);
+      return;
+    }
+    if (fm.picks.length < DRAFT_SIZE) {
+      toast.error(`${DRAFT_SIZE} chats minimum per draft — ${DRAFT_SIZE - fm.picks.length} more to go`);
       return;
     }
     const claimed: string[] = [];
@@ -237,10 +251,10 @@ export function FinalMoment() {
               key={r}
               size="sm"
               variant={label === r ? "default" : "outline"}
-              disabled={!!activeRound}
+              disabled={!!activeRound || labelUsed(r)}
               onClick={() => setLabel(r)}
             >
-              Draft {r}
+              Draft {r}{labelUsed(r) ? " ✓" : ""}
             </Button>
           ))}
           <Separator orientation="vertical" className="h-6" />
@@ -248,14 +262,14 @@ export function FinalMoment() {
             Restart 300s
           </Button>
           <Badge variant="secondary">
-            {activeRound ? `${activeRound.label} in progress` : `${fm.picks.length}/${fm.target} marked`}
+            {activeRound ? `${activeRound.label} in progress` : `${fm.picks.length}/${DRAFT_SIZE} marked`}
           </Badge>
         </div>
         <Progress
           className="mt-3"
           value={activeRound
             ? ((cursor + 1) / Math.max(1, roundLeads.length)) * 100
-            : (fm.picks.length / fm.target) * 100}
+            : (fm.picks.length / DRAFT_SIZE) * 100}
         />
       </header>
 
@@ -339,15 +353,15 @@ export function FinalMoment() {
                         +new Date(b.lastCustomerMsgAt ?? b.updatedAt) -
                         +new Date(a.lastCustomerMsgAt ?? a.updatedAt),
                     )
-                    .slice(0, fm.target - fm.picks.length)
+                    .slice(0, DRAFT_SIZE - fm.picks.length)
                     .map((s) => s.ulid);
                   fm.pickMany(free);
                   fm.markWaMany(free);
                   for (const u of free) mv.markWaDraft(u, label as DraftCode);
-                  toast.success(`Filled ${free.length} stuck chats to reach ${fm.target}`);
+                  toast.success(`Filled ${free.length} stuck chats to reach ${DRAFT_SIZE}`);
                 }}
               >
-                Fill to {fm.target} stuck chats
+                Fill to {DRAFT_SIZE} stuck chats
               </Button>
             </div>
           </div>
@@ -361,7 +375,7 @@ export function FinalMoment() {
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              Target {fm.target} — 28 or 35 is fine, close to 30 is the goal.
+              Exactly {DRAFT_SIZE} per draft · {DRAFT_SIZE} is the minimum to lock · each draft (D1–D4) runs once a day.
             </p>
             <ul className="max-h-[420px] space-y-1 overflow-auto">
               {fm.picks.map((u, i) => {
@@ -399,8 +413,16 @@ export function FinalMoment() {
                 <li className="py-6 text-center text-xs text-muted-foreground">Nothing marked yet.</li>
               )}
             </ul>
-            <Button className="w-full" onClick={startRound} disabled={!fm.picks.length}>
-              Lock &amp; work these {fm.picks.length}
+            <Button
+              className="w-full"
+              onClick={startRound}
+              disabled={fm.picks.length < DRAFT_SIZE || labelUsed(label)}
+            >
+              {labelUsed(label)
+                ? `Draft ${label} already done`
+                : fm.picks.length < DRAFT_SIZE
+                  ? `Need ${DRAFT_SIZE - fm.picks.length} more to lock`
+                  : `Lock & work these ${fm.picks.length}`}
             </Button>
           </aside>
         </section>
@@ -444,9 +466,11 @@ export function FinalMoment() {
                   </div>
                 </div>
 
+                <LogActivity lead={current} />
+
                 <div className="space-y-2">
                   <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                    Call
+                    Quick call buttons
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <Button size="sm" onClick={() => act(() => mv.startCall(current.ulid), "calls", "Call started")}>

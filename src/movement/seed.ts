@@ -5,7 +5,7 @@ import { useMovement } from "./store";
 import { seedWaInbox } from "@/wa/seed";
 import type { DraftCode } from "./types";
 
-const SEED_KEY = "gharpayy.movement.seeded.v1";
+const SEED_KEY = "gharpayy.movement.seeded.v2";
 
 const EXTRA = [
   { name: "Rohit Nair", phone: "9008078901", location: "BTM Layout", zone: "BTM", budget: "10000", need: "Boys", room: "Shared", type: "Working", moveIn: "5th Sep" },
@@ -15,6 +15,31 @@ const EXTRA = [
   { name: "Sameer Khan", phone: "9008012399", location: "Hebbal", zone: "HBL", budget: "12500", need: "Boys", room: "Private", type: "Working", moveIn: "immediate" },
   { name: "Tanvi Rao", phone: "9008023477", location: "Sarjapur Road", zone: "SJR", budget: "14000", need: "Girls", room: "Private", type: "Working", moveIn: "8th Sep" },
 ];
+
+
+/** 4 drafts x 30 chats a day needs a real pool — generate a deep stuck-chat bench. */
+const FIRST = ["Aarav","Isha","Karan","Meera","Nikhil","Pooja","Rahul","Sneha","Varun","Divya","Arjun","Kavya","Manish","Ritu","Sahil","Tara","Yash","Zoya","Deepak","Nisha"];
+const LAST = ["Sharma","Patel","Reddy","Nair","Gupta","Singh","Iyer","Menon","Joshi","Bose","Rao","Kulkarni","Shetty","Das","Verma"];
+const AREAS: Array<[string, string]> = [["Koramangala","KOR"],["HSR Layout","HSR"],["BTM Layout","BTM"],["Indiranagar","IDR"],["Whitefield","WFD"],["Marathahalli","MRT"],["Bellandur","BLD"],["Electronic City","ECT"],["JP Nagar","JPN"],["Sarjapur Road","SJR"]];
+
+function bench(count: number) {
+  const out: typeof EXTRA = [];
+  for (let i = 0; i < count; i++) {
+    const [location, zone] = AREAS[i % AREAS.length];
+    out.push({
+      name: `${FIRST[i % FIRST.length]} ${LAST[(i * 7) % LAST.length]} ${String(i + 1).padStart(3, "0")}`,
+      phone: `9${String(200000000 + i * 137717).slice(0, 9)}`,
+      location,
+      zone,
+      budget: String(8500 + (i % 9) * 900),
+      need: i % 3 === 0 ? "Girls" : i % 3 === 1 ? "Boys" : "Coed",
+      room: i % 2 ? "Private" : "Shared",
+      type: i % 4 ? "Working" : "Student",
+      moveIn: i % 5 === 0 ? "immediate" : `${(i % 27) + 1}th Sep`,
+    });
+  }
+  return out;
+}
 
 const hrsAgo = (h: number) => new Date(Date.now() - h * 3600_000).toISOString();
 const inHrs = (h: number) => new Date(Date.now() + h * 3600_000).toISOString();
@@ -28,7 +53,7 @@ export function seedMovement() {
 
   const id = useIdentityStore.getState();
   const existing = new Set(id.leads.map((l) => l.name));
-  for (const d of EXTRA) {
+  for (const d of [...EXTRA, ...bench(132)]) {
     if (existing.has(d.name)) continue;
     id.createLead({
       name: d.name, phone: d.phone, email: "", location: d.location,
@@ -59,7 +84,7 @@ export function seedMovement() {
 
   const drafts: DraftCode[] = ["D1", "D1", "D2", "D2", "D3", "D1", "D2", "D4", "D3", "D1", "D2", "D1"];
 
-  leads.forEach((l, i) => {
+  leads.slice(0, 26).forEach((l, i) => {
     const s = useMovement.getState();
     const u = l.ulid;
     const code = drafts[i % drafts.length];
