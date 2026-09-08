@@ -14,7 +14,7 @@ import { DRAFT_META, type DraftCode, type MovementState } from "@/movement/types
 import { last4, parseTokens, roundPace, useFinalMoment, type RoundLabel } from "./store";
 import { LogActivity } from "./LogActivity";
 import { BridgePanel } from "./BridgePanel";
-import { ensureStuckChats, ingestMessage, last4of } from "./bridge";
+import { ensureStuckChats, ingestMessage } from "./bridge";
 
 const ROUNDS: RoundLabel[] = ["D1", "D2", "D3", "D4"];
 const DAILY_CONNECT_TARGET = 70;
@@ -389,6 +389,13 @@ export function FinalMoment() {
 
       </header>
 
+      {!activeRound && (
+        <BridgePanel
+          onAdd={(s) => addLead(s)}
+          inDraft={(u) => fm.picks.includes(u)}
+        />
+      )}
+
       {!activeRound ? (
         /* ------------------------------ MARK 30 ----------------------------- */
         <section className="grid gap-4 lg:grid-cols-[1fr_360px]">
@@ -747,7 +754,10 @@ export function FinalMoment() {
                           () => {
                             mv.draft(current.ulid, "D1");
                             mv.qualify(current.ulid, true);
+                            mv.setStage(current.ulid, "negotiation", "Marked definite close");
+                            mv.log(current.ulid, "note", "Definite close — committed by customer");
                             fm.bump("closed");
+                            fm.markDone(current.ulid);
                           },
                           undefined,
                           "Marked as definite close",
