@@ -76,7 +76,7 @@ export function DraftingPanel({ list, meta }: { list: MovementState[]; meta: Met
 
   const markSelection = (code: DraftCode) => {
     if (!selection.length) return;
-    const b = mv.startBatch("D1", selection);
+    const b = mv.startBatch("G1", selection);
     selection.forEach((u, idx) => mv.draft(u, code, b.id, `${idx + 1}/${selection.length}`));
     mv.endBatch(b.id);
     toast.success(`${selection.length} chats marked ${code}`);
@@ -99,7 +99,7 @@ export function DraftingPanel({ list, meta }: { list: MovementState[]; meta: Met
           </Button>
           <Button size="sm" className="h-7 text-[11px]" disabled={!selection.length}
             onClick={() => {
-              const b = mv.startBatch("D1", selection);
+              const b = mv.startBatch("G1", selection);
               setI(0); setTick(Date.now());
               toast.success(`Batch ${b.id} started · ${b.size} chats`);
             }}>
