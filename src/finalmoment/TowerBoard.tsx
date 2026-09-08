@@ -102,7 +102,7 @@ export function TowerBoard({ compact = false }: { compact?: boolean }) {
     <div className="space-y-4">
       <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-6">
         <Stat label="rounds today" value={roundsToday.length} sub={`${totals.done}/${totals.marked} chats cleared`} />
-        <Stat label="leads / minute" value={perMinute.toFixed(2)} sub={`${Math.round(totals.mins)} min on the desk`} />
+        <Stat label="leads / minute" value={perMinute.toFixed(2)} sub={`${totals.mins.toFixed(1)} min on the desk`} />
         <Stat
           label="connected today"
           value={`${connectedToday.length}/${DAILY_CONNECT_TARGET}`}
