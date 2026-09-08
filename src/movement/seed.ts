@@ -148,3 +148,15 @@ export function seedMovement() {
 
   window.localStorage.setItem(SEED_KEY, "1");
 }
+
+/** Names and phone numbers must exist on every movement record — last-4 search needs them. */
+function backfillIdentity() {
+  const m = useMovement.getState();
+  for (const l of useIdentityStore.getState().leads) {
+    const st = m.states[l.ulid];
+    if (!st) continue;
+    if (!st.name || !st.phone) {
+      m.patch(l.ulid, { name: st.name ?? l.name, phone: st.phone ?? l.phone, zone: st.zone || (l.zone ?? "") });
+    }
+  }
+}
