@@ -84,7 +84,7 @@ export function seedMovement() {
 
   const drafts: DraftCode[] = ["D1", "D1", "D2", "D2", "D3", "D1", "D2", "D4", "D3", "D1", "D2", "D1"];
 
-  leads.forEach((l, i) => {
+  leads.slice(0, 26).forEach((l, i) => {
     const s = useMovement.getState();
     const u = l.ulid;
     const code = drafts[i % drafts.length];
