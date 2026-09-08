@@ -53,6 +53,9 @@ export function FinalMoment() {
 
   useEffect(() => {
     seedMovement();
+    // real stuck WhatsApp chats so every 30-chat draft is real work
+    const made = ensureStuckChats(40);
+    if (made) toast.success(`${made} stuck WhatsApp chats pulled into the draft pool`);
   }, []);
 
   const states = useMemo(
