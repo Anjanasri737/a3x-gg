@@ -1,5 +1,5 @@
 // Priority Engine — hard overrides P0..P6, then a score. Active 13 = top 13.
-import type { MovementState, PriorityBucket } from "./types";
+import type { Health, MovementState, PriorityBucket } from "./types";
 
 export interface Scored {
   ulid: string;
@@ -7,7 +7,7 @@ export interface Scored {
   bucket: PriorityBucket;
   score: number;
   reason: string;
-  health: MovementState extends never ? never : import("./types").Health;
+  health: Health;
   minutesWaiting: number;
   overdueMins: number;
 }
