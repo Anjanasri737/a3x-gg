@@ -22,7 +22,9 @@ const inHrs = (h: number) => new Date(Date.now() + h * 3600_000).toISOString();
 export function seedMovement() {
   if (typeof window === "undefined") return;
   seedWaInbox();
+  backfillIdentity();
   if (window.localStorage.getItem(SEED_KEY)) return;
+
 
   const id = useIdentityStore.getState();
   const existing = new Set(id.leads.map((l) => l.name));
@@ -42,6 +44,10 @@ export function seedMovement() {
   m.ensureMany(
     leads.map((l, i) => ({
       ulid: l.ulid,
+      name: l.name,
+      phone: l.phoneE164 || l.phoneRaw,
+      zone: l.zone ?? undefined,
+      location: l.area ?? null,
       ownerId: l.assigneeId ?? "u-self",
       ownerName: l.assigneeName ?? (i % 3 === 0 ? "You" : i % 3 === 1 ? "Aarav Mehta" : "Neha Verma"),
       unread: 0,
@@ -49,6 +55,7 @@ export function seedMovement() {
       checkInDate: l.earliestCheckIn ?? null,
     })),
   );
+
 
   const drafts: DraftCode[] = ["D1", "D1", "D2", "D2", "D3", "D1", "D2", "D4", "D3", "D1", "D2", "D1"];
 
@@ -140,4 +147,16 @@ export function seedMovement() {
   });
 
   window.localStorage.setItem(SEED_KEY, "1");
+}
+
+/** Names and phone numbers must exist on every movement record — last-4 search needs them. */
+function backfillIdentity() {
+  const m = useMovement.getState();
+  for (const l of useIdentityStore.getState().leads) {
+    const st = m.states[l.ulid];
+    if (!st) continue;
+    if (!st.name || !st.phone) {
+      m.patch(l.ulid, { name: st.name ?? l.name, phone: st.phone ?? (l.phoneE164 || l.phoneRaw), zone: st.zone || (l.zone ?? "") });
+    }
+  }
 }
