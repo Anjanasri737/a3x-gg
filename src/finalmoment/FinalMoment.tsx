@@ -89,6 +89,27 @@ export function FinalMoment() {
       .slice(0, 8);
   }, [query, states]);
 
+  /** digits typed so far — the 4-digit parser lights up as soon as we have 4 */
+  const typedDigits = query.replace(/\D/g, "");
+
+  /** no CRM chat for these digits: the bridge opens a shadow lead and drafts it */
+  function addTypedNumber() {
+    const l4 = typedDigits.slice(-4);
+    const phone = typedDigits.length >= 10 ? typedDigits : `9${l4.padStart(9, "0")}`;
+    const row = ingestMessage({
+      phoneRaw: phone,
+      name: `WA ···${l4}`,
+      text: "Marked 111111 on WhatsApp",
+    });
+    const st = row.ulid ? useMovement.getState().states[row.ulid] : null;
+    if (!st) {
+      toast.error("Could not open that chat");
+      return;
+    }
+    addLead(st);
+    toast.success(`···${l4} added from WhatsApp`);
+  }
+
   const markTimer = fm.markTimers?.[label];
   const elapsed = markTimer
     ? Math.floor((Date.now() - +new Date(markTimer.startedAt)) / 1000)
