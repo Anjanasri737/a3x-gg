@@ -42,6 +42,10 @@ export function seedMovement() {
   m.ensureMany(
     leads.map((l, i) => ({
       ulid: l.ulid,
+      name: l.name,
+      phone: l.phone,
+      zone: l.zone ?? undefined,
+      location: l.location ?? null,
       ownerId: l.assigneeId ?? "u-self",
       ownerName: l.assigneeName ?? (i % 3 === 0 ? "You" : i % 3 === 1 ? "Aarav Mehta" : "Neha Verma"),
       unread: 0,
@@ -49,6 +53,7 @@ export function seedMovement() {
       checkInDate: l.earliestCheckIn ?? null,
     })),
   );
+
 
   const drafts: DraftCode[] = ["D1", "D1", "D2", "D2", "D3", "D1", "D2", "D4", "D3", "D1", "D2", "D1"];
 
