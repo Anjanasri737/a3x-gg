@@ -1,14 +1,20 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Compass } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useMovementSync } from "./bridge";
+import { seedMovement } from "./seed";
 import {
   ActiveList, Dashboards, DraftingPanel, JourneyTimeline, UnmatchedQueue, WorkPanel,
 } from "./components";
 
 export function MovementOS() {
+  useEffect(() => { try { console.log("SEED start"); seedMovement(); console.log("SEED done"); } catch (e) { console.log("SEED err", String(e)); } }, []);
   const { list, nameOf, me } = useMovementSync();
   const [selected, setSelected] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!selected && list.length) setSelected(list[0].ulid);
+  }, [list, selected]);
 
   return (
     <div className="space-y-3">
