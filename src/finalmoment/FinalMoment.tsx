@@ -11,7 +11,7 @@ import { cn } from "@/lib/utils";
 import { useMovement } from "@/movement/store";
 import { seedMovement } from "@/movement/seed";
 import { DRAFT_META, type DraftCode, type MovementState } from "@/movement/types";
-import { last4, parseTokens, useFinalMoment, type RoundLabel } from "./store";
+import { last4, parseTokens, roundPace, useFinalMoment, type RoundLabel } from "./store";
 import { LogActivity } from "./LogActivity";
 
 const ROUNDS: RoundLabel[] = ["D1", "D2", "D3", "D4"];
@@ -84,10 +84,15 @@ export function FinalMoment() {
       .slice(0, 8);
   }, [query, states]);
 
-  const elapsed = fm.markStartedAt
-    ? Math.floor((Date.now() - +new Date(fm.markStartedAt)) / 1000)
-    : 0;
+  const markTimer = fm.markTimers?.[label];
+  const elapsed = markTimer
+    ? Math.floor((Date.now() - +new Date(markTimer.startedAt)) / 1000)
+    : fm.markStartedAt
+      ? Math.floor((Date.now() - +new Date(fm.markStartedAt)) / 1000)
+      : 0;
   const remaining = fm.windowSecs - elapsed;
+  const pace = activeRound ? roundPace(activeRound) : null;
+  const doneSet = new Set(activeRound?.done ?? []);
 
   const connectedToday = useMemo(() => {
     const start = new Date();
@@ -189,20 +194,41 @@ export function FinalMoment() {
   const cursor = Math.min(activeRound?.cursor ?? 0, Math.max(0, roundLeads.length - 1));
   const current = roundLeads[cursor];
 
+  const OUTCOME_COUNTERS = ["tours", "quotes", "bookings", "closed"] as const;
+
   function act(fn: () => void, counter?: Parameters<typeof fm.bump>[0], msg?: string) {
     fn();
     if (counter) fm.bump(counter);
+    // an outcome finishes the lead for this round — it counts towards the 90-minute pace
+    if (counter && (OUTCOME_COUNTERS as readonly string[]).includes(counter) && current) {
+      fm.markDone(current.ulid);
+    }
     if (msg) toast.success(msg);
   }
 
+  /** jump to the next lead that is not finished yet */
   function next() {
     if (!activeRound) return;
-    if (cursor + 1 >= roundLeads.length) {
-      toast.info("End of the round list — close it when you are done");
+    const done = new Set(activeRound.done ?? []);
+    const order = [
+      ...roundLeads.slice(cursor + 1).map((s, i) => cursor + 1 + i),
+      ...roundLeads.slice(0, cursor).map((_, i) => i),
+    ];
+    const nextIdx = order.find((i) => !done.has(roundLeads[i].ulid));
+    if (nextIdx === undefined) {
+      toast.info("All 30 are done — close the round");
       return;
     }
-    fm.setCursor(cursor + 1);
+    fm.setCursor(nextIdx);
   }
+
+  function doneAndNext() {
+    if (!current) return;
+    fm.markDone(current.ulid);
+    toast.success(`${current.name ?? last4(current.phone)} done`);
+    next();
+  }
+
 
   function finishRound() {
     if (!activeRound) return;
@@ -227,14 +253,30 @@ export function FinalMoment() {
             </p>
           </div>
           <div className="flex items-center gap-4">
-            <div className="text-right">
-              <div className={cn("font-mono text-2xl font-bold", remaining <= 30 && "text-destructive")}>
-                {fmtClock(remaining)}
+            {activeRound && pace ? (
+              <div className="text-right">
+                <div
+                  className={cn(
+                    "font-mono text-2xl font-bold",
+                    pace.remainingSecs <= 10 * 60 && "text-destructive",
+                  )}
+                >
+                  {pace.remainingSecs < 0 ? `+${fmtClock(-pace.remainingSecs)}` : fmtClock(pace.remainingSecs)}
+                </div>
+                <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                  left of {activeRound.workMins ?? 90} min for {pace.totalCount}
+                </div>
               </div>
-              <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                {fm.windowSecs}s marking window
+            ) : (
+              <div className="text-right">
+                <div className={cn("font-mono text-2xl font-bold", remaining <= 30 && "text-destructive")}>
+                  {fmtClock(remaining)}
+                </div>
+                <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                  {fm.windowSecs}s marking window · {label}
+                </div>
               </div>
-            </div>
+            )}
             <div className="text-right">
               <div className="text-2xl font-bold">
                 {connectedToday}
@@ -245,32 +287,80 @@ export function FinalMoment() {
           </div>
         </div>
 
+        {/* per-draft timers — one clock per draft, running from the first lead added */}
+        <div className="mt-3 grid gap-2 sm:grid-cols-4">
+          {ROUNDS.map((r) => {
+            const t = fm.markTimers?.[r];
+            const round = fm.rounds.find((x) => x.label === r);
+            const isActive = activeRound?.label === r;
+            const p = round ? roundPace(round) : null;
+            const markSecs = round
+              ? round.markSecs
+              : t
+                ? Math.floor((Date.now() - +new Date(t.startedAt)) / 1000)
+                : 0;
+            return (
+              <button
+                key={r}
+                disabled={!!activeRound || labelUsed(r)}
+                onClick={() => {
+                  setLabel(r);
+                  fm.startMarkTimer(r);
+                }}
+                className={cn(
+                  "rounded-lg border p-2 text-left",
+                  label === r && !activeRound && "border-primary bg-primary/5",
+                  isActive && "border-primary bg-primary/10",
+                  labelUsed(r) && !isActive && "opacity-60",
+                )}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold">Draft {r}</span>
+                  <span className="text-[10px] uppercase text-muted-foreground">
+                    {isActive ? "working" : round?.endedAt ? "closed" : round ? "locked" : t ? "marking" : "idle"}
+                  </span>
+                </div>
+                <div className="font-mono text-lg font-bold">
+                  {isActive && p
+                    ? p.remainingSecs < 0
+                      ? `+${fmtClock(-p.remainingSecs)}`
+                      : fmtClock(p.remainingSecs)
+                    : fmtClock(markSecs)}
+                </div>
+                <div className="text-[10px] text-muted-foreground">
+                  {isActive && p
+                    ? `${p.doneCount}/${p.totalCount} done · ${p.perMinute.toFixed(2)}/min`
+                    : round
+                      ? `marked in ${fmtClock(round.markSecs)} · ${(round.done ?? []).length}/${round.ulids.length} done`
+                      : label === r
+                        ? `${fm.picks.length}/${DRAFT_SIZE} marked`
+                        : "not started"}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
         <div className="mt-3 flex flex-wrap items-center gap-2">
-          {ROUNDS.map((r) => (
-            <Button
-              key={r}
-              size="sm"
-              variant={label === r ? "default" : "outline"}
-              disabled={!!activeRound || labelUsed(r)}
-              onClick={() => setLabel(r)}
-            >
-              Draft {r}{labelUsed(r) ? " ✓" : ""}
-            </Button>
-          ))}
-          <Separator orientation="vertical" className="h-6" />
-          <Button size="sm" variant="ghost" onClick={fm.resetMarkTimer}>
+          <Button size="sm" variant="ghost" onClick={() => fm.resetMarkTimer(label)}>
             Restart 300s
           </Button>
           <Badge variant="secondary">
             {activeRound ? `${activeRound.label} in progress` : `${fm.picks.length}/${DRAFT_SIZE} marked`}
           </Badge>
+          {pace && (
+            <Badge variant={pace.delta < 0 ? "destructive" : "default"}>
+              {pace.delta < 0 ? `${Math.abs(pace.delta)} behind pace` : `${pace.delta} ahead of pace`}
+            </Badge>
+          )}
         </div>
         <Progress
           className="mt-3"
-          value={activeRound
-            ? ((cursor + 1) / Math.max(1, roundLeads.length)) * 100
+          value={activeRound && pace
+            ? (pace.doneCount / Math.max(1, pace.totalCount)) * 100
             : (fm.picks.length / DRAFT_SIZE) * 100}
         />
+
       </header>
 
       {!activeRound ? (
@@ -291,7 +381,7 @@ export function FinalMoment() {
               value={query}
               onChange={(e) => {
                 setQuery(e.target.value);
-                fm.startMarkTimer();
+                fm.startMarkTimer(label);
               }}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && results[0]) addLead(results[0]);
@@ -335,7 +425,7 @@ export function FinalMoment() {
               value={paste}
               onChange={(e) => {
                 setPaste(e.target.value);
-                fm.startMarkTimer();
+                fm.startMarkTimer(label);
               }}
             />
             <div className="flex gap-2">
@@ -434,20 +524,82 @@ export function FinalMoment() {
               <div>
                 <h2 className="text-sm font-semibold">
                   {activeRound.label} · lead {cursor + 1} of {roundLeads.length}
+                  {current && doneSet.has(current.ulid) ? " · done" : ""}
                 </h2>
                 <p className="text-xs text-muted-foreground">
                   Locked to you — nobody else can call these while the round is open.
                 </p>
               </div>
               <div className="flex gap-2">
+                <Button size="sm" onClick={doneAndNext} disabled={!current}>
+                  Done · next
+                </Button>
                 <Button size="sm" variant="outline" onClick={next}>
-                  Next →
+                  Skip →
                 </Button>
                 <Button size="sm" variant="destructive" onClick={finishRound}>
                   Close round
                 </Button>
               </div>
             </div>
+
+            {/* ---------------------------- pace panel --------------------------- */}
+            {pace && (
+              <div className="rounded-lg border p-3">
+                <div className="grid grid-cols-2 gap-2 text-center sm:grid-cols-5">
+                  <div>
+                    <div className="text-lg font-bold">
+                      {pace.doneCount}
+                      <span className="text-xs text-muted-foreground">/{pace.totalCount}</span>
+                    </div>
+                    <div className="text-[10px] uppercase text-muted-foreground">done</div>
+                  </div>
+                  <div>
+                    <div className="font-mono text-lg font-bold">{Math.floor(pace.elapsedMins)}m</div>
+                    <div className="text-[10px] uppercase text-muted-foreground">elapsed</div>
+                  </div>
+                  <div>
+                    <div className="text-lg font-bold">{pace.perMinute.toFixed(2)}</div>
+                    <div className="text-[10px] uppercase text-muted-foreground">leads / min</div>
+                  </div>
+                  <div>
+                    <div className={cn("text-lg font-bold", pace.delta < 0 && "text-destructive")}>
+                      {pace.delta >= 0 ? `+${pace.delta}` : pace.delta}
+                    </div>
+                    <div className="text-[10px] uppercase text-muted-foreground">vs pace</div>
+                  </div>
+                  <div>
+                    <div className="font-mono text-lg font-bold">
+                      {pace.secsPerRemaining ? fmtClock(Math.round(pace.secsPerRemaining)) : "—"}
+                    </div>
+                    <div className="text-[10px] uppercase text-muted-foreground">per lead left</div>
+                  </div>
+                </div>
+                <p className="pt-2 text-[11px] text-muted-foreground">
+                  {pace.overdue
+                    ? `Over the ${activeRound.workMins ?? 90}-minute window by ${fmtClock(-pace.remainingSecs)} — ${pace.totalCount - pace.doneCount} still open.`
+                    : `Target ${pace.shouldBeDone} done by now · projected finish ${
+                        pace.projectedMins ? `${Math.round(pace.projectedMins)}m` : "—"
+                      } · marking took ${fmtClock(activeRound.markSecs)}.`}
+                </p>
+                {/* per-minute completion bars */}
+                <div className="mt-2 flex h-10 items-end gap-[2px]">
+                  {pace.minuteBuckets.map((n, i) => (
+                    <div
+                      key={i}
+                      title={`Minute ${i + 1}: ${n} done`}
+                      className={cn(
+                        "flex-1 rounded-sm bg-muted",
+                        n > 0 && "bg-primary",
+                      )}
+                      style={{ height: `${Math.max(6, Math.min(100, n * 33))}%` }}
+                    />
+                  ))}
+                </div>
+                <div className="text-[10px] text-muted-foreground">per-minute completions</div>
+              </div>
+            )}
+
 
             {current && (
               <>
@@ -622,25 +774,31 @@ export function FinalMoment() {
           <aside className="space-y-3 rounded-xl border bg-card p-4">
             <h2 className="text-sm font-semibold">Round list</h2>
             <ul className="max-h-[360px] space-y-1 overflow-auto">
-              {roundLeads.map((s, i) => (
-                <li key={s.ulid}>
-                  <button
-                    onClick={() => fm.setCursor(i)}
-                    className={cn(
-                      "w-full rounded-md border p-2 text-left text-xs",
-                      i === cursor && "border-primary bg-primary/5",
-                    )}
-                  >
-                    <span className="font-medium">
-                      {i + 1}. {s.name ?? "Unknown"}
-                    </span>{" "}
-                    <span className="font-mono text-muted-foreground">···{last4(s.phone)}</span>
-                    <div className="text-muted-foreground">
-                      {s.stage} · {s.crmDraft ?? "no draft"}
-                    </div>
-                  </button>
-                </li>
-              ))}
+              {roundLeads.map((s, i) => {
+                const isDone = doneSet.has(s.ulid);
+                return (
+                  <li key={s.ulid}>
+                    <button
+                      onClick={() => fm.setCursor(i)}
+                      className={cn(
+                        "w-full rounded-md border p-2 text-left text-xs",
+                        i === cursor && "border-primary bg-primary/5",
+                        isDone && "opacity-60",
+                      )}
+                    >
+                      <span className={cn("font-medium", isDone && "line-through")}>
+                        {i + 1}. {s.name ?? "Unknown"}
+                      </span>{" "}
+                      <span className="font-mono text-muted-foreground">···{last4(s.phone)}</span>
+                      {isDone && <span className="ml-1 text-primary">✓</span>}
+                      <div className="text-muted-foreground">
+                        {s.stage} · {s.crmDraft ?? "no draft"}
+                      </div>
+                    </button>
+                  </li>
+                );
+              })}
+
             </ul>
             <Separator />
             <div className="grid grid-cols-3 gap-2 text-center text-xs">
@@ -662,11 +820,14 @@ export function FinalMoment() {
           {fm.rounds.map((r) => (
             <li key={r.id} className="flex flex-wrap items-center gap-2 rounded-md border p-2">
               <Badge variant={r.endedAt ? "secondary" : "default"}>{r.id}</Badge>
-              <span>{r.ulids.length} leads</span>
-              <span className="text-muted-foreground">
-                {r.calls} calls · {r.connected} connected · {r.tours} tours · {r.quotes} quotes · {r.bookings} booked ·{" "}
-                {r.closed} definite
+              <span>
+                {(r.done ?? []).length}/{r.ulids.length} done in {r.workMins ?? 90}m
               </span>
+              <span className="text-muted-foreground">
+                marked in {fmtClock(r.markSecs ?? 0)} · {r.calls} calls · {r.connected} connected · {r.tours} tours ·{" "}
+                {r.quotes} quotes · {r.bookings} booked · {r.closed} definite
+              </span>
+
               <span className="ml-auto text-muted-foreground">
                 {new Date(r.startedAt).toLocaleTimeString()} {r.endedAt ? `→ ${new Date(r.endedAt).toLocaleTimeString()}` : "· open"}
               </span>
