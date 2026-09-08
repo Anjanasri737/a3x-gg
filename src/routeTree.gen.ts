@@ -37,6 +37,7 @@ import { Route as HeatmapRouteImport } from './routes/heatmap'
 import { Route as HealthRouteImport } from './routes/health'
 import { Route as HandoffsRouteImport } from './routes/handoffs'
 import { Route as FollowUpsRouteImport } from './routes/follow-ups'
+import { Route as FinalMomentRouteImport } from './routes/final-moment'
 import { Route as ExecutionRouteImport } from './routes/execution'
 import { Route as ControlTowerTeamRouteImport } from './routes/control-tower-team'
 import { Route as CoachRouteImport } from './routes/coach'
@@ -263,6 +264,11 @@ const HandoffsRoute = HandoffsRouteImport.update({
 const FollowUpsRoute = FollowUpsRouteImport.update({
   id: '/follow-ups',
   path: '/follow-ups',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FinalMomentRoute = FinalMomentRouteImport.update({
+  id: '/final-moment',
+  path: '/final-moment',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ExecutionRoute = ExecutionRouteImport.update({
@@ -711,6 +717,7 @@ export interface FileRoutesByFullPath {
   '/coach': typeof CoachRoute
   '/control-tower-team': typeof ControlTowerTeamRoute
   '/execution': typeof ExecutionRoute
+  '/final-moment': typeof FinalMomentRoute
   '/follow-ups': typeof FollowUpsRoute
   '/handoffs': typeof HandoffsRoute
   '/health': typeof HealthRoute
@@ -827,6 +834,7 @@ export interface FileRoutesByTo {
   '/coach': typeof CoachRoute
   '/control-tower-team': typeof ControlTowerTeamRoute
   '/execution': typeof ExecutionRoute
+  '/final-moment': typeof FinalMomentRoute
   '/follow-ups': typeof FollowUpsRoute
   '/handoffs': typeof HandoffsRoute
   '/health': typeof HealthRoute
@@ -944,6 +952,7 @@ export interface FileRoutesById {
   '/coach': typeof CoachRoute
   '/control-tower-team': typeof ControlTowerTeamRoute
   '/execution': typeof ExecutionRoute
+  '/final-moment': typeof FinalMomentRoute
   '/follow-ups': typeof FollowUpsRoute
   '/handoffs': typeof HandoffsRoute
   '/health': typeof HealthRoute
@@ -1063,6 +1072,7 @@ export interface FileRouteTypes {
     | '/coach'
     | '/control-tower-team'
     | '/execution'
+    | '/final-moment'
     | '/follow-ups'
     | '/handoffs'
     | '/health'
@@ -1179,6 +1189,7 @@ export interface FileRouteTypes {
     | '/coach'
     | '/control-tower-team'
     | '/execution'
+    | '/final-moment'
     | '/follow-ups'
     | '/handoffs'
     | '/health'
@@ -1295,6 +1306,7 @@ export interface FileRouteTypes {
     | '/coach'
     | '/control-tower-team'
     | '/execution'
+    | '/final-moment'
     | '/follow-ups'
     | '/handoffs'
     | '/health'
@@ -1413,6 +1425,7 @@ export interface RootRouteChildren {
   CoachRoute: typeof CoachRoute
   ControlTowerTeamRoute: typeof ControlTowerTeamRoute
   ExecutionRoute: typeof ExecutionRoute
+  FinalMomentRoute: typeof FinalMomentRoute
   FollowUpsRoute: typeof FollowUpsRoute
   HandoffsRoute: typeof HandoffsRoute
   HealthRoute: typeof HealthRoute
@@ -1683,6 +1696,13 @@ declare module '@tanstack/react-router' {
       path: '/follow-ups'
       fullPath: '/follow-ups'
       preLoaderRoute: typeof FollowUpsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/final-moment': {
+      id: '/final-moment'
+      path: '/final-moment'
+      fullPath: '/final-moment'
+      preLoaderRoute: typeof FinalMomentRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/execution': {
@@ -2418,6 +2438,7 @@ const rootRouteChildren: RootRouteChildren = {
   CoachRoute: CoachRoute,
   ControlTowerTeamRoute: ControlTowerTeamRoute,
   ExecutionRoute: ExecutionRoute,
+  FinalMomentRoute: FinalMomentRoute,
   FollowUpsRoute: FollowUpsRoute,
   HandoffsRoute: HandoffsRoute,
   HealthRoute: HealthRoute,
