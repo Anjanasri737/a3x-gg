@@ -30,6 +30,11 @@ export function LogActivity({ lead, onLogged }: Props) {
   const chosen = steps.find((s) => s.key === stepKey) ?? steps[0];
 
   function choose(a: FMActivity) {
+    // tap once to select, tap the same one again to log it straight away
+    if (pick?.key === a.key) {
+      submit();
+      return;
+    }
     setPick(a);
     setStepKey(a.nextSteps[0]?.key ?? null);
   }
@@ -40,7 +45,11 @@ export function LogActivity({ lead, onLogged }: Props) {
       return;
     }
     pick.apply(mv, lead, note.trim());
-    if (pick.counter) fm.bump(pick.counter);
+    if (pick.counter) {
+      fm.bump(pick.counter);
+      // an outcome finishes the lead for this round's 90-minute pace
+      if (["tours", "quotes", "bookings", "closed"].includes(pick.counter)) fm.markDone(lead.ulid);
+    }
     mv.log(lead.ulid, "note", `${pick.emoji} ${pick.label}${note.trim() ? ` — ${note.trim()}` : ""}`);
 
     if (chosen && chosen.inHours > 0) {
