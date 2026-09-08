@@ -177,7 +177,7 @@ export const FM_CATEGORIES: FMCategory[] = [
         tone: "positive",
         hint: "Area, budget, sharing, move-in date.",
         apply: (mv, s, note) =>
-          mv.capture(s.ulid, { location: s.zone || null, responding: true, inBangalore: true, note } as never),
+          mv.capture(s.ulid, { location: note || s.zone || null, responding: true, inBangalore: true }),
         nextSteps: [step("Send matched options in 1h", 1, "send-property"), step("Book a visit", 24, "confirm-tour")],
       },
       {
