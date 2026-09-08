@@ -21,7 +21,7 @@ export function useMovementSync() {
   const states = useMovement((s) => s.states);
 
   useEffect(() => {
-    setActor({ id: me.id, name: me.name });
+    setActor({ id: me.id, name: me.name, role: "flow-ops", zone: "KORA CORE" });
   }, [me.id, me.name, setActor]);
 
   useEffect(() => {

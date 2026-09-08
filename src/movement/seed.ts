@@ -129,7 +129,15 @@ export function seedMovement() {
   m.addUnmatched({ phoneRaw: "+91 90080 55511", waAccount: "Gharpayy Sales 1", name: "Unknown", lastMessage: "PG near Ecospace?", reason: "No CRM record for this number" });
   m.addUnmatched({ phoneRaw: "+91 90080 55512", waAccount: "Gharpayy Sales 2", lastMessage: "Rent kitna hai", reason: "Number matched 2 leads — needs manual pick" });
 
-  m.snapshot("1PM", { drafted: leads.length - 2, active: 13, tours: 3, payments: 1 });
+  m.snapshot({
+    label: "1PM",
+    operatorId: "u-self",
+    totals: { drafted: leads.length - 2, active: 13, tours: 3, payments: 1 },
+    required: { drafted: 30, calls: 20, tours: 4, booked: 2 },
+    status: "BEHIND",
+    mainLeak: "Tours not confirmed",
+    inference: "Drafting on pace, tour confirmations lagging",
+  });
 
   window.localStorage.setItem(SEED_KEY, "1");
 }
