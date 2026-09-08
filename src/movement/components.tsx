@@ -47,67 +47,174 @@ export function DraftChip({ code }: { code: DraftCode | null }) {
 
 export function DraftingPanel({ list, meta }: { list: MovementState[]; meta: Meta }) {
   const mv = useMovement();
+  const selection = useMovement((s) => s.selection);
+  const activeBatchId = useMovement((s) => s.activeBatchId);
+  const batches = useMovement((s) => s.batches);
   const queue = useMemo(() => drafting30(list), [list]);
+  const batch = batches.find((b) => b.id === activeBatchId) ?? null;
   const [i, setI] = useState(0);
-  const cur = queue[Math.min(i, Math.max(queue.length - 1, 0))];
+  const [tick, setTick] = useState(() => Date.now());
 
-  if (!queue.length) {
-    return (
-      <div className="rounded-lg border border-border bg-card p-6 text-center text-sm text-muted-foreground">
-        <CheckCircle2 className="h-5 w-5 mx-auto mb-2 text-success" />
-        Every conversation is drafted. Nothing hidden, nothing pending.
-      </div>
-    );
-  }
+  // Rows in the batch that still have no draft mark.
+  const batchRows = useMemo(
+    () => (batch ? batch.ulids.map((u) => list.find((s) => s.ulid === u)).filter(Boolean) as MovementState[] : []),
+    [batch, list],
+  );
+  const cur = batch ? batchRows[Math.min(i, Math.max(batchRows.length - 1, 0))] : queue[0];
+
+  const selected = new Set(selection);
 
   const mark = (code: DraftCode) => {
-    mv.draft(cur.ulid, code, undefined, `${i + 1}/${queue.length}`);
+    if (!cur) return;
+    mv.draft(cur.ulid, code, batch?.id, `${i + 1}/${batchRows.length || queue.length}`);
+    if (batch) {
+      mv.advanceBatch(batch.id, Date.now() - tick);
+      setTick(Date.now());
+    }
     setI((n) => n + 1);
   };
 
-  const info = meta.get(cur.ulid);
+  const markSelection = (code: DraftCode) => {
+    if (!selection.length) return;
+    const b = mv.startBatch("G1", selection);
+    selection.forEach((u, idx) => mv.draft(u, code, b.id, `${idx + 1}/${selection.length}`));
+    mv.endBatch(b.id);
+    toast.success(`${selection.length} chats marked ${code}`);
+  };
+
   return (
     <div className="space-y-3">
-      <div className="rounded-lg border border-border bg-card p-4">
-        <div className="flex items-center justify-between mb-3">
-          <div className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
-            Drafting batch · {Math.min(i + 1, queue.length)} of {queue.length}
+      {/* ── Selection controls ── */}
+      <div className="rounded-lg border border-border bg-card p-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold mr-auto">
+            Drafting queue · {queue.length} undrafted · {selection.length} selected
           </div>
-          <Badge variant="outline" className="text-[10px]">
-            <Timer className="h-3 w-3 mr-1" /> ~10s per chat
-          </Badge>
+          <Button size="sm" variant="outline" className="h-7 text-[11px]"
+            onClick={() => mv.setSelection(queue.slice(0, 30).map((s) => s.ulid))}>
+            Select next 30
+          </Button>
+          <Button size="sm" variant="ghost" className="h-7 text-[11px]" onClick={() => mv.clearSelection()}>
+            Clear
+          </Button>
+          <Button size="sm" className="h-7 text-[11px]" disabled={!selection.length}
+            onClick={() => {
+              const b = mv.startBatch("G1", selection);
+              setI(0); setTick(Date.now());
+              toast.success(`Batch ${b.id} started · ${b.size} chats`);
+            }}>
+            Start batch ({selection.length})
+          </Button>
         </div>
-        <div className="text-lg font-semibold">{info?.name ?? cur.ulid}</div>
-        <div className="text-xs text-muted-foreground">
-          {info?.phone} · {info?.area} · last message {rel(cur.lastCustomerMsgAt)} ago
-        </div>
-        {cur.waDraft && cur.crmDraft && cur.waDraft !== cur.crmDraft && (
-          <div className="mt-2 text-xs text-warning flex items-center gap-1">
-            <AlertTriangle className="h-3 w-3" />
-            WhatsApp says {cur.waDraft}, CRM says {cur.crmDraft}
-            <Button size="sm" variant="ghost" className="h-6 text-[11px]"
-              onClick={() => { mv.syncDraft(cur.ulid); toast.success("Draft synced"); }}>
-              Sync
-            </Button>
+        {!!selection.length && (
+          <div className="flex flex-wrap gap-1.5 mt-2">
+            <span className="text-[11px] text-muted-foreground self-center mr-1">Mark all selected:</span>
+            {(Object.keys(DRAFT_META) as DraftCode[]).map((code) => (
+              <Button key={code} size="sm" variant="outline" className="h-7 text-[11px]"
+                onClick={() => markSelection(code)}>
+                {code}
+              </Button>
+            ))}
           </div>
         )}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-4">
-          {(Object.keys(DRAFT_META) as DraftCode[]).map((code) => (
-            <button key={code} onClick={() => mark(code)}
-              className="rounded-lg border border-border p-3 text-left hover:border-primary hover:bg-primary/5 transition">
-              <div className="font-semibold text-sm">{DRAFT_META[code].label}</div>
-              <div className="text-[11px] text-muted-foreground">{DRAFT_META[code].hint}</div>
-            </button>
+      </div>
+
+      {/* ── Current chat card ── */}
+      {cur ? (
+        <div className="rounded-lg border border-border bg-card p-4">
+          <div className="flex items-center justify-between mb-3">
+            <div className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">
+              {batch
+                ? `Batch ${batch.id} · ${Math.min(i + 1, batchRows.length)} of ${batchRows.length}`
+                : `Drafting · ${Math.min(i + 1, queue.length)} of ${queue.length}`}
+            </div>
+            <Badge variant="outline" className="text-[10px]">
+              <Timer className="h-3 w-3 mr-1" /> ~10s per chat
+            </Badge>
+          </div>
+          <div className="text-lg font-semibold">{meta.get(cur.ulid)?.name ?? cur.ulid}</div>
+          <div className="text-xs text-muted-foreground">
+            {meta.get(cur.ulid)?.phone} · {meta.get(cur.ulid)?.area} · last message {rel(cur.lastCustomerMsgAt)} ago
+          </div>
+          {cur.waDraft && cur.crmDraft && cur.waDraft !== cur.crmDraft && (
+            <div className="mt-2 text-xs text-warning flex items-center gap-1">
+              <AlertTriangle className="h-3 w-3" />
+              WhatsApp says {cur.waDraft}, CRM says {cur.crmDraft}
+              <Button size="sm" variant="ghost" className="h-6 text-[11px]"
+                onClick={() => { mv.syncDraft(cur.ulid); toast.success("Draft synced"); }}>
+                Sync
+              </Button>
+            </div>
+          )}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mt-4">
+            {(Object.keys(DRAFT_META) as DraftCode[]).map((code) => (
+              <button key={code} onClick={() => mark(code)}
+                className="rounded-lg border border-border p-3 text-left hover:border-primary hover:bg-primary/5 transition">
+                <div className="font-semibold text-sm">{DRAFT_META[code].label}</div>
+                <div className="text-[11px] text-muted-foreground">{DRAFT_META[code].hint}</div>
+              </button>
+            ))}
+          </div>
+          <div className="flex gap-2 mt-3">
+            <Button size="sm" variant="ghost" onClick={() => setI((n) => Math.max(0, n - 1))}>Back</Button>
+            <Button size="sm" variant="ghost" onClick={() => setI((n) => n + 1)}>Skip</Button>
+            {batch && (
+              <Button size="sm" variant="outline" className="ml-auto"
+                onClick={() => { mv.endBatch(batch.id); setI(0); toast.success(`Batch ${batch.id} closed`); }}>
+                End batch
+              </Button>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="rounded-lg border border-border bg-card p-6 text-center text-sm text-muted-foreground">
+          <CheckCircle2 className="h-5 w-5 mx-auto mb-2 text-success" />
+          Every conversation is drafted. Nothing hidden, nothing pending.
+        </div>
+      )}
+
+      {/* ── Selectable list ── */}
+      <div className="rounded-lg border border-border bg-card divide-y divide-border">
+        {(batch ? batchRows : queue).map((s, idx) => (
+          <button key={s.ulid} onClick={() => mv.toggleSelect(s.ulid)}
+            className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-muted/50 transition">
+            <span className={cn(
+              "h-4 w-4 rounded border flex items-center justify-center text-[10px]",
+              selected.has(s.ulid) ? "bg-primary border-primary text-primary-foreground" : "border-border",
+            )}>
+              {selected.has(s.ulid) ? "✓" : ""}
+            </span>
+            <span className="text-[11px] text-muted-foreground w-6 tabular-nums">{idx + 1}</span>
+            <span className="text-xs font-medium truncate flex-1">{meta.get(s.ulid)?.name ?? s.ulid}</span>
+            <span className="text-[10px] text-muted-foreground">{rel(s.lastCustomerMsgAt)} ago</span>
+            <DraftChip code={s.crmDraft} />
+          </button>
+        ))}
+        {!(batch ? batchRows : queue).length && (
+          <div className="p-3 text-xs text-muted-foreground">Nothing waiting to be drafted.</div>
+        )}
+      </div>
+
+      {/* ── Batch history ── */}
+      {!!batches.length && (
+        <div className="rounded-lg border border-border bg-card p-3">
+          <div className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold mb-2">
+            Batch history
+          </div>
+          {batches.slice(0, 6).map((b) => (
+            <div key={b.id} className="flex items-center justify-between text-xs py-1">
+              <span>{b.id} · {b.operatorName}</span>
+              <span className="text-muted-foreground tabular-nums">
+                {b.perLeadMs.length}/{b.size} drafted{b.endedAt ? " · closed" : " · live"}
+              </span>
+            </div>
           ))}
         </div>
-        <div className="flex gap-2 mt-3">
-          <Button size="sm" variant="ghost" onClick={() => setI((n) => Math.max(0, n - 1))}>Back</Button>
-          <Button size="sm" variant="ghost" onClick={() => setI((n) => n + 1)}>Skip</Button>
-        </div>
-      </div>
+      )}
     </div>
   );
 }
+
 
 /* ─────────────── Active 13 ─────────────── */
 
@@ -208,7 +315,7 @@ export function WorkPanel({ ulid, meta }: { ulid: string | null; meta: Meta }) {
             <Unlock className="h-3.5 w-3.5 mr-1" /> Release
           </Button>
         ) : (
-          <Button size="sm" onClick={() => mv.claim(ulid, "work this customer")}>
+          <Button size="sm" onClick={() => mv.attemptClaim(ulid, "work", "work this customer")}>
             <Play className="h-3.5 w-3.5 mr-1" /> Start work
           </Button>
         )}
@@ -417,7 +524,15 @@ export function Dashboards({ list, meta }: { list: MovementState[]; meta: Meta }
             {(["1PM", "5PM", "EOD"] as const).map((lbl) => (
               <Button key={lbl} size="sm" variant="outline" className="h-7 text-[11px]"
                 onClick={() => {
-                  snapshot(lbl, t as unknown as Record<string, number>);
+                  snapshot({
+                    label: lbl,
+                    operatorId: "u-self",
+                    totals: t as unknown as Record<string, number>,
+                    required: { drafted: 30, calls: 20, tours: 4, booked: 2 },
+                    status: t.booked >= 2 ? "ON TRACK" : "BEHIND",
+                    mainLeak: lk.find((l) => l.count > 0)?.label ?? "none",
+                    inference: `${t.drafted}/${t.conversations} drafted · ${t.connected}/${t.calls} connected · ${t.booked} booked`,
+                  });
                   toast.success(`${lbl} checkpoint saved`);
                 }}>
                 {lbl} checkpoint

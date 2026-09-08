@@ -110,3 +110,27 @@ export function drafting30(states: MovementState[]): MovementState[] {
     .sort((a, b) => +new Date(b.lastCustomerMsgAt ?? b.updatedAt) - +new Date(a.lastCustomerMsgAt ?? a.updatedAt))
     .slice(0, 30);
 }
+
+/** Good-lead gate — derived from progressive qualification, never a manual flag. */
+export function evaluateGoodLead(st: MovementState): { good: boolean; reasons: string[] } {
+  const q = st.q ?? {};
+  const reasons: string[] = [];
+  if (q.moveInDate) reasons.push("Check-in date known");
+  if (q.location) reasons.push("Location known");
+  if (q.budget) reasons.push("Budget known");
+  if (q.inBangalore) reasons.push("In Bangalore");
+  if (q.responding !== false) reasons.push("Responding");
+  if (q.priceIntent === "ok" || q.priceIntent === "stretch") reasons.push("Price acceptable");
+  if (q.inventoryFit) reasons.push("Inventory fits");
+  const blockers: string[] = [];
+  if (q.responding === false) blockers.push("Not responding");
+  if (q.priceIntent === "no") blockers.push("Price rejected");
+  if (q.feasible === false) blockers.push("Not feasible");
+  if (q.inBangalore === false && !q.moveInDate) blockers.push("Outside city, no date");
+  const good =
+    blockers.length === 0 &&
+    Boolean(q.moveInDate) &&
+    Boolean(q.location || q.officeOrCollege) &&
+    Boolean(q.budget);
+  return { good, reasons: blockers.length ? blockers : reasons };
+}
