@@ -22,7 +22,9 @@ const inHrs = (h: number) => new Date(Date.now() + h * 3600_000).toISOString();
 export function seedMovement() {
   if (typeof window === "undefined") return;
   seedWaInbox();
+  backfillIdentity();
   if (window.localStorage.getItem(SEED_KEY)) return;
+
 
   const id = useIdentityStore.getState();
   const existing = new Set(id.leads.map((l) => l.name));
