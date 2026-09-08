@@ -4,6 +4,7 @@ import {
   Building2, Search, Sun, Command, Trophy, Sparkles, MessageSquare,
   IndianRupee, MapPin, Zap, Users, Home, Calendar, Store, Swords, Settings, AlertTriangle,
   ShieldCheck, Inbox, Camera, HelpCircle, Layers, HeartPulse, ClipboardCheck, ListChecks, Timer,
+  Compass,
 } from "lucide-react";
 import { NotificationCenter } from "./NotificationCenter";
 import { ProfileMenu } from "./ProfileMenu";
@@ -127,6 +128,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       { to: "/myt/bookings", label: "Bookings", icon: ClipboardList },
       { to: "/activity", label: "Activity", icon: Activity },
       { to: "/wa", label: "WhatsApp CRM", icon: MessageSquare, accent: true },
+      { to: "/movement", label: "Movement OS", icon: Compass, accent: true },
       { to: "/inbox", label: "Inbox", icon: Inbox },
       { to: "/myt/settings", label: "Settings", icon: Settings },
       { to: "/manager", label: "Manager Dash", icon: Activity, accent: true },
@@ -143,6 +145,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       { to: "/today", label: "Today", icon: Sun, badge: queue.length },
       { to: "/execution", label: "Execution", icon: Zap, accent: true },
       { to: "/wa", label: "WhatsApp CRM", icon: MessageSquare, accent: true },
+      { to: "/movement", label: "Movement OS", icon: Compass, accent: true },
       { to: "/inbox", label: "Inbox", icon: Inbox },
       { to: "/myt/flow-ops", label: "Flow Ops", icon: LayoutDashboard },
       { to: "/calendar", label: "Calendar", icon: Calendar },
@@ -215,6 +218,7 @@ export function AppShell({ children }: { children: ReactNode }) {
       { to: "/myt/tcm/performance", label: "My Stats", icon: Activity },
       { to: "/myt/score", label: "Score", icon: Trophy },
       { to: "/wa", label: "WhatsApp CRM", icon: MessageSquare, accent: true },
+      { to: "/movement", label: "Movement OS", icon: Compass, accent: true },
       { to: "/inbox", label: "Inbox", icon: Inbox },
       { to: "/queue", label: "Action Queue", icon: Zap, accent: true },
       { to: "/zone-brain", label: "Zone Brain", icon: MapPin },
@@ -225,6 +229,7 @@ export function AppShell({ children }: { children: ReactNode }) {
     owner: [
       { to: "/coach", label: "Coach", icon: Sparkles, accent: true },
       { to: "/wa", label: "WhatsApp CRM", icon: MessageSquare, accent: true },
+      { to: "/movement", label: "Movement OS", icon: Compass, accent: true },
       { to: "/inbox", label: "Inbox", icon: Inbox },
       { to: "/owner", label: "Owner Home", icon: ShieldCheck },
       { to: "/owner/inventory", label: "My Inventory", icon: Layers },
