@@ -13,6 +13,8 @@ import { seedMovement } from "@/movement/seed";
 import { DRAFT_META, type DraftCode, type MovementState } from "@/movement/types";
 import { last4, parseTokens, roundPace, useFinalMoment, type RoundLabel } from "./store";
 import { LogActivity } from "./LogActivity";
+import { BridgePanel } from "./BridgePanel";
+import { ensureStuckChats, ingestMessage } from "./bridge";
 
 const ROUNDS: RoundLabel[] = ["D1", "D2", "D3", "D4"];
 const DAILY_CONNECT_TARGET = 70;
@@ -51,6 +53,9 @@ export function FinalMoment() {
 
   useEffect(() => {
     seedMovement();
+    // real stuck WhatsApp chats so every 30-chat draft is real work
+    const made = ensureStuckChats(40);
+    if (made) toast.success(`${made} stuck WhatsApp chats pulled into the draft pool`);
   }, []);
 
   const states = useMemo(
@@ -83,6 +88,27 @@ export function FinalMoment() {
       )
       .slice(0, 8);
   }, [query, states]);
+
+  /** digits typed so far — the 4-digit parser lights up as soon as we have 4 */
+  const typedDigits = query.replace(/\D/g, "");
+
+  /** no CRM chat for these digits: the bridge opens a shadow lead and drafts it */
+  function addTypedNumber() {
+    const l4 = typedDigits.slice(-4);
+    const phone = typedDigits.length >= 10 ? typedDigits : `9${l4.padStart(9, "0")}`;
+    const row = ingestMessage({
+      phoneRaw: phone,
+      name: `WA ···${l4}`,
+      text: "Marked 111111 on WhatsApp",
+    });
+    const st = row.ulid ? useMovement.getState().states[row.ulid] : null;
+    if (!st) {
+      toast.error("Could not open that chat");
+      return;
+    }
+    addLead(st);
+    toast.success(`···${l4} added from WhatsApp`);
+  }
 
   const markTimer = fm.markTimers?.[label];
   const elapsed = markTimer
@@ -363,6 +389,13 @@ export function FinalMoment() {
 
       </header>
 
+      {!activeRound && (
+        <BridgePanel
+          onAdd={(s) => addLead(s)}
+          inDraft={(u) => fm.picks.includes(u)}
+        />
+      )}
+
       {!activeRound ? (
         /* ------------------------------ MARK 30 ----------------------------- */
         <section className="grid gap-4 lg:grid-cols-[1fr_360px]">
@@ -384,9 +417,31 @@ export function FinalMoment() {
                 fm.startMarkTimer(label);
               }}
               onKeyDown={(e) => {
-                if (e.key === "Enter" && results[0]) addLead(results[0]);
+                if (e.key !== "Enter") return;
+                if (results[0]) addLead(results[0]);
+                else if (typedDigits.length >= 4) addTypedNumber();
               }}
             />
+
+            {/* live parser — the moment 4 digits are typed, offer the add */}
+            {typedDigits.length >= 4 && (
+              <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-primary/40 bg-primary/5 p-2">
+                <div className="min-w-0 text-xs">
+                  <span className="font-mono font-semibold">···{typedDigits.slice(-4)}</span>{" "}
+                  {results.length ? (
+                    <span className="text-muted-foreground">
+                      {results.length} chat{results.length > 1 ? "s" : ""} matched — {results[0].name ?? "Unknown"}
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">no CRM chat — the bridge will create one</span>
+                  )}
+                </div>
+                <Button size="sm" onClick={() => (results[0] ? addLead(results[0]) : addTypedNumber())}>
+                  Add this lead
+                </Button>
+              </div>
+            )}
+
             {!!results.length && (
               <ul className="divide-y rounded-lg border">
                 {results.map((s) => {
@@ -699,7 +754,10 @@ export function FinalMoment() {
                           () => {
                             mv.draft(current.ulid, "D1");
                             mv.qualify(current.ulid, true);
+                            mv.setStage(current.ulid, "negotiation", "Marked definite close");
+                            mv.log(current.ulid, "note", "Definite close — committed by customer");
                             fm.bump("closed");
+                            fm.markDone(current.ulid);
                           },
                           undefined,
                           "Marked as definite close",

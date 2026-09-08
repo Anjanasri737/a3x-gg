@@ -60,6 +60,7 @@ import { Route as TowerQualityRouteImport } from './routes/tower.quality'
 import { Route as TowerMyLeadsRouteImport } from './routes/tower.my-leads'
 import { Route as TowerInterventionsRouteImport } from './routes/tower.interventions'
 import { Route as TowerGuideRouteImport } from './routes/tower.guide'
+import { Route as TowerFinalMomentRouteImport } from './routes/tower.final-moment'
 import { Route as TowerFeedbackRouteImport } from './routes/tower.feedback'
 import { Route as TowerEodRouteImport } from './routes/tower.eod'
 import { Route as TowerDashboardRouteImport } from './routes/tower.dashboard'
@@ -379,6 +380,11 @@ const TowerInterventionsRoute = TowerInterventionsRouteImport.update({
 const TowerGuideRoute = TowerGuideRouteImport.update({
   id: '/guide',
   path: '/guide',
+  getParentRoute: () => TowerRoute,
+} as any)
+const TowerFinalMomentRoute = TowerFinalMomentRouteImport.update({
+  id: '/final-moment',
+  path: '/final-moment',
   getParentRoute: () => TowerRoute,
 } as any)
 const TowerFeedbackRoute = TowerFeedbackRouteImport.update({
@@ -802,6 +808,7 @@ export interface FileRoutesByFullPath {
   '/tower/dashboard': typeof TowerDashboardRoute
   '/tower/eod': typeof TowerEodRoute
   '/tower/feedback': typeof TowerFeedbackRoute
+  '/tower/final-moment': typeof TowerFinalMomentRoute
   '/tower/guide': typeof TowerGuideRoute
   '/tower/interventions': typeof TowerInterventionsRoute
   '/tower/my-leads': typeof TowerMyLeadsRoute
@@ -918,6 +925,7 @@ export interface FileRoutesByTo {
   '/tower/dashboard': typeof TowerDashboardRoute
   '/tower/eod': typeof TowerEodRoute
   '/tower/feedback': typeof TowerFeedbackRoute
+  '/tower/final-moment': typeof TowerFinalMomentRoute
   '/tower/guide': typeof TowerGuideRoute
   '/tower/interventions': typeof TowerInterventionsRoute
   '/tower/my-leads': typeof TowerMyLeadsRoute
@@ -1037,6 +1045,7 @@ export interface FileRoutesById {
   '/tower/dashboard': typeof TowerDashboardRoute
   '/tower/eod': typeof TowerEodRoute
   '/tower/feedback': typeof TowerFeedbackRoute
+  '/tower/final-moment': typeof TowerFinalMomentRoute
   '/tower/guide': typeof TowerGuideRoute
   '/tower/interventions': typeof TowerInterventionsRoute
   '/tower/my-leads': typeof TowerMyLeadsRoute
@@ -1157,6 +1166,7 @@ export interface FileRouteTypes {
     | '/tower/dashboard'
     | '/tower/eod'
     | '/tower/feedback'
+    | '/tower/final-moment'
     | '/tower/guide'
     | '/tower/interventions'
     | '/tower/my-leads'
@@ -1273,6 +1283,7 @@ export interface FileRouteTypes {
     | '/tower/dashboard'
     | '/tower/eod'
     | '/tower/feedback'
+    | '/tower/final-moment'
     | '/tower/guide'
     | '/tower/interventions'
     | '/tower/my-leads'
@@ -1391,6 +1402,7 @@ export interface FileRouteTypes {
     | '/tower/dashboard'
     | '/tower/eod'
     | '/tower/feedback'
+    | '/tower/final-moment'
     | '/tower/guide'
     | '/tower/interventions'
     | '/tower/my-leads'
@@ -1857,6 +1869,13 @@ declare module '@tanstack/react-router' {
       path: '/guide'
       fullPath: '/tower/guide'
       preLoaderRoute: typeof TowerGuideRouteImport
+      parentRoute: typeof TowerRoute
+    }
+    '/tower/final-moment': {
+      id: '/tower/final-moment'
+      path: '/final-moment'
+      fullPath: '/tower/final-moment'
+      preLoaderRoute: typeof TowerFinalMomentRouteImport
       parentRoute: typeof TowerRoute
     }
     '/tower/feedback': {
@@ -2369,6 +2388,7 @@ interface TowerRouteChildren {
   TowerDashboardRoute: typeof TowerDashboardRoute
   TowerEodRoute: typeof TowerEodRoute
   TowerFeedbackRoute: typeof TowerFeedbackRoute
+  TowerFinalMomentRoute: typeof TowerFinalMomentRoute
   TowerGuideRoute: typeof TowerGuideRoute
   TowerInterventionsRoute: typeof TowerInterventionsRoute
   TowerMyLeadsRoute: typeof TowerMyLeadsRoute
@@ -2389,6 +2409,7 @@ const TowerRouteChildren: TowerRouteChildren = {
   TowerDashboardRoute: TowerDashboardRoute,
   TowerEodRoute: TowerEodRoute,
   TowerFeedbackRoute: TowerFeedbackRoute,
+  TowerFinalMomentRoute: TowerFinalMomentRoute,
   TowerGuideRoute: TowerGuideRoute,
   TowerInterventionsRoute: TowerInterventionsRoute,
   TowerMyLeadsRoute: TowerMyLeadsRoute,
