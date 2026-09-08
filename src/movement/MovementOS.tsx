@@ -8,7 +8,7 @@ import {
 } from "./components";
 
 export function MovementOS() {
-  useEffect(() => { try { console.log("SEED start"); seedMovement(); console.log("SEED done"); } catch (e) { console.log("SEED err", String(e)); } }, []);
+  useEffect(() => { seedMovement(); }, []);
   const { list, nameOf, me } = useMovementSync();
   const [selected, setSelected] = useState<string | null>(null);
 
