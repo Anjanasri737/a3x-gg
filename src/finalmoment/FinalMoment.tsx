@@ -14,6 +14,8 @@ import { DRAFT_META, type DraftCode, type MovementState } from "@/movement/types
 import { last4, parseTokens, roundPace, useFinalMoment, type RoundLabel } from "./store";
 import { LogActivity } from "./LogActivity";
 import { BridgePanel } from "./BridgePanel";
+import { DraftVisionPanel } from "./DraftVisionPanel";
+
 import { ensureStuckChats, ingestMessage } from "./bridge";
 
 const ROUNDS: RoundLabel[] = ["D1", "D2", "D3", "D4"];
