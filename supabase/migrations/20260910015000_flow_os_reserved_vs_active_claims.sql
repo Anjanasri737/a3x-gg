@@ -5,11 +5,12 @@ alter table public.flow_work_claims
   add constraint flow_work_claims_state_check
   check (state in ('reserved','active','released','expired','completed','taken_over'));
 
--- Existing rows created by earlier migration are safe; they remain active.
+-- One customer may be reserved OR actively worked by only one operator.
 drop index if exists public.flow_one_active_claim_per_lead;
 create unique index if not exists flow_one_open_claim_per_lead
   on public.flow_work_claims(lead_id) where state in ('reserved','active');
 
+-- One unfinished Draft 30 per operator keeps the work contract clear.
 create unique index if not exists flow_one_open_batch_per_operator
   on public.flow_draft_batches(operator_id) where status='open';
 
@@ -23,7 +24,9 @@ returns table(ok boolean, claim_id uuid, current_operator text, reason text)
 language plpgsql security definer set search_path=public as $$
 declare v_claim public.flow_work_claims%rowtype;
 begin
-  -- Only live active work expires automatically. Batch reservations do not.
+  -- Only live work can time out. A timed-out live lock returns to the same
+  -- operator's batch reservation; it does not suddenly become available to a
+  -- second operator while still inside Draft 30.
   update public.flow_work_claims
      set state='reserved', last_meaningful_activity_at=now()
    where lead_id=p_lead_id and state='active' and operator_id=p_operator_id and expires_at <= now();
@@ -48,7 +51,8 @@ begin
   return query select true,v_claim.id,p_operator_name,'reserved';
 end; $$;
 
--- Open / Resume converts the operator's own reservation into an active 10-minute lock.
+-- Open / Resume converts the operator's own reservation into an active
+-- 10-minute handler lock. A direct lead outside a Draft may be claimed active.
 create or replace function public.flow_claim_lead(
   p_lead_id uuid,
   p_operator_id uuid,
@@ -59,8 +63,12 @@ returns table(ok boolean, claim_id uuid, current_operator text, reason text)
 language plpgsql security definer set search_path=public as $$
 declare v_claim public.flow_work_claims%rowtype;
 begin
+  -- An expired live edit lock falls back to its reservation instead of
+  -- abandoning the lead from its operator's Draft 30.
   update public.flow_work_claims
-     set state='reserved'
+     set state=case when draft_batch_id is not null then 'reserved' else 'expired' end,
+         released_at=case when draft_batch_id is null then now() else released_at end,
+         release_reason=case when draft_batch_id is null then 'idle timeout' else release_reason end
    where lead_id=p_lead_id and state='active' and expires_at <= now();
 
   select * into v_claim from public.flow_work_claims
@@ -81,8 +89,17 @@ begin
     return;
   end if;
 
+  -- No reservation exists. A caller with a batch is creating the reservation
+  -- phase; a caller without a batch is explicitly opening the lead live.
+  if p_batch_id is not null then
+    insert into public.flow_work_claims(lead_id,operator_id,operator_name,draft_batch_id,state,expires_at)
+    values(p_lead_id,p_operator_id,p_operator_name,p_batch_id,'reserved',now()+interval '10 minutes') returning * into v_claim;
+    return query select true,v_claim.id,p_operator_name,'reserved';
+    return;
+  end if;
+
   insert into public.flow_work_claims(lead_id,operator_id,operator_name,draft_batch_id,state)
-  values(p_lead_id,p_operator_id,p_operator_name,p_batch_id,'active') returning * into v_claim;
+  values(p_lead_id,p_operator_id,p_operator_name,null,'active') returning * into v_claim;
   update public.leads set current_handler_id=p_operator_id,current_handler_name=p_operator_name where id=p_lead_id;
   return query select true,v_claim.id,p_operator_name,'claimed';
 end; $$;
