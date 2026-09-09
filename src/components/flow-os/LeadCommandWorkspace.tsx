@@ -1,15 +1,14 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Phone, MessageSquare, Clock3, MoreHorizontal, ArrowRight, CalendarClock, CheckCircle2, AlertTriangle } from "lucide-react";
+import { Phone, MessageSquare, Clock3, MoreHorizontal, ArrowRight, CalendarClock, CheckCircle2, AlertTriangle, ExternalLink } from "lucide-react";
 import { ChatSignalStrip } from "./ChatSignalStrip";
+import { QuoteBookingPanel, CheckInPanel } from "./CommercialFlowPanel";
+import { classifyLastMessage } from "@/lib/flow-os/chat-intelligence";
 import {
-  classifyLastMessage,
-  type SuggestedCommercialStage,
-} from "@/lib/flow-os/chat-intelligence";
-import {
+  claimLead,
   completeAndNext,
   confirmSuggestedStage,
   heartbeatClaim,
@@ -43,7 +42,7 @@ function primaryActionFor(stage?: string | null) {
     TOUR_IN_PROGRESS: "COMPLETE TOUR",
     POST_VISIT: "SEND QUOTATION",
     QUOTED: "FOLLOW UP QUOTE",
-    NEGOTIATION: "RECORD PAYMENT",
+    NEGOTIATION: "RECORD / VERIFY PAYMENT",
     BOOKED: "CHECK-IN READINESS",
     CHECK_IN_READY: "CONFIRM CHECK-IN",
     CHECKED_IN: "CHECKED IN",
@@ -67,6 +66,7 @@ export function LeadCommandWorkspace({
   const [section, setSection] = useState<Section>("WhatsApp Intelligence");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [claimConflict, setClaimConflict] = useState<string | null>(null);
   const [futureOpen, setFutureOpen] = useState(false);
   const [futureDate, setFutureDate] = useState("");
   const [followUpAt, setFollowUpAt] = useState("");
@@ -82,8 +82,31 @@ export function LeadCommandWorkspace({
   const latestMessage = item.latestObservation?.last_message ?? item.lead.last_wa_message ?? "";
   const suggestion = useMemo(() => classifyLastMessage(latestMessage), [latestMessage]);
   const claimOwnedByMe = !item.claim || item.claim.operator_id === operator.id;
-  const currentHandler = item.claim?.operator_name ?? item.lead.current_handler_name ?? null;
+  const currentHandler = item.claim?.state === "active"
+    ? item.claim.operator_name
+    : item.lead.current_handler_name ?? null;
   const waDigits = item.lead.phone?.replace(/\D/g, "") ?? "";
+  const canAct = claimOwnedByMe && !claimConflict;
+
+  useEffect(() => {
+    let cancelled = false;
+    claimLead(item.lead.id, item.batchId)
+      .then(async (result: any) => {
+        if (cancelled) return;
+        if (result && result.ok === false) {
+          setClaimConflict(`Currently handled/reserved by ${result.current_operator || "another operator"}`);
+          return;
+        }
+        setClaimConflict(null);
+        await onChanged?.();
+      })
+      .catch((error) => {
+        if (!cancelled) setClaimConflict(error instanceof Error ? error.message : "Could not activate work claim");
+      });
+    return () => { cancelled = true; };
+    // Deliberately only re-acquire when switching customer/batch.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [item.lead.id, item.batchId]);
 
   async function run(action: () => Promise<unknown>, success: string) {
     setBusy(true);
@@ -128,21 +151,21 @@ export function LeadCommandWorkspace({
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" asChild>
+            <Button variant="outline" size="sm" asChild disabled={!canAct}>
               <a href={`tel:${item.lead.phone}`}><Phone className="mr-1.5 h-4 w-4" />Call</a>
             </Button>
-            <Button variant="outline" size="sm" asChild>
+            <Button variant="outline" size="sm" asChild disabled={!canAct}>
               <a href={`https://wa.me/${waDigits}`} target="_blank" rel="noreferrer"><MessageSquare className="mr-1.5 h-4 w-4" />WhatsApp</a>
             </Button>
-            <Button variant="outline" size="sm" onClick={() => setCompleteOpen(true)}><Clock3 className="mr-1.5 h-4 w-4" />Follow-up</Button>
+            <Button variant="outline" size="sm" disabled={!canAct} onClick={() => setCompleteOpen(true)}><Clock3 className="mr-1.5 h-4 w-4" />Follow-up</Button>
             <Button variant="outline" size="icon" aria-label="More"><MoreHorizontal className="h-4 w-4" /></Button>
             {onClose && <Button variant="ghost" size="sm" onClick={onClose}>Close</Button>}
           </div>
         </div>
 
-        {!claimOwnedByMe && (
+        {(claimConflict || !claimOwnedByMe) && (
           <div className="mt-3 flex items-center justify-between gap-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-950 dark:bg-amber-950/30 dark:text-amber-100">
-            <span><b>Read only.</b> This chat is actively handled by {currentHandler || "another operator"}.</span>
+            <span><b>Read only.</b> {claimConflict || `This chat is actively handled by ${currentHandler || "another operator"}.`}</span>
             <Button size="sm" variant="outline" disabled={busy || !item.claim?.id} onClick={() => item.claim?.id && run(() => requestTakeover(item.claim!.id), "Takeover requested")}>Request takeover</Button>
           </div>
         )}
@@ -197,7 +220,7 @@ export function LeadCommandWorkspace({
                   <div className="text-sm">{suggestion.suggestedMission}</div>
                   <div className="mt-2 text-xs text-muted-foreground">Confidence {Math.round(suggestion.confidence * 100)}% · {suggestion.evidence.join(" · ")}</div>
                 </div>
-                {suggestion.suggestedStage !== "UNKNOWN" && suggestion.suggestedStage !== item.lead.pipeline_stage && claimOwnedByMe && (
+                {suggestion.suggestedStage !== "UNKNOWN" && suggestion.suggestedStage !== item.lead.pipeline_stage && canAct && (
                   <Button disabled={busy} onClick={() => run(
                     () => confirmSuggestedStage(item.lead.id, suggestion.suggestedStage, suggestion.suggestedMission),
                     `Stage confirmed as ${formatStage(suggestion.suggestedStage)}`,
@@ -215,20 +238,32 @@ export function LeadCommandWorkspace({
         )}
 
         {section === "Properties" && (
-          <StagePanel title="Property Match" stage={item.lead.pipeline_stage} description="Reuse the existing Gharpayy property matching capability here. The canonical mission decides when this section becomes primary; do not create a second lead state." primary="Open strongest two options" />
+          <StagePanel
+            title="Property Match"
+            stage={item.lead.pipeline_stage}
+            description="Use the existing Gharpayy supply/matching engine. Flow OS keeps the customer identity, claim and mission canonical while supply remains the capability source."
+            primary="Open Lead Matcher"
+            href="/supply-hub/match"
+          />
         )}
         {section === "Tour" && (
-          <StagePanel title="Tour" stage={item.lead.pipeline_stage} description="Schedule, confirm, start, complete, no-show and reschedule should all write one canonical tour path. Existing Tour buttons should enter this same section." primary={primaryActionFor(item.lead.pipeline_stage)} />
+          <StagePanel
+            title="Tour"
+            stage={item.lead.pipeline_stage}
+            description="Use the existing scheduling capability for exact property/date/coordinator. Every Tour entry point should return to this same customer and canonical stage."
+            primary={primaryActionFor(item.lead.pipeline_stage)}
+            href="/myt/schedule"
+          />
         )}
         {section === "Booking" && (
-          <StagePanel title="Quote / Booking / Payment" stage={item.lead.pipeline_stage} description="Quotation statuses are events (saved, copied, sent, accepted), not duplicate buttons. Record Payment is separate from Check-in readiness." primary={primaryActionFor(item.lead.pipeline_stage)} />
+          <QuoteBookingPanel leadId={item.lead.id} canAct={canAct} onChanged={onChanged} />
         )}
         {section === "Check-in" && (
-          <StagePanel title="Check-in gates" stage={item.lead.pipeline_stage} description="Payment, room/bed, owner approval, KYC and agreement must be complete before Confirm Check-in can become the primary action." primary={primaryActionFor(item.lead.pipeline_stage)} />
+          <CheckInPanel leadId={item.lead.id} canAct={canAct} onChanged={onChanged} />
         )}
         {section === "Timeline" && (
           <div className="space-y-2 text-sm text-muted-foreground">
-            <p>Every screenshot observation, claim, call, WhatsApp movement, stage confirmation, next action, tour, quote, payment and check-in event belongs to this lead's one timeline.</p>
+            <p>Every screenshot observation, claim, call, WhatsApp movement, stage confirmation, next action, tour, quote, payment, approval and check-in event belongs to this lead's one timeline.</p>
             <p>Latest observation ID: {item.latestObservation?.id || "—"}</p>
             <p>Draft batch: {item.batchId} · Position {item.position}/30 · ROI {Math.round(item.roiScore)}</p>
           </div>
@@ -248,7 +283,7 @@ export function LeadCommandWorkspace({
               <Input value={futureOutcome} onChange={(e) => setFutureOutcome(e.target.value)} placeholder="Desired next outcome" />
             </div>
             <div className="mt-3 flex gap-2">
-              <Button disabled={busy || !followUpAt || !futureReason} onClick={() => run(async () => {
+              <Button disabled={busy || !followUpAt || !futureReason || !canAct} onClick={() => run(async () => {
                 await moveLeadToFuture({
                   leadId: item.lead.id,
                   itemId: item.itemId,
@@ -275,7 +310,7 @@ export function LeadCommandWorkspace({
               <Input className="md:col-span-2" value={blocker} onChange={(e) => setBlocker(e.target.value)} placeholder="Primary blocker (optional)" />
             </div>
             <div className="mt-3 flex gap-2">
-              <Button disabled={busy || !disposition} onClick={() => run(async () => {
+              <Button disabled={busy || !disposition || !canAct} onClick={() => run(async () => {
                 await completeAndNext({
                   leadId: item.lead.id,
                   itemId: item.itemId,
@@ -300,8 +335,15 @@ export function LeadCommandWorkspace({
             {item.lead.primary_blocker && <div className="mt-0.5 flex items-center gap-1 text-xs text-amber-700"><AlertTriangle className="h-3.5 w-3.5" />{item.lead.primary_blocker}</div>}
           </div>
           <div className="flex gap-2">
-            <Button variant="outline" disabled={!claimOwnedByMe || busy} onClick={() => setFutureOpen(true)}>Move to Future</Button>
-            <Button disabled={!claimOwnedByMe || busy} onClick={() => setCompleteOpen(true)}>{primaryActionFor(item.lead.pipeline_stage)} <ArrowRight className="ml-1.5 h-4 w-4" /></Button>
+            <Button variant="outline" disabled={!canAct || busy} onClick={() => setFutureOpen(true)}>Move to Future</Button>
+            <Button disabled={!canAct || busy} onClick={() => {
+              const s = (item.lead.pipeline_stage || "NEW").toUpperCase();
+              if (["QUOTED", "NEGOTIATION", "BOOKED", "CHECK_IN_READY"].includes(s)) {
+                setSection(s === "BOOKED" || s === "CHECK_IN_READY" ? "Check-in" : "Booking");
+              } else {
+                setCompleteOpen(true);
+              }
+            }}>{primaryActionFor(item.lead.pipeline_stage)} <ArrowRight className="ml-1.5 h-4 w-4" /></Button>
           </div>
         </div>
       </div>
@@ -318,18 +360,18 @@ function Info({ label, value, wide }: { label: string; value: string; wide?: boo
   );
 }
 
-function StagePanel({ title, stage, description, primary }: { title: string; stage?: string | null; description: string; primary: string }) {
+function StagePanel({ title, stage, description, primary, href }: { title: string; stage?: string | null; description: string; primary: string; href?: string }) {
   return (
     <Card className="p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <div className="text-lg font-semibold">{title}</div>
-          <div className="mt-1 text-sm text-muted-foreground">{description}</div>
+          <div className="mt-1 max-w-2xl text-sm text-muted-foreground">{description}</div>
           <Badge variant="outline" className="mt-3">Current stage: {formatStage(stage)}</Badge>
         </div>
-        <Button variant="outline" disabled>{primary}</Button>
+        {href ? <Button asChild><a href={href}>{primary}<ExternalLink className="ml-1.5 h-4 w-4" /></a></Button> : <Button variant="outline" disabled>{primary}</Button>}
       </div>
-      <p className="mt-4 text-xs text-muted-foreground">This panel intentionally does not invent a second business record. Existing Gharpayy Tour / Quote / Booking implementations are the capability source; Flow OS owns identity, work claim, mission, blocker and next-action truth.</p>
+      <p className="mt-4 text-xs text-muted-foreground">No duplicate business record is created here. Existing Gharpayy capability surfaces execute the specialized workflow; Flow OS remains the shared identity, stage, mission, blocker, claim and next-action layer.</p>
     </Card>
   );
 }
