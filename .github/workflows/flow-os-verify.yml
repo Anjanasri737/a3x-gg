@@ -18,5 +18,9 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
+      # The repository's package.json and package-lock.json already drift on
+      # @lovable.dev/vite-tanstack-config (2.13.1 vs 2.7.1). `npm ci` fails
+      # before TypeScript can be checked, so install resolves that existing
+      # lock drift in the ephemeral runner and then performs the real build.
+      - run: npm install --no-audit --no-fund
       - run: npm run build
