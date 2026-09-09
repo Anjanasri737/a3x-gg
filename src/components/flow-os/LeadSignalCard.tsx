@@ -16,18 +16,18 @@ function SeenIcon({ state }: { state?: string | null }) {
   return <Eye className="h-3.5 w-3.5" />;
 }
 
-export function LeadSignalCard({
-  lead,
-  onPrimary,
-  primaryLabel,
-  compact = false,
-}: {
-  lead: TruthRow;
-  onPrimary?: () => void;
-  primaryLabel?: string;
-  compact?: boolean;
+type NamedTruth = TruthRow & {
+  current_pipeline_stage?: string | null;
+  current_owner_name?: string | null;
+  current_handler_name?: string | null;
+  current_batch_id?: string | null;
+};
+
+export function LeadSignalCard({ lead, onPrimary, primaryLabel, compact = false }: {
+  lead: TruthRow; onPrimary?: () => void; primaryLabel?: string; compact?: boolean;
 }) {
-  const savedStage = (lead as TruthRow & { current_pipeline_stage?: string | null }).current_pipeline_stage || lead.lead_status || null;
+  const named = lead as NamedTruth;
+  const savedStage = named.current_pipeline_stage || lead.lead_status || null;
   const intelligence = inferMessageIntelligence({
     lastMessage: lead.last_message_preview,
     direction: lead.preview_direction as any,
@@ -39,7 +39,8 @@ export function LeadSignalCard({
   });
   const hintStage = lead.stage_inference || intelligence.inferredPipelineHint;
   const mismatch = Boolean(savedStage && hintStage && savedStage !== hintStage);
-  const handler = lead.current_handler || lead.handler_hint;
+  const handlerName = named.current_handler_name || lead.handler_hint;
+  const ownerName = named.current_owner_name;
 
   return (
     <div className={`rounded-xl border p-3 space-y-2 ${syncClass(lead.sync_state)}`}>
@@ -48,17 +49,13 @@ export function LeadSignalCard({
           <div className="flex items-center gap-2 flex-wrap">
             <div className="font-semibold text-sm truncate">{lead.wa_name || "Unknown customer"}</div>
             <Badge variant="outline" className="text-[10px]">{lead.sync_state}</Badge>
-            <Badge variant="secondary" className="text-[10px] flex gap-1 items-center">
-              <SeenIcon state={lead.seen_state} /> {lead.seen_state || "unknown"}
-            </Badge>
+            <Badge variant="secondary" className="text-[10px] flex gap-1 items-center"><SeenIcon state={lead.seen_state} /> {lead.seen_state || "unknown"}</Badge>
             {lead.color_hint && <Badge variant="outline" className="text-[10px]">Colour: {lead.color_hint}</Badge>}
             {lead.detected_label && <Badge className="text-[10px]">{lead.detected_label}</Badge>}
           </div>
           <div className="text-[11px] text-muted-foreground mt-0.5">{lead.phone}</div>
         </div>
-        <div className="text-right text-[10px] text-muted-foreground shrink-0">
-          {lead.latest_observation_at ? new Date(lead.latest_observation_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "—"}
-        </div>
+        <div className="text-right text-[10px] text-muted-foreground shrink-0">{lead.latest_observation_at ? new Date(lead.latest_observation_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "—"}</div>
       </div>
 
       <div className="rounded-lg border bg-background/70 p-2">
@@ -79,10 +76,8 @@ export function LeadSignalCard({
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
           <div className="rounded-md border bg-background/70 p-2">
             <div className="text-muted-foreground uppercase tracking-wide text-[9px]">Who is handling this?</div>
-            <div className="font-medium mt-0.5 flex items-center gap-1.5">
-              <UserRoundCheck className="h-3.5 w-3.5" />
-              {handler ? `Working: ${handler}` : lead.current_owner ? `Owner: ${lead.current_owner}` : "AVAILABLE / UNOWNED"}
-            </div>
+            <div className="font-medium mt-0.5 flex items-center gap-1.5"><UserRoundCheck className="h-3.5 w-3.5" />{handlerName ? `Working now: ${handlerName}` : ownerName ? `Owner: ${ownerName}` : lead.current_owner ? "Owned · handler name unavailable" : "AVAILABLE / UNOWNED"}</div>
+            {named.current_batch_id && <div className="text-muted-foreground mt-0.5">Reserved in Draft batch</div>}
             {lead.claim_expires_at && <div className="text-muted-foreground mt-0.5 flex gap-1 items-center"><Clock3 className="h-3 w-3" /> claim until {new Date(lead.claim_expires_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</div>}
           </div>
           <div className="rounded-md border bg-background/70 p-2">
