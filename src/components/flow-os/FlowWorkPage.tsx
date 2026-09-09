@@ -6,12 +6,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RefreshCw, Zap, Layers3, Clock3, MessageCircle, Play, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { LeadSignalCard } from "./LeadSignalCard";
+import { CompleteNextPanel } from "./CompleteNextPanel";
 import {
   claimLead,
   createDraft30,
   listTruthRows,
   loadMyActiveDraft,
-  releaseClaim,
   type TruthRow,
 } from "@/lib/flow-os/service";
 
@@ -19,6 +19,7 @@ export function FlowWorkPage() {
   const [draft, setDraft] = useState<any>(null);
   const [truth, setTruth] = useState<TruthRow[]>([]);
   const [busy, setBusy] = useState(false);
+  const [disposing, setDisposing] = useState<any>(null);
 
   const load = async () => {
     const [d, t] = await Promise.all([loadMyActiveDraft(), listTruthRows()]);
@@ -28,7 +29,6 @@ export function FlowWorkPage() {
   useEffect(() => { void load(); }, []);
 
   const activeItems = useMemo(() => (draft?.items ?? []).filter((i: any) => i.status === "active").slice(0, 13), [draft]);
-  const queuedItems = useMemo(() => (draft?.items ?? []).filter((i: any) => i.status === "queued"), [draft]);
   const completeItems = useMemo(() => (draft?.items ?? []).filter((i: any) => i.status === "completed"), [draft]);
   const dueNow = truth.filter((r) => r.next_action_at && Date.parse(r.next_action_at) <= Date.now()).length;
   const interrupts = truth.filter((r) => r.unread_visible && (r.sync_state === "RED" || r.sync_state === "AMBER")).length;
@@ -56,14 +56,6 @@ export function FlowWorkPage() {
     }
   }
 
-  async function complete(item: any) {
-    try {
-      if (item.work_claim_id) await releaseClaim(item.work_claim_id, "completed");
-      toast.success("Completed and claim released. Next work can replenish safely.");
-      await load();
-    } catch (e: any) { toast.error(e?.message || "Could not complete item"); }
-  }
-
   return (
     <div className="space-y-4">
       <header className="flex items-end justify-between gap-3 flex-wrap">
@@ -72,7 +64,7 @@ export function FlowWorkPage() {
             <h1 className="text-2xl font-bold tracking-tight">My Flow OS</h1>
             <Badge variant="outline">Draft 30 → Active 13</Badge>
           </div>
-          <p className="text-sm text-muted-foreground mt-1">One customer, one active handler, one mission. Fresh WhatsApp movement can reorder your work without stealing another person's claim.</p>
+          <p className="text-sm text-muted-foreground mt-1">One customer, one active handler, one mission. Fresh WhatsApp movement reorders work without stealing another person's valid claim.</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => void load()}><RefreshCw className="h-4 w-4 mr-2" />Refresh</Button>
@@ -86,6 +78,14 @@ export function FlowWorkPage() {
         <Stat label="Due now" value={dueNow} icon={Clock3} warn={dueNow > 0} />
         <Stat label="Priority interrupts" value={interrupts} icon={MessageCircle} warn={interrupts > 0} />
       </div>
+
+      {disposing && (
+        <CompleteNextPanel
+          item={disposing}
+          onClose={() => setDisposing(null)}
+          onDone={async () => { setDisposing(null); await load(); }}
+        />
+      )}
 
       <Tabs defaultValue="now" className="space-y-3">
         <TabsList className="h-auto flex-wrap">
@@ -105,7 +105,11 @@ export function FlowWorkPage() {
           {activeItems.map((item: any) => item.lead && (
             <div key={item.id} className="space-y-1">
               <LeadSignalCard lead={item.lead} onPrimary={() => activate(item.lead)} primaryLabel={item.mission || "Resume"} />
-              <div className="flex justify-end"><Button size="sm" variant="outline" className="h-7 text-[10px]" onClick={() => complete(item)}><CheckCircle2 className="h-3 w-3 mr-1" />Complete & Next</Button></div>
+              <div className="flex justify-end">
+                <Button size="sm" variant="outline" className="h-8 text-xs" onClick={() => setDisposing(item)}>
+                  <CheckCircle2 className="h-3.5 w-3.5 mr-1" />Complete & Next
+                </Button>
+              </div>
             </div>
           ))}
           {!activeItems.length && !interrupts && <Empty text="No immediate work. Start or refill Draft 30." />}
@@ -115,7 +119,12 @@ export function FlowWorkPage() {
           {(draft?.items ?? []).map((item: any) => item.lead && (
             <div key={item.id} className="grid grid-cols-[44px_1fr] gap-2 items-start">
               <div className="rounded-lg border text-center py-2 text-sm font-bold">#{item.rank}</div>
-              <LeadSignalCard lead={item.lead} compact onPrimary={() => activate(item.lead)} primaryLabel={item.mission || undefined} />
+              <div className="space-y-1">
+                <LeadSignalCard lead={item.lead} compact onPrimary={() => activate(item.lead)} primaryLabel={item.mission || undefined} />
+                {(item.status === "active" || item.status === "queued") && (
+                  <div className="flex justify-end"><Button size="sm" variant="ghost" className="h-7 text-[10px]" onClick={() => setDisposing(item)}>Disposition</Button></div>
+                )}
+              </div>
             </div>
           ))}
           {!draft?.items?.length && <Empty text="No active Draft 30. The system will reserve the highest-value eligible leads atomically when you start one." />}
