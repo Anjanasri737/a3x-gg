@@ -390,11 +390,19 @@ export function FinalMoment() {
       </header>
 
       {!activeRound && (
-        <BridgePanel
-          onAdd={(s) => addLead(s)}
-          inDraft={(u) => fm.picks.includes(u)}
-        />
+        <>
+          <DraftVisionPanel
+            onAdd={(s) => addLead(s)}
+            inDraft={(u) => fm.picks.includes(u)}
+            remaining={Math.max(0, DRAFT_SIZE - fm.picks.length)}
+          />
+          <BridgePanel
+            onAdd={(s) => addLead(s)}
+            inDraft={(u) => fm.picks.includes(u)}
+          />
+        </>
       )}
+
 
       {!activeRound ? (
         /* ------------------------------ MARK 30 ----------------------------- */
