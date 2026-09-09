@@ -118,7 +118,7 @@ export function DraftVisionPanel({ onAdd, inDraft, remaining }: Props) {
         ulid = created.ulid ?? null;
       }
       if (!ulid) { skipped++; continue; }
-      const st = mv.states[ulid];
+      const st = useMovement.getState().states[ulid];
       if (!st) { skipped++; continue; }
       mv.log(
         ulid,
