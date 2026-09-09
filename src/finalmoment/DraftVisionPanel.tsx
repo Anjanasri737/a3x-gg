@@ -43,7 +43,7 @@ export function DraftVisionPanel({ onAdd, inDraft, remaining }: Props) {
   const [shots, setShots] = useState<string[]>([]);
   const [rows, setRows] = useState<VisionRow[]>([]);
   const [busy, setBusy] = useState(false);
-  const [account, setAccount] = useState(WA_ACCOUNTS[0]);
+  const [account, setAccount] = useState<string>(WA_ACCOUNTS[0]);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const takeFiles = async (files: File[]) => {
