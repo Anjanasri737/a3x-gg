@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as ZonesRouteImport } from './routes/zones'
 import { Route as ZoneBrainRouteImport } from './routes/zone-brain'
 import { Route as WaRouteImport } from './routes/wa'
+import { Route as VisionRouteImport } from './routes/vision'
 import { Route as TowerRouteImport } from './routes/tower'
 import { Route as ToursRouteImport } from './routes/tours'
 import { Route as TodayRouteImport } from './routes/today'
@@ -56,6 +57,7 @@ import { Route as MytIndexRouteImport } from './routes/myt/index'
 import { Route as CribbookingIndexRouteImport } from './routes/cribbooking/index'
 import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as TowerWorkflowGuaranteeRouteImport } from './routes/tower.workflow-guarantee'
+import { Route as TowerVisionRouteImport } from './routes/tower.vision'
 import { Route as TowerTeamRouteImport } from './routes/tower.team'
 import { Route as TowerQualityRouteImport } from './routes/tower.quality'
 import { Route as TowerMyLeadsRouteImport } from './routes/tower.my-leads'
@@ -108,6 +110,7 @@ import { Route as LeadsAddRouteImport } from './routes/leads.add'
 import { Route as CribbookingTokenRouteImport } from './routes/cribbooking/$token'
 import { Route as AdminWatchtowerRouteImport } from './routes/admin.watchtower'
 import { Route as AdminWarRoomRouteImport } from './routes/admin.war-room'
+import { Route as AdminVisionRouteImport } from './routes/admin.vision'
 import { Route as AdminSimulatorRouteImport } from './routes/admin.simulator'
 import { Route as AdminSheetRouteImport } from './routes/admin.sheet'
 import { Route as AdminReportCenterRouteImport } from './routes/admin.report-center'
@@ -141,6 +144,11 @@ const ZoneBrainRoute = ZoneBrainRouteImport.update({
 const WaRoute = WaRouteImport.update({
   id: '/wa',
   path: '/wa',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VisionRoute = VisionRouteImport.update({
+  id: '/vision',
+  path: '/vision',
   getParentRoute: () => rootRouteImport,
 } as any)
 const TowerRoute = TowerRouteImport.update({
@@ -361,6 +369,11 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
 const TowerWorkflowGuaranteeRoute = TowerWorkflowGuaranteeRouteImport.update({
   id: '/workflow-guarantee',
   path: '/workflow-guarantee',
+  getParentRoute: () => TowerRoute,
+} as any)
+const TowerVisionRoute = TowerVisionRouteImport.update({
+  id: '/vision',
+  path: '/vision',
   getParentRoute: () => TowerRoute,
 } as any)
 const TowerTeamRoute = TowerTeamRouteImport.update({
@@ -623,6 +636,11 @@ const AdminWarRoomRoute = AdminWarRoomRouteImport.update({
   path: '/war-room',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminVisionRoute = AdminVisionRouteImport.update({
+  id: '/vision',
+  path: '/vision',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminSimulatorRoute = AdminSimulatorRouteImport.update({
   id: '/simulator',
   path: '/simulator',
@@ -756,6 +774,7 @@ export interface FileRoutesByFullPath {
   '/today': typeof TodayRoute
   '/tours': typeof ToursRoute
   '/tower': typeof TowerRouteWithChildren
+  '/vision': typeof VisionRoute
   '/wa': typeof WaRoute
   '/zone-brain': typeof ZoneBrainRoute
   '/zones': typeof ZonesRoute
@@ -769,6 +788,7 @@ export interface FileRoutesByFullPath {
   '/admin/report-center': typeof AdminReportCenterRoute
   '/admin/sheet': typeof AdminSheetRoute
   '/admin/simulator': typeof AdminSimulatorRoute
+  '/admin/vision': typeof AdminVisionRoute
   '/admin/war-room': typeof AdminWarRoomRoute
   '/admin/watchtower': typeof AdminWatchtowerRoute
   '/cribbooking/$token': typeof CribbookingTokenRoute
@@ -821,6 +841,7 @@ export interface FileRoutesByFullPath {
   '/tower/my-leads': typeof TowerMyLeadsRoute
   '/tower/quality': typeof TowerQualityRoute
   '/tower/team': typeof TowerTeamRoute
+  '/tower/vision': typeof TowerVisionRoute
   '/tower/workflow-guarantee': typeof TowerWorkflowGuaranteeRoute
   '/admin/': typeof AdminIndexRoute
   '/cribbooking/': typeof CribbookingIndexRoute
@@ -874,6 +895,7 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRoute
   '/today': typeof TodayRoute
   '/tours': typeof ToursRoute
+  '/vision': typeof VisionRoute
   '/wa': typeof WaRoute
   '/zone-brain': typeof ZoneBrainRoute
   '/zones': typeof ZonesRoute
@@ -887,6 +909,7 @@ export interface FileRoutesByTo {
   '/admin/report-center': typeof AdminReportCenterRoute
   '/admin/sheet': typeof AdminSheetRoute
   '/admin/simulator': typeof AdminSimulatorRoute
+  '/admin/vision': typeof AdminVisionRoute
   '/admin/war-room': typeof AdminWarRoomRoute
   '/admin/watchtower': typeof AdminWatchtowerRoute
   '/cribbooking/$token': typeof CribbookingTokenRoute
@@ -939,6 +962,7 @@ export interface FileRoutesByTo {
   '/tower/my-leads': typeof TowerMyLeadsRoute
   '/tower/quality': typeof TowerQualityRoute
   '/tower/team': typeof TowerTeamRoute
+  '/tower/vision': typeof TowerVisionRoute
   '/tower/workflow-guarantee': typeof TowerWorkflowGuaranteeRoute
   '/admin': typeof AdminIndexRoute
   '/cribbooking': typeof CribbookingIndexRoute
@@ -995,6 +1019,7 @@ export interface FileRoutesById {
   '/today': typeof TodayRoute
   '/tours': typeof ToursRoute
   '/tower': typeof TowerRouteWithChildren
+  '/vision': typeof VisionRoute
   '/wa': typeof WaRoute
   '/zone-brain': typeof ZoneBrainRoute
   '/zones': typeof ZonesRoute
@@ -1008,6 +1033,7 @@ export interface FileRoutesById {
   '/admin/report-center': typeof AdminReportCenterRoute
   '/admin/sheet': typeof AdminSheetRoute
   '/admin/simulator': typeof AdminSimulatorRoute
+  '/admin/vision': typeof AdminVisionRoute
   '/admin/war-room': typeof AdminWarRoomRoute
   '/admin/watchtower': typeof AdminWatchtowerRoute
   '/cribbooking/$token': typeof CribbookingTokenRoute
@@ -1060,6 +1086,7 @@ export interface FileRoutesById {
   '/tower/my-leads': typeof TowerMyLeadsRoute
   '/tower/quality': typeof TowerQualityRoute
   '/tower/team': typeof TowerTeamRoute
+  '/tower/vision': typeof TowerVisionRoute
   '/tower/workflow-guarantee': typeof TowerWorkflowGuaranteeRoute
   '/admin/': typeof AdminIndexRoute
   '/cribbooking/': typeof CribbookingIndexRoute
@@ -1117,6 +1144,7 @@ export interface FileRouteTypes {
     | '/today'
     | '/tours'
     | '/tower'
+    | '/vision'
     | '/wa'
     | '/zone-brain'
     | '/zones'
@@ -1130,6 +1158,7 @@ export interface FileRouteTypes {
     | '/admin/report-center'
     | '/admin/sheet'
     | '/admin/simulator'
+    | '/admin/vision'
     | '/admin/war-room'
     | '/admin/watchtower'
     | '/cribbooking/$token'
@@ -1182,6 +1211,7 @@ export interface FileRouteTypes {
     | '/tower/my-leads'
     | '/tower/quality'
     | '/tower/team'
+    | '/tower/vision'
     | '/tower/workflow-guarantee'
     | '/admin/'
     | '/cribbooking/'
@@ -1235,6 +1265,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/today'
     | '/tours'
+    | '/vision'
     | '/wa'
     | '/zone-brain'
     | '/zones'
@@ -1248,6 +1279,7 @@ export interface FileRouteTypes {
     | '/admin/report-center'
     | '/admin/sheet'
     | '/admin/simulator'
+    | '/admin/vision'
     | '/admin/war-room'
     | '/admin/watchtower'
     | '/cribbooking/$token'
@@ -1300,6 +1332,7 @@ export interface FileRouteTypes {
     | '/tower/my-leads'
     | '/tower/quality'
     | '/tower/team'
+    | '/tower/vision'
     | '/tower/workflow-guarantee'
     | '/admin'
     | '/cribbooking'
@@ -1355,6 +1388,7 @@ export interface FileRouteTypes {
     | '/today'
     | '/tours'
     | '/tower'
+    | '/vision'
     | '/wa'
     | '/zone-brain'
     | '/zones'
@@ -1368,6 +1402,7 @@ export interface FileRouteTypes {
     | '/admin/report-center'
     | '/admin/sheet'
     | '/admin/simulator'
+    | '/admin/vision'
     | '/admin/war-room'
     | '/admin/watchtower'
     | '/cribbooking/$token'
@@ -1420,6 +1455,7 @@ export interface FileRouteTypes {
     | '/tower/my-leads'
     | '/tower/quality'
     | '/tower/team'
+    | '/tower/vision'
     | '/tower/workflow-guarantee'
     | '/admin/'
     | '/cribbooking/'
@@ -1476,6 +1512,7 @@ export interface RootRouteChildren {
   TodayRoute: typeof TodayRoute
   ToursRoute: typeof ToursRoute
   TowerRoute: typeof TowerRouteWithChildren
+  VisionRoute: typeof VisionRoute
   WaRoute: typeof WaRoute
   ZoneBrainRoute: typeof ZoneBrainRoute
   ZonesRoute: typeof ZonesRoute
@@ -1546,6 +1583,13 @@ declare module '@tanstack/react-router' {
       path: '/wa'
       fullPath: '/wa'
       preLoaderRoute: typeof WaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/vision': {
+      id: '/vision'
+      path: '/vision'
+      fullPath: '/vision'
+      preLoaderRoute: typeof VisionRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/tower': {
@@ -1854,6 +1898,13 @@ declare module '@tanstack/react-router' {
       path: '/workflow-guarantee'
       fullPath: '/tower/workflow-guarantee'
       preLoaderRoute: typeof TowerWorkflowGuaranteeRouteImport
+      parentRoute: typeof TowerRoute
+    }
+    '/tower/vision': {
+      id: '/tower/vision'
+      path: '/vision'
+      fullPath: '/tower/vision'
+      preLoaderRoute: typeof TowerVisionRouteImport
       parentRoute: typeof TowerRoute
     }
     '/tower/team': {
@@ -2220,6 +2271,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminWarRoomRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/vision': {
+      id: '/admin/vision'
+      path: '/vision'
+      fullPath: '/admin/vision'
+      preLoaderRoute: typeof AdminVisionRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/simulator': {
       id: '/admin/simulator'
       path: '/simulator'
@@ -2367,6 +2425,7 @@ interface AdminRouteChildren {
   AdminReportCenterRoute: typeof AdminReportCenterRoute
   AdminSheetRoute: typeof AdminSheetRoute
   AdminSimulatorRoute: typeof AdminSimulatorRoute
+  AdminVisionRoute: typeof AdminVisionRoute
   AdminWarRoomRoute: typeof AdminWarRoomRoute
   AdminWatchtowerRoute: typeof AdminWatchtowerRoute
   AdminIndexRoute: typeof AdminIndexRoute
@@ -2383,6 +2442,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminReportCenterRoute: AdminReportCenterRoute,
   AdminSheetRoute: AdminSheetRoute,
   AdminSimulatorRoute: AdminSimulatorRoute,
+  AdminVisionRoute: AdminVisionRoute,
   AdminWarRoomRoute: AdminWarRoomRoute,
   AdminWatchtowerRoute: AdminWatchtowerRoute,
   AdminIndexRoute: AdminIndexRoute,
@@ -2414,6 +2474,7 @@ interface TowerRouteChildren {
   TowerMyLeadsRoute: typeof TowerMyLeadsRoute
   TowerQualityRoute: typeof TowerQualityRoute
   TowerTeamRoute: typeof TowerTeamRoute
+  TowerVisionRoute: typeof TowerVisionRoute
   TowerWorkflowGuaranteeRoute: typeof TowerWorkflowGuaranteeRoute
   TowerIndexRoute: typeof TowerIndexRoute
   TowerLeadsIdRoute: typeof TowerLeadsIdRoute
@@ -2435,6 +2496,7 @@ const TowerRouteChildren: TowerRouteChildren = {
   TowerMyLeadsRoute: TowerMyLeadsRoute,
   TowerQualityRoute: TowerQualityRoute,
   TowerTeamRoute: TowerTeamRoute,
+  TowerVisionRoute: TowerVisionRoute,
   TowerWorkflowGuaranteeRoute: TowerWorkflowGuaranteeRoute,
   TowerIndexRoute: TowerIndexRoute,
   TowerLeadsIdRoute: TowerLeadsIdRoute,
@@ -2506,6 +2568,7 @@ const rootRouteChildren: RootRouteChildren = {
   TodayRoute: TodayRoute,
   ToursRoute: ToursRoute,
   TowerRoute: TowerRouteWithChildren,
+  VisionRoute: VisionRoute,
   WaRoute: WaRoute,
   ZoneBrainRoute: ZoneBrainRoute,
   ZonesRoute: ZonesRoute,
