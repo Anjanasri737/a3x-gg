@@ -15,6 +15,9 @@ import { last4, parseTokens, roundPace, useFinalMoment, type RoundLabel } from "
 import { LogActivity } from "./LogActivity";
 import { BridgePanel } from "./BridgePanel";
 import { DraftVisionPanel } from "./DraftVisionPanel";
+import { LiveCallDock } from "./LiveCallDock";
+import { TourCalendly } from "./TourCalendly";
+
 
 import { ensureStuckChats, ingestMessage } from "./bridge";
 
@@ -683,7 +686,18 @@ export function FinalMoment() {
                   </div>
                 </div>
 
+                <LiveCallDock
+                  lead={current}
+                  onConnected={() => {
+                    fm.bump("connected");
+                    fm.bump("calls");
+                  }}
+                />
+
+                <TourCalendly lead={current} onScheduled={() => act(() => {}, "tours")} />
+
                 <LogActivity lead={current} />
+
 
                 <div className="space-y-2">
                   <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
