@@ -36,6 +36,21 @@ export function CompanionPanel() {
     ensureStuckChats(40);
   }, []);
 
+  // Real WhatsApp Web extension tells us which conversation is open.
+  useEffect(() => {
+    const onMsg = (e: MessageEvent) => {
+      const d = e.data as { source?: string; type?: string; phone?: string; title?: string } | null;
+      if (!d || d.source !== "gharpayy-wa" || d.type !== "active-chat") return;
+      const all = Object.values(useMovement.getState().states);
+      const hit =
+        (d.phone && all.find((s) => (s.phone ?? "").replace(/\D/g, "").slice(-10) === d.phone)) ||
+        (d.title && all.find((s) => (s.name ?? "").toLowerCase() === d.title!.toLowerCase()));
+      if (hit) setActive(hit.ulid);
+    };
+    window.addEventListener("message", onMsg);
+    return () => window.removeEventListener("message", onMsg);
+  }, []);
+
   const chats = useMemo(() => {
     const all = Object.values(mv.states).sort(
       (a, b) =>

@@ -57,34 +57,63 @@ export const extractWhatsappRows = createServerFn({ method: "POST" })
     const key = process.env["LOVABLE_API_KEY"];
     if (!key) throw new Error("AI is not configured for this project");
 
-    const res = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const res = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
       method: "POST",
       headers: { "Content-Type": "application/json", "Lovable-API-Key": key, "X-Lovable-AIG-SDK": "fetch" },
       body: JSON.stringify({
-        model: "google/gemini-3.8-flash",
-        messages: [
-          { role: "system", content: SYSTEM },
+        model: "openai/gpt-6-astra",
+        stream: true,
+        reasoning: { effort: "low", summary: "auto" },
+        store: false,
+        text: { format: { type: "json_object" } },
+        input: [
+          { role: "developer", content: [{ type: "input_text", text: SYSTEM }] },
           {
             role: "user",
             content: [
-              { type: "text", text: "Extract every chat row from the left chat list of these screenshots." },
-              ...data.images.map((url) => ({ type: "image_url", image_url: { url } })),
+              {
+                type: "input_text",
+                text: "Extract every chat row from the left chat list of these screenshots. Answer with JSON only.",
+              },
+              ...data.images.map((url) => ({ type: "input_image", image_url: url })),
             ],
           },
         ],
-        response_format: { type: "json_object" },
       }),
     });
 
-    if (!res.ok) {
-      const body = await res.text();
+    if (!res.ok || !res.body) {
+      const body = await res.text().catch(() => "");
       if (res.status === 429) throw new Error("Too many screenshots at once — wait a few seconds and paste again.");
       if (res.status === 402) throw new Error("AI credits are exhausted for this workspace.");
-      throw new Error(`Screenshot reading failed (${res.status}). ${body.slice(0, 200)}`);
+      throw new Error(`Screenshot reading failed (${res.status}). ${body.slice(0, 300)}`);
     }
 
-    const json = (await res.json()) as { choices?: Array<{ message?: { content?: string } }> };
-    const text = json.choices?.[0]?.message?.content ?? "";
+    // Reasoning runs stream: accumulate the answer deltas, never buffer the call.
+    const reader = res.body.getReader();
+    const dec = new TextDecoder();
+    let buf = "";
+    let text = "";
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, { stream: true });
+      const lines = buf.split("\n");
+      buf = lines.pop() ?? "";
+      for (const line of lines) {
+        if (!line.startsWith("data:")) continue;
+        const payload = line.slice(5).trim();
+        if (!payload || payload === "[DONE]") continue;
+        try {
+          const evt = JSON.parse(payload) as { type?: string; delta?: string; response?: { output_text?: string } };
+          if (evt.type === "response.output_text.delta" && typeof evt.delta === "string") text += evt.delta;
+          else if (evt.type === "response.completed" && evt.response?.output_text) text ||= evt.response.output_text;
+        } catch {
+          /* keep reading */
+        }
+      }
+    }
+
     let parsed: { rows?: VisionRawRow[]; notes?: string };
     try {
       parsed = JSON.parse(text);
