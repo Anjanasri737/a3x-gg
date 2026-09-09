@@ -1,0 +1,19 @@
+{
+  "manifest_version": 3,
+  "name": "Gharpayy CRM for WhatsApp Web",
+  "version": "1.0.0",
+  "description": "Opens the Gharpayy CRM beside the active chat on web.whatsapp.com: claim, call, draft and schedule without leaving WhatsApp.",
+  "permissions": ["storage", "activeTab"],
+  "host_permissions": ["https://web.whatsapp.com/*"],
+  "action": { "default_title": "Toggle Gharpayy panel" },
+  "background": { "service_worker": "background.js" },
+  "options_page": "options.html",
+  "content_scripts": [
+    {
+      "matches": ["https://web.whatsapp.com/*"],
+      "js": ["content.js"],
+      "css": ["panel.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}
