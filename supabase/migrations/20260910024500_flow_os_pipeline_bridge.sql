@@ -7,7 +7,12 @@ alter table public.leads
 create index if not exists leads_current_pipeline_stage_idx
   on public.leads(current_pipeline_stage);
 
-create or replace view public.flow_three_day_truth as
+-- The prior Flow OS migration creates this view with a smaller column shape.
+-- Drop/recreate so migration replay is deterministic and Postgres does not treat
+-- an inserted column as an attempted rename of an existing view column.
+drop view if exists public.flow_three_day_truth;
+
+create view public.flow_three_day_truth as
 with latest_obs as (
   select distinct on (lead_id)
     lead_id, id observation_id, captured_at, last_message_preview, preview_direction,
