@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
 import { ScreenshotSyncPage } from "@/components/flow-os/ScreenshotSyncPage";
+import { RevenueLeakagePanel } from "@/components/flow-os/RevenueLeakagePanel";
 
 export const Route = createFileRoute("/vision")({
   head: () => ({
@@ -12,5 +13,12 @@ export const Route = createFileRoute("/vision")({
       { property: "og:type", content: "website" },
     ],
   }),
-  component: () => <AppShell><ScreenshotSyncPage /></AppShell>,
+  component: () => (
+    <AppShell>
+      <div className="space-y-8">
+        <ScreenshotSyncPage />
+        <RevenueLeakagePanel />
+      </div>
+    </AppShell>
+  ),
 });
