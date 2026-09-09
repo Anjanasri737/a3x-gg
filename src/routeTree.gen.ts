@@ -40,6 +40,7 @@ import { Route as FollowUpsRouteImport } from './routes/follow-ups'
 import { Route as FinalMomentRouteImport } from './routes/final-moment'
 import { Route as ExecutionRouteImport } from './routes/execution'
 import { Route as ControlTowerTeamRouteImport } from './routes/control-tower-team'
+import { Route as CompanionRouteImport } from './routes/companion'
 import { Route as CoachRouteImport } from './routes/coach'
 import { Route as ClosingRouteImport } from './routes/closing'
 import { Route as CalendarRouteImport } from './routes/calendar'
@@ -280,6 +281,11 @@ const ExecutionRoute = ExecutionRouteImport.update({
 const ControlTowerTeamRoute = ControlTowerTeamRouteImport.update({
   id: '/control-tower-team',
   path: '/control-tower-team',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CompanionRoute = CompanionRouteImport.update({
+  id: '/companion',
+  path: '/companion',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CoachRoute = CoachRouteImport.update({
@@ -721,6 +727,7 @@ export interface FileRoutesByFullPath {
   '/calendar': typeof CalendarRoute
   '/closing': typeof ClosingRoute
   '/coach': typeof CoachRoute
+  '/companion': typeof CompanionRoute
   '/control-tower-team': typeof ControlTowerTeamRoute
   '/execution': typeof ExecutionRoute
   '/final-moment': typeof FinalMomentRoute
@@ -839,6 +846,7 @@ export interface FileRoutesByTo {
   '/calendar': typeof CalendarRoute
   '/closing': typeof ClosingRoute
   '/coach': typeof CoachRoute
+  '/companion': typeof CompanionRoute
   '/control-tower-team': typeof ControlTowerTeamRoute
   '/execution': typeof ExecutionRoute
   '/final-moment': typeof FinalMomentRoute
@@ -958,6 +966,7 @@ export interface FileRoutesById {
   '/calendar': typeof CalendarRoute
   '/closing': typeof ClosingRoute
   '/coach': typeof CoachRoute
+  '/companion': typeof CompanionRoute
   '/control-tower-team': typeof ControlTowerTeamRoute
   '/execution': typeof ExecutionRoute
   '/final-moment': typeof FinalMomentRoute
@@ -1079,6 +1088,7 @@ export interface FileRouteTypes {
     | '/calendar'
     | '/closing'
     | '/coach'
+    | '/companion'
     | '/control-tower-team'
     | '/execution'
     | '/final-moment'
@@ -1197,6 +1207,7 @@ export interface FileRouteTypes {
     | '/calendar'
     | '/closing'
     | '/coach'
+    | '/companion'
     | '/control-tower-team'
     | '/execution'
     | '/final-moment'
@@ -1315,6 +1326,7 @@ export interface FileRouteTypes {
     | '/calendar'
     | '/closing'
     | '/coach'
+    | '/companion'
     | '/control-tower-team'
     | '/execution'
     | '/final-moment'
@@ -1435,6 +1447,7 @@ export interface RootRouteChildren {
   CalendarRoute: typeof CalendarRoute
   ClosingRoute: typeof ClosingRoute
   CoachRoute: typeof CoachRoute
+  CompanionRoute: typeof CompanionRoute
   ControlTowerTeamRoute: typeof ControlTowerTeamRoute
   ExecutionRoute: typeof ExecutionRoute
   FinalMomentRoute: typeof FinalMomentRoute
@@ -1729,6 +1742,13 @@ declare module '@tanstack/react-router' {
       path: '/control-tower-team'
       fullPath: '/control-tower-team'
       preLoaderRoute: typeof ControlTowerTeamRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/companion': {
+      id: '/companion'
+      path: '/companion'
+      fullPath: '/companion'
+      preLoaderRoute: typeof CompanionRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/coach': {
@@ -2457,6 +2477,7 @@ const rootRouteChildren: RootRouteChildren = {
   CalendarRoute: CalendarRoute,
   ClosingRoute: ClosingRoute,
   CoachRoute: CoachRoute,
+  CompanionRoute: CompanionRoute,
   ControlTowerTeamRoute: ControlTowerTeamRoute,
   ExecutionRoute: ExecutionRoute,
   FinalMomentRoute: FinalMomentRoute,
