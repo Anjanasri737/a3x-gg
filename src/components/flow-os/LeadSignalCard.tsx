@@ -27,6 +27,7 @@ export function LeadSignalCard({
   primaryLabel?: string;
   compact?: boolean;
 }) {
+  const savedStage = (lead as TruthRow & { current_pipeline_stage?: string | null }).current_pipeline_stage || lead.lead_status || null;
   const intelligence = inferMessageIntelligence({
     lastMessage: lead.last_message_preview,
     direction: lead.preview_direction as any,
@@ -34,9 +35,10 @@ export function LeadSignalCard({
     seenState: lead.seen_state as any,
     colorHint: lead.color_hint,
     detectedLabel: lead.detected_label,
-    savedStage: lead.stage_inference,
+    savedStage,
   });
-  const mismatch = Boolean(lead.stage_inference && intelligence.inferredPipelineHint && lead.stage_inference !== intelligence.inferredPipelineHint);
+  const hintStage = lead.stage_inference || intelligence.inferredPipelineHint;
+  const mismatch = Boolean(savedStage && hintStage && savedStage !== hintStage);
   const handler = lead.current_handler || lead.handler_hint;
 
   return (
@@ -49,11 +51,7 @@ export function LeadSignalCard({
             <Badge variant="secondary" className="text-[10px] flex gap-1 items-center">
               <SeenIcon state={lead.seen_state} /> {lead.seen_state || "unknown"}
             </Badge>
-            {lead.color_hint && (
-              <Badge variant="outline" className="text-[10px]">
-                <span className="h-2 w-2 rounded-full bg-emerald-500 mr-1 inline-block" />{lead.color_hint}
-              </Badge>
-            )}
+            {lead.color_hint && <Badge variant="outline" className="text-[10px]">Colour: {lead.color_hint}</Badge>}
             {lead.detected_label && <Badge className="text-[10px]">{lead.detected_label}</Badge>}
           </div>
           <div className="text-[11px] text-muted-foreground mt-0.5">{lead.phone}</div>
@@ -69,11 +67,9 @@ export function LeadSignalCard({
           <div className="min-w-0">
             <div className="text-xs line-clamp-2">{lead.last_message_preview || "No WhatsApp preview captured yet"}</div>
             <div className="flex gap-1.5 flex-wrap mt-1.5">
-              <Badge variant="outline" className="text-[9px]">Saved: {lead.stage_inference || lead.lead_status || "unknown"}</Badge>
-              <Badge variant={mismatch ? "destructive" : "secondary"} className="text-[9px]">
-                Hint: {intelligence.inferredPipelineHint || intelligence.inferredIntent}
-              </Badge>
-              <Badge variant="secondary" className="text-[9px]">{intelligence.confidence}%</Badge>
+              <Badge variant="outline" className="text-[9px]">Saved: {savedStage || "unknown"}</Badge>
+              <Badge variant={mismatch ? "destructive" : "secondary"} className="text-[9px]">Hint: {hintStage || intelligence.inferredIntent}</Badge>
+              <Badge variant="secondary" className="text-[9px]">{lead.stage_confidence ?? intelligence.confidence}%</Badge>
             </div>
           </div>
         </div>
@@ -87,23 +83,19 @@ export function LeadSignalCard({
               <UserRoundCheck className="h-3.5 w-3.5" />
               {handler ? `Working: ${handler}` : lead.current_owner ? `Owner: ${lead.current_owner}` : "AVAILABLE / UNOWNED"}
             </div>
-            {lead.claim_expires_at && (
-              <div className="text-muted-foreground mt-0.5 flex gap-1 items-center"><Clock3 className="h-3 w-3" /> claim until {new Date(lead.claim_expires_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</div>
-            )}
+            {lead.claim_expires_at && <div className="text-muted-foreground mt-0.5 flex gap-1 items-center"><Clock3 className="h-3 w-3" /> claim until {new Date(lead.claim_expires_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</div>}
           </div>
           <div className="rounded-md border bg-background/70 p-2">
             <div className="text-muted-foreground uppercase tracking-wide text-[9px]">Why now / mission</div>
             <div className="font-medium mt-0.5">{intelligence.primaryMission}</div>
-            {mismatch && <div className="text-amber-600 flex gap-1 items-center mt-0.5"><AlertTriangle className="h-3 w-3" /> CRM and message hint differ</div>}
+            {mismatch && <div className="text-amber-600 flex gap-1 items-center mt-0.5"><AlertTriangle className="h-3 w-3" /> CRM saved stage and message hint differ</div>}
           </div>
         </div>
       )}
 
       <div className="flex items-center justify-between gap-2">
         <div className="text-[10px] text-muted-foreground truncate">{intelligence.reasons.slice(0, 2).join(" · ")}</div>
-        {onPrimary && (
-          <Button size="sm" className="h-8 shrink-0" onClick={onPrimary}>{primaryLabel || intelligence.primaryAction}</Button>
-        )}
+        {onPrimary && <Button size="sm" className="h-8 shrink-0" onClick={onPrimary}>{primaryLabel || intelligence.primaryAction}</Button>}
       </div>
     </div>
   );
