@@ -37,9 +37,9 @@ export function LiveCallDock({ lead, onConnected, compact }: Props) {
   const other = lock && !mine ? lock : null;
 
   const claim = () => {
-    const res = mv.attemptClaim(lead.ulid, "calling", "call the customer");
+    const res = mv.attemptClaim(lead.ulid, "call", "call the customer");
     if (!res.ok) {
-      toast.error(`Locked by ${res.lock?.operatorName ?? "another operator"} — history is read-only for you`);
+      toast.error(`Locked by ${(res as { holder?: { operatorName: string } }).holder?.operatorName ?? "another operator"} — history is read-only for you`);
       return;
     }
     toast.success("Live lock taken — this lead is yours");

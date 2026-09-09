@@ -16,9 +16,10 @@ interface Props {
 }
 
 const OUTCOMES: { o: TourOutcome; label: string }[] = [
-  { o: "interested", label: "Interested" },
-  { o: "wants-alternatives", label: "Wants alternatives" },
-  { o: "not-interested", label: "Not interested" },
+  { o: "positive", label: "Positive" },
+  { o: "maybe", label: "Maybe" },
+  { o: "another-property", label: "Wants another property" },
+  { o: "not-looking", label: "Not looking" },
 ];
 
 const localNow = (offsetMins = 120) =>
@@ -67,7 +68,7 @@ export function TourCalendly({ lead, onScheduled }: Props) {
     mv.tourOutcome(lead.ulid, o);
     mv.setWork(lead.ulid, "in-work");
     mv.setNextAction(lead.ulid, {
-      kind: o === "interested" ? "send-quote" : o === "wants-alternatives" ? "send-property" : "recheck-later",
+      kind: o === "positive" ? "send-quote" : o === "another-property" || o === "maybe" ? "send-property" : "recheck-later",
       dueAt: new Date(Date.now() + 60 * 60000).toISOString(),
       ownerId: mv.actor.id,
       ownerName: mv.actor.name,
