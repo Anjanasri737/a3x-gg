@@ -15,6 +15,9 @@ import { last4, parseTokens, roundPace, useFinalMoment, type RoundLabel } from "
 import { LogActivity } from "./LogActivity";
 import { BridgePanel } from "./BridgePanel";
 import { DraftVisionPanel } from "./DraftVisionPanel";
+import { LiveCallDock } from "./LiveCallDock";
+import { TourCalendly } from "./TourCalendly";
+
 
 import { ensureStuckChats, ingestMessage } from "./bridge";
 
