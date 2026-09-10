@@ -308,6 +308,415 @@ export type Database = {
         }
         Relationships: []
       }
+      flow_draft_batches: {
+        Row: {
+          active_tray_size: number
+          closed_at: string | null
+          created_at: string
+          id: string
+          operator_id: string
+          operator_name: string | null
+          status: string
+          target_size: number
+        }
+        Insert: {
+          active_tray_size?: number
+          closed_at?: string | null
+          created_at?: string
+          id?: string
+          operator_id: string
+          operator_name?: string | null
+          status?: string
+          target_size?: number
+        }
+        Update: {
+          active_tray_size?: number
+          closed_at?: string | null
+          created_at?: string
+          id?: string
+          operator_id?: string
+          operator_name?: string | null
+          status?: string
+          target_size?: number
+        }
+        Relationships: []
+      }
+      flow_draft_items: {
+        Row: {
+          batch_id: string
+          completed_at: string | null
+          created_at: string
+          disposition: string | null
+          id: string
+          is_priority_interrupt: boolean
+          lead_id: string
+          position: number
+          roi_reasons: string[]
+          roi_score: number
+          state: string
+        }
+        Insert: {
+          batch_id: string
+          completed_at?: string | null
+          created_at?: string
+          disposition?: string | null
+          id?: string
+          is_priority_interrupt?: boolean
+          lead_id: string
+          position: number
+          roi_reasons?: string[]
+          roi_score?: number
+          state?: string
+        }
+        Update: {
+          batch_id?: string
+          completed_at?: string | null
+          created_at?: string
+          disposition?: string | null
+          id?: string
+          is_priority_interrupt?: boolean
+          lead_id?: string
+          position?: number
+          roi_reasons?: string[]
+          roi_score?: number
+          state?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flow_draft_items_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "flow_draft_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flow_draft_items_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      flow_label_colour_mapping: {
+        Row: {
+          active: boolean
+          colour_key: string
+          created_at: string
+          crm_label: string
+          id: string
+          suggested_mission: string | null
+          suggested_stage: string | null
+          updated_at: string
+          updated_by: string | null
+          wa_label_name: string | null
+        }
+        Insert: {
+          active?: boolean
+          colour_key: string
+          created_at?: string
+          crm_label: string
+          id?: string
+          suggested_mission?: string | null
+          suggested_stage?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          wa_label_name?: string | null
+        }
+        Update: {
+          active?: boolean
+          colour_key?: string
+          created_at?: string
+          crm_label?: string
+          id?: string
+          suggested_mission?: string | null
+          suggested_stage?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          wa_label_name?: string | null
+        }
+        Relationships: []
+      }
+      flow_screenshot_batches: {
+        Row: {
+          capture_from: string | null
+          capture_to: string | null
+          created_at: string
+          id: string
+          note: string | null
+          rows_reconciled: number
+          rows_segmented: number
+          screenshot_count: number
+          status: string
+          unresolved_rows: number
+          updated_at: string
+          uploaded_by: string | null
+          uploaded_by_name: string | null
+          visible_rows_expected: number
+          wa_account_label: string | null
+          wa_source_id: string | null
+        }
+        Insert: {
+          capture_from?: string | null
+          capture_to?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          rows_reconciled?: number
+          rows_segmented?: number
+          screenshot_count?: number
+          status?: string
+          unresolved_rows?: number
+          updated_at?: string
+          uploaded_by?: string | null
+          uploaded_by_name?: string | null
+          visible_rows_expected?: number
+          wa_account_label?: string | null
+          wa_source_id?: string | null
+        }
+        Update: {
+          capture_from?: string | null
+          capture_to?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          rows_reconciled?: number
+          rows_segmented?: number
+          screenshot_count?: number
+          status?: string
+          unresolved_rows?: number
+          updated_at?: string
+          uploaded_by?: string | null
+          uploaded_by_name?: string | null
+          visible_rows_expected?: number
+          wa_account_label?: string | null
+          wa_source_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flow_screenshot_batches_wa_source_id_fkey"
+            columns: ["wa_source_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      flow_screenshot_observations: {
+        Row: {
+          batch_id: string
+          captured_at: string
+          contact_name: string | null
+          created_at: string
+          handler_id: string | null
+          handler_name: string | null
+          id: string
+          label_colour: string | null
+          label_name: string | null
+          last_message: string | null
+          lead_id: string | null
+          movement_signal: string | null
+          ocr_confidence: number | null
+          phone_e164: string | null
+          phone_raw: string | null
+          preview_direction: string | null
+          previous_observation_id: string | null
+          raw_text: string | null
+          resolution: string
+          resolution_reason: string | null
+          resolved_at: string | null
+          row_bottom_px: number | null
+          row_colour: string | null
+          row_index: number
+          row_top_px: number | null
+          screenshot_hash: string | null
+          screenshot_key: string
+          seen_state: string
+          suggested_mission: string | null
+          suggested_stage: string | null
+          suggestion_confidence: number | null
+          suggestion_evidence: string | null
+          unread_count: number
+          visible_timestamp_raw: string | null
+          wa_account_label: string | null
+          wa_source_id: string | null
+        }
+        Insert: {
+          batch_id: string
+          captured_at?: string
+          contact_name?: string | null
+          created_at?: string
+          handler_id?: string | null
+          handler_name?: string | null
+          id?: string
+          label_colour?: string | null
+          label_name?: string | null
+          last_message?: string | null
+          lead_id?: string | null
+          movement_signal?: string | null
+          ocr_confidence?: number | null
+          phone_e164?: string | null
+          phone_raw?: string | null
+          preview_direction?: string | null
+          previous_observation_id?: string | null
+          raw_text?: string | null
+          resolution?: string
+          resolution_reason?: string | null
+          resolved_at?: string | null
+          row_bottom_px?: number | null
+          row_colour?: string | null
+          row_index: number
+          row_top_px?: number | null
+          screenshot_hash?: string | null
+          screenshot_key: string
+          seen_state?: string
+          suggested_mission?: string | null
+          suggested_stage?: string | null
+          suggestion_confidence?: number | null
+          suggestion_evidence?: string | null
+          unread_count?: number
+          visible_timestamp_raw?: string | null
+          wa_account_label?: string | null
+          wa_source_id?: string | null
+        }
+        Update: {
+          batch_id?: string
+          captured_at?: string
+          contact_name?: string | null
+          created_at?: string
+          handler_id?: string | null
+          handler_name?: string | null
+          id?: string
+          label_colour?: string | null
+          label_name?: string | null
+          last_message?: string | null
+          lead_id?: string | null
+          movement_signal?: string | null
+          ocr_confidence?: number | null
+          phone_e164?: string | null
+          phone_raw?: string | null
+          preview_direction?: string | null
+          previous_observation_id?: string | null
+          raw_text?: string | null
+          resolution?: string
+          resolution_reason?: string | null
+          resolved_at?: string | null
+          row_bottom_px?: number | null
+          row_colour?: string | null
+          row_index?: number
+          row_top_px?: number | null
+          screenshot_hash?: string | null
+          screenshot_key?: string
+          seen_state?: string
+          suggested_mission?: string | null
+          suggested_stage?: string | null
+          suggestion_confidence?: number | null
+          suggestion_evidence?: string | null
+          unread_count?: number
+          visible_timestamp_raw?: string | null
+          wa_account_label?: string | null
+          wa_source_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flow_screenshot_observations_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "flow_screenshot_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flow_screenshot_observations_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flow_screenshot_observations_previous_observation_id_fkey"
+            columns: ["previous_observation_id"]
+            isOneToOne: false
+            referencedRelation: "flow_screenshot_observations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flow_screenshot_observations_wa_source_id_fkey"
+            columns: ["wa_source_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      flow_work_claims: {
+        Row: {
+          claimed_at: string
+          created_at: string
+          draft_batch_id: string | null
+          expires_at: string
+          id: string
+          last_meaningful_activity_at: string
+          lead_id: string
+          operator_id: string
+          operator_name: string | null
+          release_reason: string | null
+          released_at: string | null
+          state: string
+          takeover_requested_at: string | null
+          takeover_requested_by: string | null
+          takeover_requested_by_name: string | null
+        }
+        Insert: {
+          claimed_at?: string
+          created_at?: string
+          draft_batch_id?: string | null
+          expires_at?: string
+          id?: string
+          last_meaningful_activity_at?: string
+          lead_id: string
+          operator_id: string
+          operator_name?: string | null
+          release_reason?: string | null
+          released_at?: string | null
+          state?: string
+          takeover_requested_at?: string | null
+          takeover_requested_by?: string | null
+          takeover_requested_by_name?: string | null
+        }
+        Update: {
+          claimed_at?: string
+          created_at?: string
+          draft_batch_id?: string | null
+          expires_at?: string
+          id?: string
+          last_meaningful_activity_at?: string
+          lead_id?: string
+          operator_id?: string
+          operator_name?: string | null
+          release_reason?: string | null
+          released_at?: string | null
+          state?: string
+          takeover_requested_at?: string | null
+          takeover_requested_by?: string | null
+          takeover_requested_by_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flow_work_claims_draft_batch_id_fkey"
+            columns: ["draft_batch_id"]
+            isOneToOne: false
+            referencedRelation: "flow_draft_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flow_work_claims_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       hourly_reports: {
         Row: {
           accepted: number
@@ -603,56 +1012,131 @@ export type Database = {
       leads: {
         Row: {
           created_at: string
+          current_handler_id: string | null
+          current_handler_name: string | null
+          current_mission: string
           current_owner: string | null
+          current_pipeline_stage: string
           current_scenario: Database["public"]["Enums"]["scenario_code"] | null
           id: string
+          inferred_label: string | null
+          inferred_stage: string | null
+          last_operator_action_at: string | null
+          last_wa_message: string | null
+          last_wa_seen_at: string | null
+          latest_whatsapp_observation_at: string | null
+          latest_whatsapp_preview: string | null
           location_score: number
           location_text: string | null
           movein_bucket: Database["public"]["Enums"]["move_in_bucket"] | null
           movein_date: string | null
           movein_score: number
+          opportunity_score: number
           phone: string
+          pipeline_stage: string
+          primary_blocker: string | null
           priority: Database["public"]["Enums"]["lead_priority"] | null
           score: number
           status: string
+          suggested_mission: string | null
+          suggested_stage: string | null
+          suggestion_confidence: number | null
+          suggestion_evidence: string | null
+          sync_state: string | null
           updated_at: string
+          wa_label_colour: string | null
+          wa_label_name: string | null
           wa_name: string | null
+          wa_seen_state: string | null
+          wa_unread_count: number | null
+          whatsapp_seen_state: string | null
+          whatsapp_sync_state: string | null
           zone_id: string | null
         }
         Insert: {
           created_at?: string
+          current_handler_id?: string | null
+          current_handler_name?: string | null
+          current_mission?: string
           current_owner?: string | null
+          current_pipeline_stage?: string
           current_scenario?: Database["public"]["Enums"]["scenario_code"] | null
           id?: string
+          inferred_label?: string | null
+          inferred_stage?: string | null
+          last_operator_action_at?: string | null
+          last_wa_message?: string | null
+          last_wa_seen_at?: string | null
+          latest_whatsapp_observation_at?: string | null
+          latest_whatsapp_preview?: string | null
           location_score?: number
           location_text?: string | null
           movein_bucket?: Database["public"]["Enums"]["move_in_bucket"] | null
           movein_date?: string | null
           movein_score?: number
+          opportunity_score?: number
           phone: string
+          pipeline_stage?: string
+          primary_blocker?: string | null
           priority?: Database["public"]["Enums"]["lead_priority"] | null
           score?: number
           status?: string
+          suggested_mission?: string | null
+          suggested_stage?: string | null
+          suggestion_confidence?: number | null
+          suggestion_evidence?: string | null
+          sync_state?: string | null
           updated_at?: string
+          wa_label_colour?: string | null
+          wa_label_name?: string | null
           wa_name?: string | null
+          wa_seen_state?: string | null
+          wa_unread_count?: number | null
+          whatsapp_seen_state?: string | null
+          whatsapp_sync_state?: string | null
           zone_id?: string | null
         }
         Update: {
           created_at?: string
+          current_handler_id?: string | null
+          current_handler_name?: string | null
+          current_mission?: string
           current_owner?: string | null
+          current_pipeline_stage?: string
           current_scenario?: Database["public"]["Enums"]["scenario_code"] | null
           id?: string
+          inferred_label?: string | null
+          inferred_stage?: string | null
+          last_operator_action_at?: string | null
+          last_wa_message?: string | null
+          last_wa_seen_at?: string | null
+          latest_whatsapp_observation_at?: string | null
+          latest_whatsapp_preview?: string | null
           location_score?: number
           location_text?: string | null
           movein_bucket?: Database["public"]["Enums"]["move_in_bucket"] | null
           movein_date?: string | null
           movein_score?: number
+          opportunity_score?: number
           phone?: string
+          pipeline_stage?: string
+          primary_blocker?: string | null
           priority?: Database["public"]["Enums"]["lead_priority"] | null
           score?: number
           status?: string
+          suggested_mission?: string | null
+          suggested_stage?: string | null
+          suggestion_confidence?: number | null
+          suggestion_evidence?: string | null
+          sync_state?: string | null
           updated_at?: string
+          wa_label_colour?: string | null
+          wa_label_name?: string | null
           wa_name?: string | null
+          wa_seen_state?: string | null
+          wa_unread_count?: number | null
+          whatsapp_seen_state?: string | null
+          whatsapp_sync_state?: string | null
           zone_id?: string | null
         }
         Relationships: [
@@ -1205,6 +1689,47 @@ export type Database = {
     }
     Functions: {
       any_role: { Args: { _user_id: string }; Returns: boolean }
+      flow_claim_lead: {
+        Args: {
+          p_batch_id?: string
+          p_lead_id: string
+          p_operator_id: string
+          p_operator_name: string
+        }
+        Returns: {
+          claim_id: string
+          current_operator: string
+          ok: boolean
+          reason: string
+        }[]
+      }
+      flow_close_batch: {
+        Args: { p_batch_id: string; p_operator_id: string; p_reason?: string }
+        Returns: boolean
+      }
+      flow_heartbeat_claim: {
+        Args: { p_claim_id: string; p_operator_id: string }
+        Returns: boolean
+      }
+      flow_refresh_batch: { Args: { p_batch_id: string }; Returns: undefined }
+      flow_release_claim: {
+        Args: { p_claim_id: string; p_operator_id: string; p_reason?: string }
+        Returns: boolean
+      }
+      flow_reserve_lead: {
+        Args: {
+          p_batch_id: string
+          p_lead_id: string
+          p_operator_id: string
+          p_operator_name: string
+        }
+        Returns: {
+          claim_id: string
+          current_operator: string
+          ok: boolean
+          reason: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
