@@ -1,17 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
-import { MissionQueue } from "@/components/workflow/MissionQueue";
+import { FlowWorkPage } from "@/components/flow-os/FlowWorkPage";
 
 export const Route = createFileRoute("/my-work")({
   head: () => ({
     meta: [
-      { title: "My Work — Mission Queue" },
-      { name: "description", content: "One mission at a time: waves, live projected end of day, mandatory next action on every outcome." },
-      { property: "og:title", content: "My Work — Mission Queue" },
-      { property: "og:description", content: "Your daily mission with waves, recovery queue and guaranteed next actions." },
+      { title: "My Work — Draft 30 / Active 13 | Gharpayy Flow OS" },
+      { name: "description", content: "Collision-safe customer work: Draft 30, Active 13, WhatsApp priority interrupts and mandatory Complete & Next." },
+      { property: "og:title", content: "My Work — Gharpayy Flow OS" },
+      { property: "og:description", content: "One customer, one handler, one mission and one dated next action." },
       { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary" },
     ],
   }),
-  component: () => <AppShell><MissionQueue /></AppShell>,
+  component: () => <AppShell><FlowWorkPage /></AppShell>,
 });

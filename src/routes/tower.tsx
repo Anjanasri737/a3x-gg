@@ -35,6 +35,13 @@ function TowerShell() {
               <div className="text-xs text-muted-foreground">Zero Lead Left Behind</div>
             </Link>
             <nav className="flex gap-1 flex-wrap">
+              <Link
+                to="/flow-os"
+                className={`px-3 py-1.5 rounded text-sm font-semibold ${pathname.startsWith("/flow-os") ? "bg-primary text-primary-foreground" : "bg-primary/10 text-primary hover:bg-primary/15"}`}
+                title="Screenshot reconciliation, Draft 30, WhatsApp truth and revenue leakage"
+              >
+                Flow OS · Revenue Guarantee
+              </Link>
               {tabs.map((t) => {
                 const active = t.exact ? pathname === t.to : pathname.startsWith(t.to);
                 return (
