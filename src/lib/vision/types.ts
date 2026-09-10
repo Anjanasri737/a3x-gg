@@ -59,7 +59,7 @@ export interface ObservationRecord {
   blocker_hint: string | null;
   operator_edited: boolean;
   lead_id: string | null;
-  intelligence: Record<string, unknown>;
+  intelligence: Record<string, any>;
 }
 
 export interface ScreenshotRecord {

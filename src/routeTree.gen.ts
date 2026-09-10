@@ -38,6 +38,7 @@ import { Route as HeatmapRouteImport } from './routes/heatmap'
 import { Route as HealthRouteImport } from './routes/health'
 import { Route as HandoffsRouteImport } from './routes/handoffs'
 import { Route as FollowUpsRouteImport } from './routes/follow-ups'
+import { Route as FlowOsRouteImport } from './routes/flow-os'
 import { Route as FinalMomentRouteImport } from './routes/final-moment'
 import { Route as ExecutionRouteImport } from './routes/execution'
 import { Route as ControlTowerTeamRouteImport } from './routes/control-tower-team'
@@ -59,6 +60,7 @@ import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as TowerWorkflowGuaranteeRouteImport } from './routes/tower.workflow-guarantee'
 import { Route as TowerVisionRouteImport } from './routes/tower.vision'
 import { Route as TowerTeamRouteImport } from './routes/tower.team'
+import { Route as TowerScreenshotSyncRouteImport } from './routes/tower.screenshot-sync'
 import { Route as TowerQualityRouteImport } from './routes/tower.quality'
 import { Route as TowerMyLeadsRouteImport } from './routes/tower.my-leads'
 import { Route as TowerInterventionsRouteImport } from './routes/tower.interventions'
@@ -107,6 +109,7 @@ import { Route as MytDraftsRouteImport } from './routes/myt/drafts'
 import { Route as MytCalendarRouteImport } from './routes/myt/calendar'
 import { Route as MytBookingsRouteImport } from './routes/myt/bookings'
 import { Route as LeadsAddRouteImport } from './routes/leads.add'
+import { Route as FlowOsWorkRouteImport } from './routes/flow-os.work'
 import { Route as CribbookingTokenRouteImport } from './routes/cribbooking/$token'
 import { Route as AdminWatchtowerRouteImport } from './routes/admin.watchtower'
 import { Route as AdminWarRoomRouteImport } from './routes/admin.war-room'
@@ -276,6 +279,11 @@ const FollowUpsRoute = FollowUpsRouteImport.update({
   path: '/follow-ups',
   getParentRoute: () => rootRouteImport,
 } as any)
+const FlowOsRoute = FlowOsRouteImport.update({
+  id: '/flow-os',
+  path: '/flow-os',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const FinalMomentRoute = FinalMomentRouteImport.update({
   id: '/final-moment',
   path: '/final-moment',
@@ -379,6 +387,11 @@ const TowerVisionRoute = TowerVisionRouteImport.update({
 const TowerTeamRoute = TowerTeamRouteImport.update({
   id: '/team',
   path: '/team',
+  getParentRoute: () => TowerRoute,
+} as any)
+const TowerScreenshotSyncRoute = TowerScreenshotSyncRouteImport.update({
+  id: '/screenshot-sync',
+  path: '/screenshot-sync',
   getParentRoute: () => TowerRoute,
 } as any)
 const TowerQualityRoute = TowerQualityRouteImport.update({
@@ -621,6 +634,11 @@ const LeadsAddRoute = LeadsAddRouteImport.update({
   path: '/add',
   getParentRoute: () => LeadsRoute,
 } as any)
+const FlowOsWorkRoute = FlowOsWorkRouteImport.update({
+  id: '/work',
+  path: '/work',
+  getParentRoute: () => FlowOsRoute,
+} as any)
 const CribbookingTokenRoute = CribbookingTokenRouteImport.update({
   id: '/cribbooking/$token',
   path: '/cribbooking/$token',
@@ -749,6 +767,7 @@ export interface FileRoutesByFullPath {
   '/control-tower-team': typeof ControlTowerTeamRoute
   '/execution': typeof ExecutionRoute
   '/final-moment': typeof FinalMomentRoute
+  '/flow-os': typeof FlowOsRouteWithChildren
   '/follow-ups': typeof FollowUpsRoute
   '/handoffs': typeof HandoffsRoute
   '/health': typeof HealthRoute
@@ -792,6 +811,7 @@ export interface FileRoutesByFullPath {
   '/admin/war-room': typeof AdminWarRoomRoute
   '/admin/watchtower': typeof AdminWatchtowerRoute
   '/cribbooking/$token': typeof CribbookingTokenRoute
+  '/flow-os/work': typeof FlowOsWorkRoute
   '/leads/add': typeof LeadsAddRoute
   '/myt/bookings': typeof MytBookingsRoute
   '/myt/calendar': typeof MytCalendarRoute
@@ -840,6 +860,7 @@ export interface FileRoutesByFullPath {
   '/tower/interventions': typeof TowerInterventionsRoute
   '/tower/my-leads': typeof TowerMyLeadsRoute
   '/tower/quality': typeof TowerQualityRoute
+  '/tower/screenshot-sync': typeof TowerScreenshotSyncRoute
   '/tower/team': typeof TowerTeamRoute
   '/tower/vision': typeof TowerVisionRoute
   '/tower/workflow-guarantee': typeof TowerWorkflowGuaranteeRoute
@@ -871,6 +892,7 @@ export interface FileRoutesByTo {
   '/control-tower-team': typeof ControlTowerTeamRoute
   '/execution': typeof ExecutionRoute
   '/final-moment': typeof FinalMomentRoute
+  '/flow-os': typeof FlowOsRouteWithChildren
   '/follow-ups': typeof FollowUpsRoute
   '/handoffs': typeof HandoffsRoute
   '/health': typeof HealthRoute
@@ -913,6 +935,7 @@ export interface FileRoutesByTo {
   '/admin/war-room': typeof AdminWarRoomRoute
   '/admin/watchtower': typeof AdminWatchtowerRoute
   '/cribbooking/$token': typeof CribbookingTokenRoute
+  '/flow-os/work': typeof FlowOsWorkRoute
   '/leads/add': typeof LeadsAddRoute
   '/myt/bookings': typeof MytBookingsRoute
   '/myt/calendar': typeof MytCalendarRoute
@@ -961,6 +984,7 @@ export interface FileRoutesByTo {
   '/tower/interventions': typeof TowerInterventionsRoute
   '/tower/my-leads': typeof TowerMyLeadsRoute
   '/tower/quality': typeof TowerQualityRoute
+  '/tower/screenshot-sync': typeof TowerScreenshotSyncRoute
   '/tower/team': typeof TowerTeamRoute
   '/tower/vision': typeof TowerVisionRoute
   '/tower/workflow-guarantee': typeof TowerWorkflowGuaranteeRoute
@@ -994,6 +1018,7 @@ export interface FileRoutesById {
   '/control-tower-team': typeof ControlTowerTeamRoute
   '/execution': typeof ExecutionRoute
   '/final-moment': typeof FinalMomentRoute
+  '/flow-os': typeof FlowOsRouteWithChildren
   '/follow-ups': typeof FollowUpsRoute
   '/handoffs': typeof HandoffsRoute
   '/health': typeof HealthRoute
@@ -1037,6 +1062,7 @@ export interface FileRoutesById {
   '/admin/war-room': typeof AdminWarRoomRoute
   '/admin/watchtower': typeof AdminWatchtowerRoute
   '/cribbooking/$token': typeof CribbookingTokenRoute
+  '/flow-os/work': typeof FlowOsWorkRoute
   '/leads/add': typeof LeadsAddRoute
   '/myt/bookings': typeof MytBookingsRoute
   '/myt/calendar': typeof MytCalendarRoute
@@ -1085,6 +1111,7 @@ export interface FileRoutesById {
   '/tower/interventions': typeof TowerInterventionsRoute
   '/tower/my-leads': typeof TowerMyLeadsRoute
   '/tower/quality': typeof TowerQualityRoute
+  '/tower/screenshot-sync': typeof TowerScreenshotSyncRoute
   '/tower/team': typeof TowerTeamRoute
   '/tower/vision': typeof TowerVisionRoute
   '/tower/workflow-guarantee': typeof TowerWorkflowGuaranteeRoute
@@ -1119,6 +1146,7 @@ export interface FileRouteTypes {
     | '/control-tower-team'
     | '/execution'
     | '/final-moment'
+    | '/flow-os'
     | '/follow-ups'
     | '/handoffs'
     | '/health'
@@ -1162,6 +1190,7 @@ export interface FileRouteTypes {
     | '/admin/war-room'
     | '/admin/watchtower'
     | '/cribbooking/$token'
+    | '/flow-os/work'
     | '/leads/add'
     | '/myt/bookings'
     | '/myt/calendar'
@@ -1210,6 +1239,7 @@ export interface FileRouteTypes {
     | '/tower/interventions'
     | '/tower/my-leads'
     | '/tower/quality'
+    | '/tower/screenshot-sync'
     | '/tower/team'
     | '/tower/vision'
     | '/tower/workflow-guarantee'
@@ -1241,6 +1271,7 @@ export interface FileRouteTypes {
     | '/control-tower-team'
     | '/execution'
     | '/final-moment'
+    | '/flow-os'
     | '/follow-ups'
     | '/handoffs'
     | '/health'
@@ -1283,6 +1314,7 @@ export interface FileRouteTypes {
     | '/admin/war-room'
     | '/admin/watchtower'
     | '/cribbooking/$token'
+    | '/flow-os/work'
     | '/leads/add'
     | '/myt/bookings'
     | '/myt/calendar'
@@ -1331,6 +1363,7 @@ export interface FileRouteTypes {
     | '/tower/interventions'
     | '/tower/my-leads'
     | '/tower/quality'
+    | '/tower/screenshot-sync'
     | '/tower/team'
     | '/tower/vision'
     | '/tower/workflow-guarantee'
@@ -1363,6 +1396,7 @@ export interface FileRouteTypes {
     | '/control-tower-team'
     | '/execution'
     | '/final-moment'
+    | '/flow-os'
     | '/follow-ups'
     | '/handoffs'
     | '/health'
@@ -1406,6 +1440,7 @@ export interface FileRouteTypes {
     | '/admin/war-room'
     | '/admin/watchtower'
     | '/cribbooking/$token'
+    | '/flow-os/work'
     | '/leads/add'
     | '/myt/bookings'
     | '/myt/calendar'
@@ -1454,6 +1489,7 @@ export interface FileRouteTypes {
     | '/tower/interventions'
     | '/tower/my-leads'
     | '/tower/quality'
+    | '/tower/screenshot-sync'
     | '/tower/team'
     | '/tower/vision'
     | '/tower/workflow-guarantee'
@@ -1487,6 +1523,7 @@ export interface RootRouteChildren {
   ControlTowerTeamRoute: typeof ControlTowerTeamRoute
   ExecutionRoute: typeof ExecutionRoute
   FinalMomentRoute: typeof FinalMomentRoute
+  FlowOsRoute: typeof FlowOsRouteWithChildren
   FollowUpsRoute: typeof FollowUpsRoute
   HandoffsRoute: typeof HandoffsRoute
   HealthRoute: typeof HealthRoute
@@ -1767,6 +1804,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof FollowUpsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/flow-os': {
+      id: '/flow-os'
+      path: '/flow-os'
+      fullPath: '/flow-os'
+      preLoaderRoute: typeof FlowOsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/final-moment': {
       id: '/final-moment'
       path: '/final-moment'
@@ -1912,6 +1956,13 @@ declare module '@tanstack/react-router' {
       path: '/team'
       fullPath: '/tower/team'
       preLoaderRoute: typeof TowerTeamRouteImport
+      parentRoute: typeof TowerRoute
+    }
+    '/tower/screenshot-sync': {
+      id: '/tower/screenshot-sync'
+      path: '/screenshot-sync'
+      fullPath: '/tower/screenshot-sync'
+      preLoaderRoute: typeof TowerScreenshotSyncRouteImport
       parentRoute: typeof TowerRoute
     }
     '/tower/quality': {
@@ -2250,6 +2301,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LeadsAddRouteImport
       parentRoute: typeof LeadsRoute
     }
+    '/flow-os/work': {
+      id: '/flow-os/work'
+      path: '/work'
+      fullPath: '/flow-os/work'
+      preLoaderRoute: typeof FlowOsWorkRouteImport
+      parentRoute: typeof FlowOsRoute
+    }
     '/cribbooking/$token': {
       id: '/cribbooking/$token'
       path: '/cribbooking/$token'
@@ -2450,6 +2508,17 @@ const AdminRouteChildren: AdminRouteChildren = {
 
 const AdminRouteWithChildren = AdminRoute._addFileChildren(AdminRouteChildren)
 
+interface FlowOsRouteChildren {
+  FlowOsWorkRoute: typeof FlowOsWorkRoute
+}
+
+const FlowOsRouteChildren: FlowOsRouteChildren = {
+  FlowOsWorkRoute: FlowOsWorkRoute,
+}
+
+const FlowOsRouteWithChildren =
+  FlowOsRoute._addFileChildren(FlowOsRouteChildren)
+
 interface LeadsRouteChildren {
   LeadsAddRoute: typeof LeadsAddRoute
 }
@@ -2473,6 +2542,7 @@ interface TowerRouteChildren {
   TowerInterventionsRoute: typeof TowerInterventionsRoute
   TowerMyLeadsRoute: typeof TowerMyLeadsRoute
   TowerQualityRoute: typeof TowerQualityRoute
+  TowerScreenshotSyncRoute: typeof TowerScreenshotSyncRoute
   TowerTeamRoute: typeof TowerTeamRoute
   TowerVisionRoute: typeof TowerVisionRoute
   TowerWorkflowGuaranteeRoute: typeof TowerWorkflowGuaranteeRoute
@@ -2495,6 +2565,7 @@ const TowerRouteChildren: TowerRouteChildren = {
   TowerInterventionsRoute: TowerInterventionsRoute,
   TowerMyLeadsRoute: TowerMyLeadsRoute,
   TowerQualityRoute: TowerQualityRoute,
+  TowerScreenshotSyncRoute: TowerScreenshotSyncRoute,
   TowerTeamRoute: TowerTeamRoute,
   TowerVisionRoute: TowerVisionRoute,
   TowerWorkflowGuaranteeRoute: TowerWorkflowGuaranteeRoute,
@@ -2543,6 +2614,7 @@ const rootRouteChildren: RootRouteChildren = {
   ControlTowerTeamRoute: ControlTowerTeamRoute,
   ExecutionRoute: ExecutionRoute,
   FinalMomentRoute: FinalMomentRoute,
+  FlowOsRoute: FlowOsRouteWithChildren,
   FollowUpsRoute: FollowUpsRoute,
   HandoffsRoute: HandoffsRoute,
   HealthRoute: HealthRoute,

@@ -444,7 +444,7 @@ export async function ingestScreenshotBatch(input: ScreenshotBatchInput): Promis
       resolution,
       resolution_reason: sourceRow.resolutionReason ?? null,
       lead_id: lead?.id ?? null,
-      resolved_at: resolution === "pending" ? null : isoNow(),
+      resolved_at: resolution === "identity_review" ? null : isoNow(),
     });
     if (observationError) throw observationError;
   }
