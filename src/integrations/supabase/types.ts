@@ -81,6 +81,20 @@ export type Database = {
             foreignKeyName: "assignments_lead_id_fkey"
             columns: ["lead_id"]
             isOneToOne: false
+            referencedRelation: "flow_checkin_status"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "assignments_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "flow_three_day_truth"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "assignments_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
             referencedRelation: "leads"
             referencedColumns: ["id"]
           },
@@ -227,6 +241,124 @@ export type Database = {
         }
         Relationships: []
       }
+      draft_batch_items: {
+        Row: {
+          added_at: string
+          batch_id: string
+          completed_at: string | null
+          id: string
+          lead_id: string
+          mission: string | null
+          rank: number
+          released_at: string | null
+          score: number
+          status: string
+          why_now: string | null
+          work_claim_id: string | null
+        }
+        Insert: {
+          added_at?: string
+          batch_id: string
+          completed_at?: string | null
+          id?: string
+          lead_id: string
+          mission?: string | null
+          rank: number
+          released_at?: string | null
+          score?: number
+          status?: string
+          why_now?: string | null
+          work_claim_id?: string | null
+        }
+        Update: {
+          added_at?: string
+          batch_id?: string
+          completed_at?: string | null
+          id?: string
+          lead_id?: string
+          mission?: string | null
+          rank?: number
+          released_at?: string | null
+          score?: number
+          status?: string
+          why_now?: string | null
+          work_claim_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "draft_batch_items_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "draft_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "draft_batch_items_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "flow_checkin_status"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "draft_batch_items_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "flow_three_day_truth"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "draft_batch_items_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "draft_batch_items_work_claim_id_fkey"
+            columns: ["work_claim_id"]
+            isOneToOne: false
+            referencedRelation: "flow_three_day_truth"
+            referencedColumns: ["claim_id"]
+          },
+          {
+            foreignKeyName: "draft_batch_items_work_claim_id_fkey"
+            columns: ["work_claim_id"]
+            isOneToOne: false
+            referencedRelation: "work_claims"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      draft_batches: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          id: string
+          metadata: Json
+          operator_id: string
+          status: string
+          target_size: number
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json
+          operator_id: string
+          status?: string
+          target_size?: number
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          metadata?: Json
+          operator_id?: string
+          status?: string
+          target_size?: number
+        }
+        Relationships: []
+      }
       duplicate_matches: {
         Row: {
           created_at: string
@@ -259,6 +391,20 @@ export type Database = {
           resolved_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "duplicate_matches_existing_lead_id_fkey"
+            columns: ["existing_lead_id"]
+            isOneToOne: false
+            referencedRelation: "flow_checkin_status"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "duplicate_matches_existing_lead_id_fkey"
+            columns: ["existing_lead_id"]
+            isOneToOne: false
+            referencedRelation: "flow_three_day_truth"
+            referencedColumns: ["lead_id"]
+          },
           {
             foreignKeyName: "duplicate_matches_existing_lead_id_fkey"
             columns: ["existing_lead_id"]
@@ -307,6 +453,598 @@ export type Database = {
           totals?: Json
         }
         Relationships: []
+      }
+      flow_checkin_readiness: {
+        Row: {
+          agreement_done: boolean
+          arrived_at: string | null
+          bed_reference: string | null
+          booking_id: string | null
+          confirmed_at: string | null
+          confirmed_by: string | null
+          created_at: string
+          keys_handed_over_at: string | null
+          kyc_done: boolean
+          lead_id: string
+          notes: string | null
+          owner_approval_status: string
+          payment_ref: string | null
+          payment_verified: boolean
+          room_number: string | null
+          updated_at: string
+        }
+        Insert: {
+          agreement_done?: boolean
+          arrived_at?: string | null
+          bed_reference?: string | null
+          booking_id?: string | null
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string
+          keys_handed_over_at?: string | null
+          kyc_done?: boolean
+          lead_id: string
+          notes?: string | null
+          owner_approval_status?: string
+          payment_ref?: string | null
+          payment_verified?: boolean
+          room_number?: string | null
+          updated_at?: string
+        }
+        Update: {
+          agreement_done?: boolean
+          arrived_at?: string | null
+          bed_reference?: string | null
+          booking_id?: string | null
+          confirmed_at?: string | null
+          confirmed_by?: string | null
+          created_at?: string
+          keys_handed_over_at?: string | null
+          kyc_done?: boolean
+          lead_id?: string
+          notes?: string | null
+          owner_approval_status?: string
+          payment_ref?: string | null
+          payment_verified?: boolean
+          room_number?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flow_checkin_readiness_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: true
+            referencedRelation: "flow_checkin_status"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "flow_checkin_readiness_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: true
+            referencedRelation: "flow_three_day_truth"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "flow_checkin_readiness_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: true
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      flow_draft_batches: {
+        Row: {
+          active_tray_size: number
+          closed_at: string | null
+          created_at: string
+          id: string
+          operator_id: string
+          operator_name: string | null
+          status: string
+          target_size: number
+        }
+        Insert: {
+          active_tray_size?: number
+          closed_at?: string | null
+          created_at?: string
+          id?: string
+          operator_id: string
+          operator_name?: string | null
+          status?: string
+          target_size?: number
+        }
+        Update: {
+          active_tray_size?: number
+          closed_at?: string | null
+          created_at?: string
+          id?: string
+          operator_id?: string
+          operator_name?: string | null
+          status?: string
+          target_size?: number
+        }
+        Relationships: []
+      }
+      flow_draft_items: {
+        Row: {
+          batch_id: string
+          completed_at: string | null
+          created_at: string
+          disposition: string | null
+          id: string
+          is_priority_interrupt: boolean
+          lead_id: string
+          position: number
+          roi_reasons: string[]
+          roi_score: number
+          state: string
+        }
+        Insert: {
+          batch_id: string
+          completed_at?: string | null
+          created_at?: string
+          disposition?: string | null
+          id?: string
+          is_priority_interrupt?: boolean
+          lead_id: string
+          position: number
+          roi_reasons?: string[]
+          roi_score?: number
+          state?: string
+        }
+        Update: {
+          batch_id?: string
+          completed_at?: string | null
+          created_at?: string
+          disposition?: string | null
+          id?: string
+          is_priority_interrupt?: boolean
+          lead_id?: string
+          position?: number
+          roi_reasons?: string[]
+          roi_score?: number
+          state?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flow_draft_items_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "flow_draft_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flow_draft_items_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "flow_checkin_status"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "flow_draft_items_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "flow_three_day_truth"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "flow_draft_items_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      flow_label_colour_mapping: {
+        Row: {
+          active: boolean
+          colour_key: string
+          created_at: string
+          crm_label: string
+          id: string
+          suggested_mission: string | null
+          suggested_stage: string | null
+          updated_at: string
+          updated_by: string | null
+          wa_label_name: string | null
+        }
+        Insert: {
+          active?: boolean
+          colour_key: string
+          created_at?: string
+          crm_label: string
+          id?: string
+          suggested_mission?: string | null
+          suggested_stage?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          wa_label_name?: string | null
+        }
+        Update: {
+          active?: boolean
+          colour_key?: string
+          created_at?: string
+          crm_label?: string
+          id?: string
+          suggested_mission?: string | null
+          suggested_stage?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          wa_label_name?: string | null
+        }
+        Relationships: []
+      }
+      flow_label_rules: {
+        Row: {
+          color_hint: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          inferred_bucket: string | null
+          inferred_label: string
+          inferred_priority: string | null
+          is_enabled: boolean
+          name: string
+          rank: number
+          seen_state: string | null
+          source_id: string | null
+          text_pattern: string | null
+          updated_at: string
+          whatsapp_account: string | null
+        }
+        Insert: {
+          color_hint?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          inferred_bucket?: string | null
+          inferred_label: string
+          inferred_priority?: string | null
+          is_enabled?: boolean
+          name: string
+          rank?: number
+          seen_state?: string | null
+          source_id?: string | null
+          text_pattern?: string | null
+          updated_at?: string
+          whatsapp_account?: string | null
+        }
+        Update: {
+          color_hint?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          inferred_bucket?: string | null
+          inferred_label?: string
+          inferred_priority?: string | null
+          is_enabled?: boolean
+          name?: string
+          rank?: number
+          seen_state?: string | null
+          source_id?: string | null
+          text_pattern?: string | null
+          updated_at?: string
+          whatsapp_account?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flow_label_rules_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      flow_screenshot_batches: {
+        Row: {
+          capture_from: string | null
+          capture_to: string | null
+          created_at: string
+          id: string
+          note: string | null
+          rows_reconciled: number
+          rows_segmented: number
+          screenshot_count: number
+          status: string
+          unresolved_rows: number
+          updated_at: string
+          uploaded_by: string | null
+          uploaded_by_name: string | null
+          visible_rows_expected: number
+          wa_account_label: string | null
+          wa_source_id: string | null
+        }
+        Insert: {
+          capture_from?: string | null
+          capture_to?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          rows_reconciled?: number
+          rows_segmented?: number
+          screenshot_count?: number
+          status?: string
+          unresolved_rows?: number
+          updated_at?: string
+          uploaded_by?: string | null
+          uploaded_by_name?: string | null
+          visible_rows_expected?: number
+          wa_account_label?: string | null
+          wa_source_id?: string | null
+        }
+        Update: {
+          capture_from?: string | null
+          capture_to?: string | null
+          created_at?: string
+          id?: string
+          note?: string | null
+          rows_reconciled?: number
+          rows_segmented?: number
+          screenshot_count?: number
+          status?: string
+          unresolved_rows?: number
+          updated_at?: string
+          uploaded_by?: string | null
+          uploaded_by_name?: string | null
+          visible_rows_expected?: number
+          wa_account_label?: string | null
+          wa_source_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flow_screenshot_batches_wa_source_id_fkey"
+            columns: ["wa_source_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      flow_screenshot_observations: {
+        Row: {
+          batch_id: string
+          captured_at: string
+          contact_name: string | null
+          created_at: string
+          handler_id: string | null
+          handler_name: string | null
+          id: string
+          label_colour: string | null
+          label_name: string | null
+          last_message: string | null
+          lead_id: string | null
+          movement_signal: string | null
+          ocr_confidence: number | null
+          phone_e164: string | null
+          phone_raw: string | null
+          preview_direction: string | null
+          previous_observation_id: string | null
+          raw_text: string | null
+          resolution: string
+          resolution_reason: string | null
+          resolved_at: string | null
+          row_bottom_px: number | null
+          row_colour: string | null
+          row_index: number
+          row_top_px: number | null
+          screenshot_hash: string | null
+          screenshot_key: string
+          seen_state: string
+          suggested_mission: string | null
+          suggested_stage: string | null
+          suggestion_confidence: number | null
+          suggestion_evidence: string | null
+          unread_count: number
+          visible_timestamp_raw: string | null
+          wa_account_label: string | null
+          wa_source_id: string | null
+        }
+        Insert: {
+          batch_id: string
+          captured_at?: string
+          contact_name?: string | null
+          created_at?: string
+          handler_id?: string | null
+          handler_name?: string | null
+          id?: string
+          label_colour?: string | null
+          label_name?: string | null
+          last_message?: string | null
+          lead_id?: string | null
+          movement_signal?: string | null
+          ocr_confidence?: number | null
+          phone_e164?: string | null
+          phone_raw?: string | null
+          preview_direction?: string | null
+          previous_observation_id?: string | null
+          raw_text?: string | null
+          resolution?: string
+          resolution_reason?: string | null
+          resolved_at?: string | null
+          row_bottom_px?: number | null
+          row_colour?: string | null
+          row_index: number
+          row_top_px?: number | null
+          screenshot_hash?: string | null
+          screenshot_key: string
+          seen_state?: string
+          suggested_mission?: string | null
+          suggested_stage?: string | null
+          suggestion_confidence?: number | null
+          suggestion_evidence?: string | null
+          unread_count?: number
+          visible_timestamp_raw?: string | null
+          wa_account_label?: string | null
+          wa_source_id?: string | null
+        }
+        Update: {
+          batch_id?: string
+          captured_at?: string
+          contact_name?: string | null
+          created_at?: string
+          handler_id?: string | null
+          handler_name?: string | null
+          id?: string
+          label_colour?: string | null
+          label_name?: string | null
+          last_message?: string | null
+          lead_id?: string | null
+          movement_signal?: string | null
+          ocr_confidence?: number | null
+          phone_e164?: string | null
+          phone_raw?: string | null
+          preview_direction?: string | null
+          previous_observation_id?: string | null
+          raw_text?: string | null
+          resolution?: string
+          resolution_reason?: string | null
+          resolved_at?: string | null
+          row_bottom_px?: number | null
+          row_colour?: string | null
+          row_index?: number
+          row_top_px?: number | null
+          screenshot_hash?: string | null
+          screenshot_key?: string
+          seen_state?: string
+          suggested_mission?: string | null
+          suggested_stage?: string | null
+          suggestion_confidence?: number | null
+          suggestion_evidence?: string | null
+          unread_count?: number
+          visible_timestamp_raw?: string | null
+          wa_account_label?: string | null
+          wa_source_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flow_screenshot_observations_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "flow_screenshot_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flow_screenshot_observations_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "flow_checkin_status"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "flow_screenshot_observations_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "flow_three_day_truth"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "flow_screenshot_observations_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flow_screenshot_observations_previous_observation_id_fkey"
+            columns: ["previous_observation_id"]
+            isOneToOne: false
+            referencedRelation: "flow_screenshot_observations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flow_screenshot_observations_wa_source_id_fkey"
+            columns: ["wa_source_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      flow_work_claims: {
+        Row: {
+          claimed_at: string
+          created_at: string
+          draft_batch_id: string | null
+          expires_at: string
+          id: string
+          last_meaningful_activity_at: string
+          lead_id: string
+          operator_id: string
+          operator_name: string | null
+          release_reason: string | null
+          released_at: string | null
+          state: string
+          takeover_requested_at: string | null
+          takeover_requested_by: string | null
+          takeover_requested_by_name: string | null
+        }
+        Insert: {
+          claimed_at?: string
+          created_at?: string
+          draft_batch_id?: string | null
+          expires_at?: string
+          id?: string
+          last_meaningful_activity_at?: string
+          lead_id: string
+          operator_id: string
+          operator_name?: string | null
+          release_reason?: string | null
+          released_at?: string | null
+          state?: string
+          takeover_requested_at?: string | null
+          takeover_requested_by?: string | null
+          takeover_requested_by_name?: string | null
+        }
+        Update: {
+          claimed_at?: string
+          created_at?: string
+          draft_batch_id?: string | null
+          expires_at?: string
+          id?: string
+          last_meaningful_activity_at?: string
+          lead_id?: string
+          operator_id?: string
+          operator_name?: string | null
+          release_reason?: string | null
+          released_at?: string | null
+          state?: string
+          takeover_requested_at?: string | null
+          takeover_requested_by?: string | null
+          takeover_requested_by_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flow_work_claims_draft_batch_id_fkey"
+            columns: ["draft_batch_id"]
+            isOneToOne: false
+            referencedRelation: "flow_draft_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flow_work_claims_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "flow_checkin_status"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "flow_work_claims_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "flow_three_day_truth"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "flow_work_claims_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       hourly_reports: {
         Row: {
@@ -423,6 +1161,20 @@ export type Database = {
             foreignKeyName: "inbound_conversations_lead_id_fkey"
             columns: ["lead_id"]
             isOneToOne: false
+            referencedRelation: "flow_checkin_status"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "inbound_conversations_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "flow_three_day_truth"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "inbound_conversations_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
             referencedRelation: "leads"
             referencedColumns: ["id"]
           },
@@ -468,6 +1220,20 @@ export type Database = {
             foreignKeyName: "lead_cycles_lead_id_fkey"
             columns: ["lead_id"]
             isOneToOne: false
+            referencedRelation: "flow_checkin_status"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "lead_cycles_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "flow_three_day_truth"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "lead_cycles_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
             referencedRelation: "leads"
             referencedColumns: ["id"]
           },
@@ -508,6 +1274,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "assignments"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_scenarios_log_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "flow_checkin_status"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "lead_scenarios_log_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "flow_three_day_truth"
+            referencedColumns: ["lead_id"]
           },
           {
             foreignKeyName: "lead_scenarios_log_lead_id_fkey"
@@ -588,6 +1368,20 @@ export type Database = {
             foreignKeyName: "lead_timeline_lead_id_fkey"
             columns: ["lead_id"]
             isOneToOne: false
+            referencedRelation: "flow_checkin_status"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "lead_timeline_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "flow_three_day_truth"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "lead_timeline_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
             referencedRelation: "leads"
             referencedColumns: ["id"]
           },
@@ -603,56 +1397,131 @@ export type Database = {
       leads: {
         Row: {
           created_at: string
+          current_handler_id: string | null
+          current_handler_name: string | null
+          current_mission: string
           current_owner: string | null
+          current_pipeline_stage: string
           current_scenario: Database["public"]["Enums"]["scenario_code"] | null
           id: string
+          inferred_label: string | null
+          inferred_stage: string | null
+          last_operator_action_at: string | null
+          last_wa_message: string | null
+          last_wa_seen_at: string | null
+          latest_whatsapp_observation_at: string | null
+          latest_whatsapp_preview: string | null
           location_score: number
           location_text: string | null
           movein_bucket: Database["public"]["Enums"]["move_in_bucket"] | null
           movein_date: string | null
           movein_score: number
+          opportunity_score: number
           phone: string
+          pipeline_stage: string
+          primary_blocker: string | null
           priority: Database["public"]["Enums"]["lead_priority"] | null
           score: number
           status: string
+          suggested_mission: string | null
+          suggested_stage: string | null
+          suggestion_confidence: number | null
+          suggestion_evidence: string | null
+          sync_state: string | null
           updated_at: string
+          wa_label_colour: string | null
+          wa_label_name: string | null
           wa_name: string | null
+          wa_seen_state: string | null
+          wa_unread_count: number | null
+          whatsapp_seen_state: string | null
+          whatsapp_sync_state: string | null
           zone_id: string | null
         }
         Insert: {
           created_at?: string
+          current_handler_id?: string | null
+          current_handler_name?: string | null
+          current_mission?: string
           current_owner?: string | null
+          current_pipeline_stage?: string
           current_scenario?: Database["public"]["Enums"]["scenario_code"] | null
           id?: string
+          inferred_label?: string | null
+          inferred_stage?: string | null
+          last_operator_action_at?: string | null
+          last_wa_message?: string | null
+          last_wa_seen_at?: string | null
+          latest_whatsapp_observation_at?: string | null
+          latest_whatsapp_preview?: string | null
           location_score?: number
           location_text?: string | null
           movein_bucket?: Database["public"]["Enums"]["move_in_bucket"] | null
           movein_date?: string | null
           movein_score?: number
+          opportunity_score?: number
           phone: string
+          pipeline_stage?: string
+          primary_blocker?: string | null
           priority?: Database["public"]["Enums"]["lead_priority"] | null
           score?: number
           status?: string
+          suggested_mission?: string | null
+          suggested_stage?: string | null
+          suggestion_confidence?: number | null
+          suggestion_evidence?: string | null
+          sync_state?: string | null
           updated_at?: string
+          wa_label_colour?: string | null
+          wa_label_name?: string | null
           wa_name?: string | null
+          wa_seen_state?: string | null
+          wa_unread_count?: number | null
+          whatsapp_seen_state?: string | null
+          whatsapp_sync_state?: string | null
           zone_id?: string | null
         }
         Update: {
           created_at?: string
+          current_handler_id?: string | null
+          current_handler_name?: string | null
+          current_mission?: string
           current_owner?: string | null
+          current_pipeline_stage?: string
           current_scenario?: Database["public"]["Enums"]["scenario_code"] | null
           id?: string
+          inferred_label?: string | null
+          inferred_stage?: string | null
+          last_operator_action_at?: string | null
+          last_wa_message?: string | null
+          last_wa_seen_at?: string | null
+          latest_whatsapp_observation_at?: string | null
+          latest_whatsapp_preview?: string | null
           location_score?: number
           location_text?: string | null
           movein_bucket?: Database["public"]["Enums"]["move_in_bucket"] | null
           movein_date?: string | null
           movein_score?: number
+          opportunity_score?: number
           phone?: string
+          pipeline_stage?: string
+          primary_blocker?: string | null
           priority?: Database["public"]["Enums"]["lead_priority"] | null
           score?: number
           status?: string
+          suggested_mission?: string | null
+          suggested_stage?: string | null
+          suggestion_confidence?: number | null
+          suggestion_evidence?: string | null
+          sync_state?: string | null
           updated_at?: string
+          wa_label_colour?: string | null
+          wa_label_name?: string | null
           wa_name?: string | null
+          wa_seen_state?: string | null
+          wa_unread_count?: number | null
+          whatsapp_seen_state?: string | null
+          whatsapp_sync_state?: string | null
           zone_id?: string | null
         }
         Relationships: [
@@ -676,6 +1545,10 @@ export type Database = {
           lead_id: string
           notes: string | null
           owner_id: string | null
+          priority: string | null
+          source: string | null
+          status: string
+          triggered_by_observation_id: string | null
           updated_at: string
         }
         Insert: {
@@ -688,6 +1561,10 @@ export type Database = {
           lead_id: string
           notes?: string | null
           owner_id?: string | null
+          priority?: string | null
+          source?: string | null
+          status?: string
+          triggered_by_observation_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -700,6 +1577,10 @@ export type Database = {
           lead_id?: string
           notes?: string | null
           owner_id?: string | null
+          priority?: string | null
+          source?: string | null
+          status?: string
+          triggered_by_observation_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -707,7 +1588,35 @@ export type Database = {
             foreignKeyName: "next_actions_lead_id_fkey"
             columns: ["lead_id"]
             isOneToOne: false
+            referencedRelation: "flow_checkin_status"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "next_actions_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "flow_three_day_truth"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "next_actions_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
             referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "next_actions_triggered_by_observation_id_fkey"
+            columns: ["triggered_by_observation_id"]
+            isOneToOne: false
+            referencedRelation: "flow_three_day_truth"
+            referencedColumns: ["observation_id"]
+          },
+          {
+            foreignKeyName: "next_actions_triggered_by_observation_id_fkey"
+            columns: ["triggered_by_observation_id"]
+            isOneToOne: false
+            referencedRelation: "screenshot_observations"
             referencedColumns: ["id"]
           },
         ]
@@ -943,6 +1852,20 @@ export type Database = {
             foreignKeyName: "reviews_lead_id_fkey"
             columns: ["lead_id"]
             isOneToOne: false
+            referencedRelation: "flow_checkin_status"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "reviews_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "flow_three_day_truth"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "reviews_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
             referencedRelation: "leads"
             referencedColumns: ["id"]
           },
@@ -951,6 +1874,237 @@ export type Database = {
             columns: ["re_review_of"]
             isOneToOne: false
             referencedRelation: "reviews"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      screenshot_batches: {
+        Row: {
+          capture_window_end: string | null
+          capture_window_start: string | null
+          created_at: string
+          detected_rows_total: number
+          expected_override: number | null
+          id: string
+          metadata: Json
+          rows_reconciled: number
+          rows_segmented: number
+          screenshot_count: number
+          source_id: string | null
+          status: string
+          unresolved_count: number
+          updated_at: string
+          uploaded_at: string
+          uploader_id: string | null
+          visible_rows_expected: number
+          whatsapp_account: string | null
+        }
+        Insert: {
+          capture_window_end?: string | null
+          capture_window_start?: string | null
+          created_at?: string
+          detected_rows_total?: number
+          expected_override?: number | null
+          id?: string
+          metadata?: Json
+          rows_reconciled?: number
+          rows_segmented?: number
+          screenshot_count?: number
+          source_id?: string | null
+          status?: string
+          unresolved_count?: number
+          updated_at?: string
+          uploaded_at?: string
+          uploader_id?: string | null
+          visible_rows_expected?: number
+          whatsapp_account?: string | null
+        }
+        Update: {
+          capture_window_end?: string | null
+          capture_window_start?: string | null
+          created_at?: string
+          detected_rows_total?: number
+          expected_override?: number | null
+          id?: string
+          metadata?: Json
+          rows_reconciled?: number
+          rows_segmented?: number
+          screenshot_count?: number
+          source_id?: string | null
+          status?: string
+          unresolved_count?: number
+          updated_at?: string
+          uploaded_at?: string
+          uploader_id?: string | null
+          visible_rows_expected?: number
+          whatsapp_account?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "screenshot_batches_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      screenshot_observations: {
+        Row: {
+          batch_id: string
+          blocker_hint: string | null
+          captured_at: string
+          color_hint: string | null
+          contact_name: string | null
+          created_at: string
+          detected_label: string | null
+          handler_hint: string | null
+          id: string
+          intelligence: Json
+          last_message_preview: string | null
+          lead_id: string | null
+          movement_signal: string | null
+          ocr_confidence: number | null
+          operator_edited: boolean
+          phone_normalized: string | null
+          phone_raw: string | null
+          preview_direction: string
+          primary_mission: string | null
+          raw_text: string
+          reconciliation_reason: string | null
+          reconciliation_state: string
+          row_bottom_px: number | null
+          row_index: number | null
+          row_top_px: number | null
+          screenshot_id: string
+          seen_state: string
+          source_id: string | null
+          stage_confidence: number | null
+          stage_inference: string | null
+          unread_count: number | null
+          unread_visible: boolean | null
+          visible_timestamp_raw: string | null
+          whatsapp_account: string | null
+          whatsapp_row_color: string | null
+          work_bucket: string | null
+        }
+        Insert: {
+          batch_id: string
+          blocker_hint?: string | null
+          captured_at?: string
+          color_hint?: string | null
+          contact_name?: string | null
+          created_at?: string
+          detected_label?: string | null
+          handler_hint?: string | null
+          id?: string
+          intelligence?: Json
+          last_message_preview?: string | null
+          lead_id?: string | null
+          movement_signal?: string | null
+          ocr_confidence?: number | null
+          operator_edited?: boolean
+          phone_normalized?: string | null
+          phone_raw?: string | null
+          preview_direction?: string
+          primary_mission?: string | null
+          raw_text?: string
+          reconciliation_reason?: string | null
+          reconciliation_state?: string
+          row_bottom_px?: number | null
+          row_index?: number | null
+          row_top_px?: number | null
+          screenshot_id: string
+          seen_state?: string
+          source_id?: string | null
+          stage_confidence?: number | null
+          stage_inference?: string | null
+          unread_count?: number | null
+          unread_visible?: boolean | null
+          visible_timestamp_raw?: string | null
+          whatsapp_account?: string | null
+          whatsapp_row_color?: string | null
+          work_bucket?: string | null
+        }
+        Update: {
+          batch_id?: string
+          blocker_hint?: string | null
+          captured_at?: string
+          color_hint?: string | null
+          contact_name?: string | null
+          created_at?: string
+          detected_label?: string | null
+          handler_hint?: string | null
+          id?: string
+          intelligence?: Json
+          last_message_preview?: string | null
+          lead_id?: string | null
+          movement_signal?: string | null
+          ocr_confidence?: number | null
+          operator_edited?: boolean
+          phone_normalized?: string | null
+          phone_raw?: string | null
+          preview_direction?: string
+          primary_mission?: string | null
+          raw_text?: string
+          reconciliation_reason?: string | null
+          reconciliation_state?: string
+          row_bottom_px?: number | null
+          row_index?: number | null
+          row_top_px?: number | null
+          screenshot_id?: string
+          seen_state?: string
+          source_id?: string | null
+          stage_confidence?: number | null
+          stage_inference?: string | null
+          unread_count?: number | null
+          unread_visible?: boolean | null
+          visible_timestamp_raw?: string | null
+          whatsapp_account?: string | null
+          whatsapp_row_color?: string | null
+          work_bucket?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "screenshot_observations_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "screenshot_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "screenshot_observations_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "flow_checkin_status"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "screenshot_observations_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "flow_three_day_truth"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "screenshot_observations_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "screenshot_observations_screenshot_id_fkey"
+            columns: ["screenshot_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_screenshots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "screenshot_observations_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_sources"
             referencedColumns: ["id"]
           },
         ]
@@ -1065,6 +2219,100 @@ export type Database = {
         }
         Relationships: []
       }
+      whatsapp_screenshots: {
+        Row: {
+          ai_visible_row_count: number | null
+          batch_id: string
+          captured_at: string | null
+          created_at: string
+          error_message: string | null
+          extraction_confidence: number | null
+          extraction_model: string | null
+          extraction_version: string | null
+          file_name: string | null
+          id: string
+          image_hash: string | null
+          processing_status: string
+          raw_ocr_summary: Json
+          reused_from_screenshot_id: string | null
+          source_id: string | null
+          temporary_storage_path: string | null
+          updated_at: string
+          uploaded_at: string
+          visible_row_count: number
+          warnings: Json
+          whatsapp_account: string | null
+        }
+        Insert: {
+          ai_visible_row_count?: number | null
+          batch_id: string
+          captured_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          extraction_confidence?: number | null
+          extraction_model?: string | null
+          extraction_version?: string | null
+          file_name?: string | null
+          id?: string
+          image_hash?: string | null
+          processing_status?: string
+          raw_ocr_summary?: Json
+          reused_from_screenshot_id?: string | null
+          source_id?: string | null
+          temporary_storage_path?: string | null
+          updated_at?: string
+          uploaded_at?: string
+          visible_row_count?: number
+          warnings?: Json
+          whatsapp_account?: string | null
+        }
+        Update: {
+          ai_visible_row_count?: number | null
+          batch_id?: string
+          captured_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          extraction_confidence?: number | null
+          extraction_model?: string | null
+          extraction_version?: string | null
+          file_name?: string | null
+          id?: string
+          image_hash?: string | null
+          processing_status?: string
+          raw_ocr_summary?: Json
+          reused_from_screenshot_id?: string | null
+          source_id?: string | null
+          temporary_storage_path?: string | null
+          updated_at?: string
+          uploaded_at?: string
+          visible_row_count?: number
+          warnings?: Json
+          whatsapp_account?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "whatsapp_screenshots_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "screenshot_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_screenshots_reused_from_screenshot_id_fkey"
+            columns: ["reused_from_screenshot_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_screenshots"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "whatsapp_screenshots_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "whatsapp_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       whatsapp_sources: {
         Row: {
           campaign: string | null
@@ -1094,6 +2342,92 @@ export type Database = {
           wa_number?: string
         }
         Relationships: []
+      }
+      work_claims: {
+        Row: {
+          batch_id: string | null
+          bucket: string
+          claimed_at: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          is_current: boolean
+          last_meaningful_action_at: string
+          lead_id: string
+          next_action: string | null
+          next_action_at: string | null
+          operator_id: string
+          release_reason: string | null
+          released_at: string | null
+          state: string
+          updated_at: string
+        }
+        Insert: {
+          batch_id?: string | null
+          bucket?: string
+          claimed_at?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_current?: boolean
+          last_meaningful_action_at?: string
+          lead_id: string
+          next_action?: string | null
+          next_action_at?: string | null
+          operator_id: string
+          release_reason?: string | null
+          released_at?: string | null
+          state?: string
+          updated_at?: string
+        }
+        Update: {
+          batch_id?: string | null
+          bucket?: string
+          claimed_at?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_current?: boolean
+          last_meaningful_action_at?: string
+          lead_id?: string
+          next_action?: string | null
+          next_action_at?: string | null
+          operator_id?: string
+          release_reason?: string | null
+          released_at?: string | null
+          state?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_claims_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "draft_batches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "work_claims_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "flow_checkin_status"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "work_claims_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "flow_three_day_truth"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "work_claims_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       workload_points: {
         Row: {
@@ -1201,10 +2535,180 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      flow_checkin_status: {
+        Row: {
+          agreement_done: boolean | null
+          arrived_at: string | null
+          bed_reference: string | null
+          confirmed_at: string | null
+          current_pipeline_stage: string | null
+          keys_handed_over_at: string | null
+          kyc_done: boolean | null
+          lead_id: string | null
+          next_checkin_gate: string | null
+          owner_approval_status: string | null
+          payment_ref: string | null
+          payment_verified: boolean | null
+          phone: string | null
+          ready_to_confirm: boolean | null
+          room_number: string | null
+          wa_name: string | null
+        }
+        Relationships: []
+      }
+      flow_revenue_leakage: {
+        Row: {
+          current_handler: string | null
+          current_handler_name: string | null
+          current_owner: string | null
+          current_owner_name: string | null
+          current_pipeline_stage: string | null
+          last_message_preview: string | null
+          latest_observation_at: string | null
+          lead_id: string | null
+          leak_type: string | null
+          observation_id: string | null
+          phone: string | null
+          severity: number | null
+          wa_name: string | null
+          why_red: string | null
+        }
+        Relationships: []
+      }
+      flow_three_day_truth: {
+        Row: {
+          claim_expires_at: string | null
+          claim_id: string | null
+          claim_state: string | null
+          color_hint: string | null
+          current_batch_id: string | null
+          current_handler: string | null
+          current_handler_name: string | null
+          current_owner: string | null
+          current_owner_name: string | null
+          current_pipeline_stage: string | null
+          detected_label: string | null
+          handler_hint: string | null
+          last_message_preview: string | null
+          latest_observation_at: string | null
+          lead_id: string | null
+          lead_status: string | null
+          next_action_at: string | null
+          next_action_id: string | null
+          next_action_kind: string | null
+          observation_id: string | null
+          phone: string | null
+          preview_direction: string | null
+          priority: Database["public"]["Enums"]["lead_priority"] | null
+          seen_state: string | null
+          stage_confidence: number | null
+          stage_inference: string | null
+          sync_state: string | null
+          unread_count: number | null
+          unread_visible: boolean | null
+          wa_name: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "work_claims_batch_id_fkey"
+            columns: ["current_batch_id"]
+            isOneToOne: false
+            referencedRelation: "draft_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       any_role: { Args: { _user_id: string }; Returns: boolean }
+      claim_flow_lead: {
+        Args: {
+          _batch_id?: string
+          _bucket?: string
+          _lead_id: string
+          _next_action?: string
+          _next_action_at?: string
+          _operator_id: string
+          _ttl_minutes?: number
+        }
+        Returns: {
+          batch_id: string | null
+          bucket: string
+          claimed_at: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          is_current: boolean
+          last_meaningful_action_at: string
+          lead_id: string
+          next_action: string | null
+          next_action_at: string | null
+          operator_id: string
+          release_reason: string | null
+          released_at: string | null
+          state: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "work_claims"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      complete_flow_item: {
+        Args: {
+          _batch_item_id: string
+          _claim_id: string
+          _next_action_at?: string
+          _next_action_kind?: string
+          _notes?: string
+          _outcome: string
+        }
+        Returns: Json
+      }
+      confirm_flow_checkin: { Args: { _lead_id: string }; Returns: Json }
+      flow_claim_lead: {
+        Args: {
+          p_batch_id?: string
+          p_lead_id: string
+          p_operator_id: string
+          p_operator_name: string
+        }
+        Returns: {
+          claim_id: string
+          current_operator: string
+          ok: boolean
+          reason: string
+        }[]
+      }
+      flow_close_batch: {
+        Args: { p_batch_id: string; p_operator_id: string; p_reason?: string }
+        Returns: boolean
+      }
+      flow_heartbeat_claim: {
+        Args: { p_claim_id: string; p_operator_id: string }
+        Returns: boolean
+      }
+      flow_refresh_batch: { Args: { p_batch_id: string }; Returns: undefined }
+      flow_release_claim: {
+        Args: { p_claim_id: string; p_operator_id: string; p_reason?: string }
+        Returns: boolean
+      }
+      flow_reserve_lead: {
+        Args: {
+          p_batch_id: string
+          p_lead_id: string
+          p_operator_id: string
+          p_operator_name: string
+        }
+        Returns: {
+          claim_id: string
+          current_operator: string
+          ok: boolean
+          reason: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1213,6 +2717,37 @@ export type Database = {
         Returns: boolean
       }
       is_tower_ops: { Args: { _user_id: string }; Returns: boolean }
+      release_flow_claim: {
+        Args: { _claim_id: string; _reason?: string }
+        Returns: undefined
+      }
+      touch_flow_claim: {
+        Args: { _claim_id: string; _ttl_minutes?: number }
+        Returns: {
+          batch_id: string | null
+          bucket: string
+          claimed_at: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          is_current: boolean
+          last_meaningful_action_at: string
+          lead_id: string
+          next_action: string | null
+          next_action_at: string | null
+          operator_id: string
+          release_reason: string | null
+          released_at: string | null
+          state: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "work_claims"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
     }
     Enums: {
       ack_choice: "understood" | "need_clarification" | "disagree"
