@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
 import { FlowWorkPage } from "@/components/flow-os/FlowWorkPage";
+import { LegacyOverlayGuard } from "@/components/flow-os/LegacyOverlayGuard";
 
 export const Route = createFileRoute("/my-work")({
   head: () => ({
@@ -12,5 +13,5 @@ export const Route = createFileRoute("/my-work")({
       { property: "og:type", content: "website" },
     ],
   }),
-  component: () => <AppShell><FlowWorkPage /></AppShell>,
+  component: () => <AppShell><LegacyOverlayGuard /><FlowWorkPage /></AppShell>,
 });

@@ -21,8 +21,11 @@ jobs:
           node-version: 22
           cache: npm
       # The repository's package.json and package-lock.json already drift on
-      # @lovable.dev/vite-tanstack-config (2.13.1 vs 2.7.1). `npm ci` fails
-      # before TypeScript can be checked, so install resolves that existing
-      # lock drift in the ephemeral runner and then performs the real build.
+      # @lovable.dev/vite-tanstack-config. Resolve the existing lock drift in
+      # the ephemeral runner, then enforce architecture + strict TS + bundling.
       - run: npm install --no-audit --no-fund
+      - name: Verify Flow OS architecture invariants
+        run: node scripts/verify-flow-os.mjs
+      - name: Strict TypeScript check
+        run: npx tsc --noEmit --pretty false
       - run: npm run build

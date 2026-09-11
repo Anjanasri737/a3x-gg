@@ -4,7 +4,7 @@ const db = supabase as unknown as {
   rpc: (fn: string, args?: Record<string, unknown>) => Promise<{ data: any; error: any }>;
 };
 
-export type FlowOutcome = "completed" | "future" | "waiting" | "lost" | "booked" | "checked_in" | "handoff";
+export type FlowOutcome = "future" | "waiting" | "lost" | "booked" | "handoff";
 
 export async function completeAndNext(params: {
   batchItemId: string;

@@ -2,6 +2,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { normalizePhoneIN } from "@/lib/lead-identity/normalize";
 import { inferMessageIntelligence } from "./message-intelligence";
 import { reconcileCounts, type LabelRule } from "./reconciliation";
+import { selectDraftPortfolio } from "./drafting-algorithm";
 
 const db = supabase as unknown as {
   from: (table: string) => any;
@@ -28,7 +29,16 @@ export interface TruthRow {
   lead_id: string;
   phone: string;
   wa_name: string | null;
+  location_text?: string | null;
+  movein_date?: string | null;
+  lead_source?: string | null;
+  opportunity_score?: number | null;
   current_owner: string | null;
+  current_owner_name?: string | null;
+  current_pipeline_stage: string | null;
+  current_mission?: string | null;
+  primary_blocker?: string | null;
+  last_operator_action_at?: string | null;
   lead_status: string;
   priority: string | null;
   latest_observation_at: string | null;
@@ -44,8 +54,12 @@ export interface TruthRow {
   stage_confidence: number | null;
   claim_id: string | null;
   current_handler: string | null;
+  current_handler_name?: string | null;
+  reservation_operator?: string | null;
+  reservation_operator_name?: string | null;
   claim_state: string | null;
   claim_expires_at: string | null;
+  current_batch_id?: string | null;
   next_action_id: string | null;
   next_action_kind: string | null;
   next_action_at: string | null;
@@ -69,6 +83,17 @@ export async function currentUserId() {
   return data.user?.id ?? null;
 }
 
+export async function currentOperator() {
+  const { data } = await db.auth.getUser();
+  const user = data.user;
+  if (!user) throw new Error("Sign in required");
+  return {
+    id: user.id,
+    name: user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split("@")[0] || "Operator",
+    email: user.email ?? undefined,
+  };
+}
+
 export async function listScreenshotBatches(limit = 20): Promise<ScreenshotBatchSummary[]> {
   const { data, error } = await db.from("screenshot_batches").select("*").order("uploaded_at", { ascending: false }).limit(limit);
   if (error) throw error;
@@ -79,6 +104,12 @@ export async function listTruthRows(): Promise<TruthRow[]> {
   const { data, error } = await db.from("flow_three_day_truth").select("*").order("latest_observation_at", { ascending: false, nullsFirst: false });
   if (error) throw error;
   return (data ?? []) as TruthRow[];
+}
+
+export async function getTruthRow(leadId: string): Promise<TruthRow | null> {
+  const { data, error } = await db.from("flow_three_day_truth").select("*").eq("lead_id", leadId).maybeSingle();
+  if (error) throw error;
+  return (data ?? null) as TruthRow | null;
 }
 
 export async function listLabelRules(): Promise<LabelRule[]> {
@@ -138,6 +169,7 @@ async function createCanonicalLead(input: ManualObservationInput) {
     score: input.unreadVisible ? 20 : 0,
     priority: input.unreadVisible ? "hot" : "active",
     status: "open",
+    current_pipeline_stage: "DOSSIER",
     latest_whatsapp_observation_at: new Date().toISOString(),
     latest_whatsapp_preview: input.lastMessage || null,
     whatsapp_seen_state: input.seenState,
@@ -217,6 +249,7 @@ export async function ingestManualBatch(params: {
       unresolved += 1;
     }
 
+    const savedStage = lead?.current_pipeline_stage ?? null;
     const intelligence = inferMessageIntelligence({
       lastMessage: row.lastMessage,
       direction: row.direction,
@@ -224,7 +257,7 @@ export async function ingestManualBatch(params: {
       seenState: row.seenState,
       colorHint: row.colorHint,
       detectedLabel: row.detectedLabel,
-      savedStage: lead?.inferred_stage ?? null,
+      savedStage,
     });
     const screenshot = screenshots[rowIndex % screenshots.length];
     const { data: obs, error: obsError } = await db.from("screenshot_observations").insert({
@@ -258,7 +291,13 @@ export async function ingestManualBatch(params: {
     states.push(reconciliationState);
 
     if (lead) {
-      const syncState = row.unreadVisible && !lead.current_owner ? "RED" : intelligence.inferredPipelineHint && lead.inferred_stage && intelligence.inferredPipelineHint !== lead.inferred_stage ? "AMBER" : "GREEN";
+      const syncState = row.unreadVisible && !lead.current_owner
+        ? "RED"
+        : intelligence.inferredPipelineHint && savedStage && intelligence.inferredPipelineHint !== savedStage
+          ? "AMBER"
+          : "GREEN";
+      // Screenshot evidence is passive truth. Do not update leads.updated_at or
+      // last_operator_action_at: OCR must never masquerade as human CRM work.
       await db.from("leads").update({
         latest_whatsapp_observation_at: now,
         latest_whatsapp_preview: row.lastMessage || null,
@@ -266,7 +305,6 @@ export async function ingestManualBatch(params: {
         inferred_stage: intelligence.inferredPipelineHint,
         inferred_label: row.detectedLabel ?? null,
         whatsapp_sync_state: syncState,
-        updated_at: now,
       }).eq("id", lead.id);
       if (intelligence.isPriorityInterrupt && lead.current_owner) {
         await db.from("next_actions").insert({
@@ -305,6 +343,21 @@ export async function ingestManualBatch(params: {
   return { batchId: batch.id, counts, unresolved, status };
 }
 
+export async function reserveLead(leadId: string, bucket = "TODAY", batchId: string, nextAction?: string | null, nextActionAt?: string | null) {
+  const uid = await currentUserId();
+  if (!uid) throw new Error("Sign in required to reserve a lead");
+  const { data, error } = await db.rpc("reserve_flow_lead", {
+    _lead_id: leadId,
+    _operator_id: uid,
+    _batch_id: batchId,
+    _bucket: bucket,
+    _next_action: nextAction ?? null,
+    _next_action_at: nextActionAt ?? null,
+  });
+  if (error) throw error;
+  return data;
+}
+
 export async function claimLead(leadId: string, bucket = "TODAY", batchId?: string | null, nextAction?: string | null, nextActionAt?: string | null) {
   const uid = await currentUserId();
   if (!uid) throw new Error("Sign in required to claim a lead");
@@ -332,65 +385,80 @@ export async function releaseClaim(claimId: string, reason = "completed") {
   if (error) throw error;
 }
 
-function draftScore(row: TruthRow) {
-  let score = 0;
-  if (row.unread_visible) score += 100;
-  if (row.sync_state === "RED") score += 80;
-  if (row.sync_state === "AMBER") score += 50;
-  if (row.stage_inference === "TOUR_SCHEDULED" || row.stage_inference === "TOUR_IN_PROGRESS") score += 45;
-  if (row.stage_inference === "POST_VISIT") score += 40;
-  if (row.stage_inference === "QUOTED" || row.stage_inference === "NEGOTIATION") score += 35;
-  if (row.priority === "super_hot") score += 60;
-  if (row.priority === "hot") score += 35;
-  if (row.next_action_at && Date.parse(row.next_action_at) <= Date.now()) score += 30;
-  if (!row.current_owner) score += 20;
-  const age = row.latest_observation_at ? Date.now() - Date.parse(row.latest_observation_at) : Number.MAX_SAFE_INTEGER;
-  if (age < 30 * 60_000) score += 30;
-  else if (age < 2 * 3600_000) score += 15;
-  return score;
+async function getOrCreateActiveDraft(uid: string, targetSize: number) {
+  const { data: existing, error: existingError } = await db.from("draft_batches")
+    .select("*").eq("operator_id", uid).eq("status", "active")
+    .order("created_at", { ascending: false }).limit(1).maybeSingle();
+  if (existingError) throw existingError;
+  if (existing) return existing;
+  const { data: batch, error } = await db.from("draft_batches").insert({
+    operator_id: uid,
+    target_size: targetSize,
+    status: "active",
+    metadata: { createdBy: "flow-os-10x", algorithm: "roi-soft-balanced-v1" },
+  }).select("*").single();
+  if (error) throw error;
+  return batch;
 }
 
 export async function createDraft30(targetSize = 30) {
   const uid = await currentUserId();
   if (!uid) throw new Error("Sign in required");
-  const truth = await listTruthRows();
-  const mineOrFree = truth.filter((r) => !r.current_handler || r.current_handler === uid);
-  const ranked = mineOrFree
-    .map((row) => ({ row, score: draftScore(row), intel: inferMessageIntelligence({
-      lastMessage: row.last_message_preview,
-      direction: row.preview_direction as any,
-      unreadVisible: row.unread_visible,
-      seenState: row.seen_state as any,
-      colorHint: row.color_hint,
-      detectedLabel: row.detected_label,
-      savedStage: row.stage_inference,
-    }) }))
-    .sort((a, b) => b.score - a.score);
+  const target = Math.max(1, Math.min(60, targetSize));
+  const batch = await getOrCreateActiveDraft(uid, target);
 
-  const { data: batch, error: batchError } = await db.from("draft_batches").insert({ operator_id: uid, target_size: targetSize, status: "active", metadata: { createdBy: "flow-os" } }).select("*").single();
-  if (batchError) throw batchError;
+  const { data: existingItems, error: itemError } = await db.from("draft_batch_items")
+    .select("*").eq("batch_id", batch.id).in("status", ["active", "queued"])
+    .order("rank", { ascending: true });
+  if (itemError) throw itemError;
+  const existingIds = new Set((existingItems ?? []).map((i: any) => i.lead_id));
+  const needed = Math.max(0, target - existingIds.size);
 
-  const items: any[] = [];
-  for (const candidate of ranked) {
-    if (items.length >= targetSize) break;
-    try {
-      const claim = await claimLead(candidate.row.lead_id, candidate.intel.inferredWorkBucket, batch.id, candidate.intel.primaryAction, candidate.row.next_action_at);
-      const { data: item, error } = await db.from("draft_batch_items").insert({
-        batch_id: batch.id,
-        lead_id: candidate.row.lead_id,
-        work_claim_id: claim?.id ?? claim?.[0]?.id ?? null,
-        rank: items.length + 1,
-        mission: candidate.intel.primaryMission,
-        why_now: candidate.intel.reasons.join(" · "),
-        score: candidate.score,
-        status: items.length < 13 ? "active" : "queued",
-      }).select("*").single();
-      if (!error) items.push({ ...item, lead: candidate.row, intelligence: candidate.intel });
-    } catch {
-      // Atomic claim lost to another operator. Skip and continue; this is the collision barrier.
+  if (needed > 0) {
+    const truth = await listTruthRows();
+    const eligible = truth.filter((r) => {
+      if (["CHECKED_IN", "LOST"].includes(String(r.current_pipeline_stage || r.lead_status).toUpperCase())) return false;
+      if (existingIds.has(r.lead_id)) return false;
+      const reservation = r.reservation_operator ?? (r.claim_state === "drafted" ? r.current_handler : null);
+      return !reservation || reservation === uid;
+    });
+    const portfolio = selectDraftPortfolio(eligible, Math.max(target, needed));
+    let nextRank = (existingItems ?? []).reduce((max: number, i: any) => Math.max(max, Number(i.rank) || 0), 0);
+    let added = 0;
+
+    for (const candidate of portfolio) {
+      if (added >= needed) break;
+      try {
+        const claim = await reserveLead(
+          candidate.row.lead_id,
+          candidate.intelligence.inferredWorkBucket,
+          batch.id,
+          candidate.intelligence.primaryAction,
+          candidate.row.next_action_at,
+        );
+        nextRank += 1;
+        const { error } = await db.from("draft_batch_items").insert({
+          batch_id: batch.id,
+          lead_id: candidate.row.lead_id,
+          work_claim_id: claim?.id ?? claim?.[0]?.id ?? null,
+          rank: nextRank,
+          mission: candidate.intelligence.primaryMission,
+          why_now: candidate.why.join(" · "),
+          score: candidate.score,
+          status: nextRank <= 13 ? "active" : "queued",
+        });
+        if (!error) {
+          existingIds.add(candidate.row.lead_id);
+          added += 1;
+        }
+      } catch {
+        // The database unique claim is the final collision barrier. Another
+        // operator won the race; continue until this batch is filled.
+      }
     }
   }
-  return { batch, items, active: items.slice(0, 13), queued: items.slice(13) };
+
+  return loadMyActiveDraft();
 }
 
 export async function loadMyActiveDraft() {

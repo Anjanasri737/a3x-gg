@@ -79,14 +79,28 @@ create table if not exists public.flow_checkins (
 );
 create index if not exists flow_checkins_lead_idx on public.flow_checkins(lead_id, created_at desc);
 
--- Link the existing Crib booking surface to the same lead/cycle/commercial chain.
-alter table public.crib_bookings add column if not exists lead_id uuid references public.leads(id) on delete set null;
-alter table public.crib_bookings add column if not exists cycle_id uuid references public.lead_cycles(id) on delete set null;
-alter table public.crib_bookings add column if not exists flow_booking_id uuid references public.flow_bookings(id) on delete set null;
-alter table public.crib_bookings add column if not exists quotation_id uuid references public.flow_quotations(id) on delete set null;
-create index if not exists crib_bookings_lead_idx on public.crib_bookings(lead_id, created_at desc);
+-- Optional compatibility linkage only. A clean Flow OS database must not fail
+-- or invent a legacy Crib table when that module is absent.
+do $$
+begin
+  if to_regclass('public.crib_bookings') is not null then
+    execute 'alter table public.crib_bookings add column if not exists lead_id uuid references public.leads(id) on delete set null';
+    execute 'alter table public.crib_bookings add column if not exists cycle_id uuid references public.lead_cycles(id) on delete set null';
+    execute 'alter table public.crib_bookings add column if not exists flow_booking_id uuid references public.flow_bookings(id) on delete set null';
+    execute 'alter table public.crib_bookings add column if not exists quotation_id uuid references public.flow_quotations(id) on delete set null';
+    if exists (
+      select 1 from information_schema.columns
+      where table_schema='public' and table_name='crib_bookings' and column_name='created_at'
+    ) then
+      execute 'create index if not exists crib_bookings_lead_idx on public.crib_bookings(lead_id, created_at desc)';
+    else
+      execute 'create index if not exists crib_bookings_lead_idx on public.crib_bookings(lead_id)';
+    end if;
+  end if;
+end $$;
 
--- Check-in may complete only when all configured hard gates pass.
+-- Initial check-in command. Later Flow OS hardening migrations replace this
+-- function with the stricter physical-arrival + room-label invariant.
 create or replace function public.flow_confirm_checkin(p_checkin_id uuid,p_actor_id uuid,p_actor_name text)
 returns table(ok boolean,reason text)
 language plpgsql security definer set search_path=public as $$
@@ -116,17 +130,13 @@ begin
          status='checked_in',checked_in_at=now(),updated_at=now()
    where id=p_checkin_id;
   update public.flow_bookings set status='booked',booked_at=coalesce(booked_at,now()),updated_at=now() where id=v_booking.id;
-  update public.leads
-     set pipeline_stage='CHECKED_IN',current_mission='Resident handover complete',primary_blocker=null,last_operator_action_at=now()
-   where id=v_checkin.lead_id;
+  update public.leads set current_pipeline_stage='CHECKED_IN',status='closed',updated_at=now() where id=v_checkin.lead_id;
   update public.next_actions set done_at=now(),updated_at=now() where lead_id=v_checkin.lead_id and done_at is null;
   insert into public.lead_timeline(lead_id,activity,actor,new_stage,detail)
-  values(v_checkin.lead_id,'checked_in',p_actor_name,'CHECKED_IN','Check-in gates completed');
+  values(v_checkin.lead_id,'checked_in',p_actor_id,'CHECKED_IN',concat('Check-in gates completed by ',coalesce(p_actor_name,'operator')));
   return query select true,'checked in';
 end; $$;
 
--- RLS: shared operating truth for authenticated team. Role-specific UI/commands
--- remain responsible for stricter product permissions while migration is phased.
 alter table public.flow_quotations enable row level security;
 alter table public.flow_bookings enable row level security;
 alter table public.flow_checkins enable row level security;

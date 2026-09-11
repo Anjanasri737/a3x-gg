@@ -1,0 +1,57 @@
+import fs from "node:fs";
+
+const read = (path) => fs.readFileSync(new URL(`../${path}`, import.meta.url), "utf8");
+const checks = [];
+const check = (name, ok, detail = "") => checks.push({ name, ok: Boolean(ok), detail });
+const includes = (text, value) => text.includes(value);
+
+const flowRoute = read("src/routes/flow-os.tsx");
+const workRoute = read("src/routes/my-work.tsx");
+const visionRoute = read("src/routes/vision.tsx");
+const workPage = read("src/components/flow-os/FlowWorkPage.tsx");
+const vision = read("src/components/flow-os/LiveVisionSyncPage.tsx");
+const workspace = read("src/components/flow-os/UnifiedCustomerWorkspace.tsx");
+const completeNext = read("src/components/flow-os/CompleteNextPanel.tsx");
+const commercialApi = read("src/lib/flow-os/commercial-api.ts");
+const canonicalCommercial = read("src/lib/flow-os/commercial-api-v2.ts");
+const workActions = read("src/lib/flow-os/work-actions.ts");
+const invariantSql = read("supabase/migrations/20260910042000_flow_os_10x_invariants.sql");
+const draftGuardSql = read("supabase/migrations/20260910044000_flow_os_100x_draft_guards.sql");
+const customerActionsSql = read("supabase/migrations/20260910044500_flow_os_100x_customer_actions.sql");
+const truthSql = read("supabase/migrations/20260910043000_flow_os_10x_truth_view.sql");
+const commercialSql = read("supabase/migrations/20260910020000_flow_os_quote_booking_checkin.sql");
+const legacyLockdown = read("supabase/migrations/20260910045000_flow_os_100x_legacy_lockdown.sql");
+
+check("/flow-os uses the canonical home", includes(flowRoute, "FlowOSHome") && !includes(flowRoute, "RevenueGuaranteeOS"));
+check("Canonical routes suppress the legacy CRM drawer", [flowRoute, workRoute, visionRoute].every((route) => includes(route, "LegacyOverlayGuard")));
+check("My Work opens the unified customer workspace", includes(workPage, "UnifiedCustomerWorkspace"));
+check("Vision opens the unified customer workspace", includes(vision, "UnifiedCustomerWorkspace"));
+check("Vision requires independent expected-row count", includes(vision, "Independent expected visible rows") && includes(vision, "expectedOverride: expected"));
+check("Vision review resolves into canonical CRM identity", includes(vision, "resolveVisionObservation") && includes(vision, "Resolve into CRM"));
+check("Non-customer requires a typed reason", includes(vision, "Write a specific reason") && includes(vision, 'mode: "non_customer"'));
+check("Customer workspace shows WhatsApp evidence", includes(workspace, "Message-derived stage hint") && includes(workspace, "Visible handler") && includes(workspace, "Colour:"));
+check("Commercial API import path is canonical", includes(commercialApi, 'export * from "./commercial-api-v2"'));
+check("Commercial API writes current_pipeline_stage", includes(canonicalCommercial, "current_pipeline_stage") && !/(^|[^A-Za-z0-9_])pipeline_stage\s*:/.test(canonicalCommercial));
+check("Timeline actor uses authenticated UUID", includes(canonicalCommercial, "actor: operator.id"));
+check("Complete & Next UI cannot mark checked-in", !includes(completeNext, 'value: "checked_in"'));
+check("Raw completed disposition is absent from client contract", !includes(workActions, '"completed"'));
+check("Server check-in requires physical arrival", includes(invariantSql, "arrival not confirmed"));
+check("Server check-in requires named room/bed allocation", includes(invariantSql, "room_or_bed_label"));
+check("Server check-in requires payment verification", includes(invariantSql, "payment not verified"));
+check("Server check-in requires owner approval when configured", includes(invariantSql, "owner approval pending"));
+check("Server check-in requires KYC/agreement/keys", includes(invariantSql, "KYC incomplete") && includes(invariantSql, "agreement incomplete") && includes(invariantSql, "keys not handed over"));
+check("Complete & Next cannot manufacture booking", includes(invariantSql, "BOOKING_RECORD_REQUIRED") && includes(invariantSql, "PAYMENT_VERIFICATION_REQUIRED"));
+check("Draft reservation cannot steal another owner", includes(draftGuardSql, "LEAD_OWNED_BY_OTHER"));
+check("Active 13 is rebalanced independent of historical rank", includes(draftGuardSql, "rebalance_flow_active_tray") && includes(draftGuardSql, "trg_flow_after_draft_item_insert"));
+check("Stage hint cannot manufacture terminal/commercial states", includes(customerActionsSql, "STAGE_REQUIRES_CANONICAL_CAPABILITY_EVIDENCE") && !customerActionsSql.includes("'CHECKED_IN'"));
+check("Next action is mandatory and dated", includes(customerActionsSql, "DATED_NEXT_ACTION_REQUIRED"));
+check("Three-day truth distinguishes reservation from live handler", includes(truthSql, "reservation_operator") && includes(truthSql, "current_handler"));
+check("Revenue leakage contains unresolved OCR rows", includes(truthSql, "OCR_UNRESOLVED"));
+check("Commercial migration is safe without legacy crib_bookings", includes(commercialSql, "to_regclass('public.crib_bookings')"));
+check("Historical first-generation Flow tables are read-only", includes(legacyLockdown, "REVOKE INSERT, UPDATE, DELETE, TRUNCATE") && includes(legacyLockdown, "FLOW_OS_LEGACY_READ_ONLY"));
+check("Canonical table generation is explicitly documented", includes(legacyLockdown, "FLOW_OS_CANONICAL") && includes(legacyLockdown, "public.work_claims") && includes(legacyLockdown, "public.flow_checkins"));
+
+const failed = checks.filter((x) => !x.ok);
+for (const row of checks) console.log(`${row.ok ? "✅" : "❌"} ${row.name}${row.detail ? ` — ${row.detail}` : ""}`);
+console.log(`\nFlow OS invariant checks: ${checks.length - failed.length}/${checks.length} passed.`);
+if (failed.length) process.exit(1);

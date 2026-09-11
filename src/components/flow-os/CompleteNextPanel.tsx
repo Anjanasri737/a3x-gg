@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { CalendarClock, CheckCircle2, X } from "lucide-react";
+import { CalendarClock, CheckCircle2, ShieldCheck, X } from "lucide-react";
 import { completeAndNext, type FlowOutcome } from "@/lib/flow-os/work-actions";
 import { toast } from "sonner";
 
@@ -13,7 +13,6 @@ const OUTCOMES: { value: FlowOutcome; label: string; dated: boolean; noteRequire
   { value: "future", label: "Move to Future", dated: true },
   { value: "handoff", label: "Handoff", dated: true },
   { value: "booked", label: "Booked", dated: false },
-  { value: "checked_in", label: "Checked In", dated: false },
   { value: "lost", label: "Lost", dated: false, noteRequired: true },
 ];
 
@@ -37,7 +36,7 @@ export function CompleteNextPanel({
   const cfg = useMemo(() => OUTCOMES.find((x) => x.value === outcome)!, [outcome]);
 
   async function submit() {
-    if (!item?.work_claim_id) { toast.error("Active work claim is required before disposition"); return; }
+    if (!item?.work_claim_id) { toast.error("Active or reserved work claim is required before disposition"); return; }
     if (cfg.dated && (!nextAction.trim() || !nextAt)) { toast.error("A dated next action is mandatory"); return; }
     if (cfg.noteRequired && !notes.trim()) { toast.error("Lost reason is mandatory"); return; }
     setBusy(true);
@@ -61,8 +60,8 @@ export function CompleteNextPanel({
     <Card className="p-4 border-primary/30 shadow-lg space-y-3">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2"><CheckCircle2 className="h-4 w-4" /><h3 className="font-semibold">Complete & Next</h3><Badge variant="outline">No silent exit</Badge></div>
-          <p className="text-xs text-muted-foreground mt-1">Finish this work with a valid commercial disposition. Future/waiting/handoff cannot be saved without a date.</p>
+          <div className="flex flex-wrap items-center gap-2"><CheckCircle2 className="h-4 w-4" /><h3 className="font-semibold">Complete & Next</h3><Badge variant="outline">No silent exit</Badge></div>
+          <p className="text-xs text-muted-foreground mt-1">Every worked customer must leave with a dated continuation or an evidence-backed commercial outcome. Future/waiting/handoff require a date; Lost requires a reason.</p>
         </div>
         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose}><X className="h-4 w-4" /></Button>
       </div>
@@ -70,6 +69,13 @@ export function CompleteNextPanel({
       <div className="flex gap-1.5 flex-wrap">
         {OUTCOMES.map((o) => <Button key={o.value} type="button" size="sm" variant={outcome === o.value ? "default" : "outline"} className="h-8 text-xs" onClick={() => setOutcome(o.value)}>{o.label}</Button>)}
       </div>
+
+      {outcome === "booked" && (
+        <div className="flex gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-xs text-amber-950 dark:bg-amber-950/30 dark:text-amber-100">
+          <ShieldCheck className="h-4 w-4 shrink-0" />
+          <span><b>Booked is evidence-gated.</b> The database will reject this unless a canonical booking exists, payment is verified, and any required owner approval is complete. Check-in is intentionally not a disposition here—use the customer Check-in tab and its hard gates.</span>
+        </div>
+      )}
 
       {cfg.dated && (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
