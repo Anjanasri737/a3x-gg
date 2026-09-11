@@ -136,6 +136,529 @@ export type Database = {
         }
         Relationships: []
       }
+      conversation_compilations: {
+        Row: {
+          action_due_at: string | null
+          active_interpretation: boolean
+          automation_safe: boolean
+          blocker: string | null
+          canonical_event: string
+          compiled_at: string
+          compiler_version: string
+          confidence: number
+          conversation_stage: string
+          event_family: string
+          evidence_quality: number
+          extracted_entities: Json
+          health: string
+          id: string
+          intent: string
+          lead_id: string | null
+          modifiers: string[]
+          momentum: number
+          movement: string
+          needs_review: boolean
+          next_action: string
+          next_action_owner: string
+          observation_id: string
+          original_interpretation: Json | null
+          parsed_labels: Json
+          priority: string
+          raw_labels: string[]
+          reasons: string[]
+          requirement_id: string | null
+          rule_id: string | null
+          rule_version: number | null
+          screenshot_due_at: string | null
+          screenshot_status: string
+          sla_status: string
+          waiting_on: string
+        }
+        Insert: {
+          action_due_at?: string | null
+          active_interpretation?: boolean
+          automation_safe?: boolean
+          blocker?: string | null
+          canonical_event: string
+          compiled_at?: string
+          compiler_version: string
+          confidence: number
+          conversation_stage: string
+          event_family: string
+          evidence_quality: number
+          extracted_entities?: Json
+          health: string
+          id?: string
+          intent: string
+          lead_id?: string | null
+          modifiers?: string[]
+          momentum?: number
+          movement: string
+          needs_review?: boolean
+          next_action: string
+          next_action_owner: string
+          observation_id: string
+          original_interpretation?: Json | null
+          parsed_labels?: Json
+          priority: string
+          raw_labels?: string[]
+          reasons?: string[]
+          requirement_id?: string | null
+          rule_id?: string | null
+          rule_version?: number | null
+          screenshot_due_at?: string | null
+          screenshot_status: string
+          sla_status: string
+          waiting_on: string
+        }
+        Update: {
+          action_due_at?: string | null
+          active_interpretation?: boolean
+          automation_safe?: boolean
+          blocker?: string | null
+          canonical_event?: string
+          compiled_at?: string
+          compiler_version?: string
+          confidence?: number
+          conversation_stage?: string
+          event_family?: string
+          evidence_quality?: number
+          extracted_entities?: Json
+          health?: string
+          id?: string
+          intent?: string
+          lead_id?: string | null
+          modifiers?: string[]
+          momentum?: number
+          movement?: string
+          needs_review?: boolean
+          next_action?: string
+          next_action_owner?: string
+          observation_id?: string
+          original_interpretation?: Json | null
+          parsed_labels?: Json
+          priority?: string
+          raw_labels?: string[]
+          reasons?: string[]
+          requirement_id?: string | null
+          rule_id?: string | null
+          rule_version?: number | null
+          screenshot_due_at?: string | null
+          screenshot_status?: string
+          sla_status?: string
+          waiting_on?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_compilations_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "flow_checkin_status"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "conversation_compilations_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "flow_three_day_truth"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "conversation_compilations_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_compilations_observation_id_fkey"
+            columns: ["observation_id"]
+            isOneToOne: false
+            referencedRelation: "flow_three_day_truth"
+            referencedColumns: ["observation_id"]
+          },
+          {
+            foreignKeyName: "conversation_compilations_observation_id_fkey"
+            columns: ["observation_id"]
+            isOneToOne: false
+            referencedRelation: "screenshot_observations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_compilations_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "conversation_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversation_pattern_clusters: {
+        Row: {
+          first_seen_at: string
+          id: string
+          last_seen_at: string
+          mapped_rule_id: string | null
+          normalized_pattern: string
+          notes: string | null
+          occurrence_count: number
+          representative_text: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          suggested_family: string | null
+        }
+        Insert: {
+          first_seen_at?: string
+          id?: string
+          last_seen_at?: string
+          mapped_rule_id?: string | null
+          normalized_pattern: string
+          notes?: string | null
+          occurrence_count?: number
+          representative_text: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          suggested_family?: string | null
+        }
+        Update: {
+          first_seen_at?: string
+          id?: string
+          last_seen_at?: string
+          mapped_rule_id?: string | null
+          normalized_pattern?: string
+          notes?: string | null
+          occurrence_count?: number
+          representative_text?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          suggested_family?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_pattern_clusters_mapped_rule_id_fkey"
+            columns: ["mapped_rule_id"]
+            isOneToOne: false
+            referencedRelation: "conversation_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversation_rules: {
+        Row: {
+          active: boolean
+          allowed_directions: string[]
+          blocker: string | null
+          canonical_event: string
+          confidence_threshold: number
+          created_at: string
+          created_by: string | null
+          default_next_action: string
+          default_owner_role: string
+          entity_extractors: string[]
+          event_family: string
+          failure_transitions: string[]
+          forbidden_previous_events: string[]
+          human_review_below: number
+          id: string
+          modifiers_to_add: string[]
+          movement_effect: number
+          negative_patterns: Json
+          observed_count: number
+          positive_patterns: Json
+          priority: string
+          required_previous_events: string[]
+          rule_key: string
+          semantic_examples: Json
+          sla_minutes: number | null
+          source: string
+          stage_after: string
+          success_transitions: string[]
+          updated_at: string
+          version: number
+          waiting_on: string
+        }
+        Insert: {
+          active?: boolean
+          allowed_directions?: string[]
+          blocker?: string | null
+          canonical_event: string
+          confidence_threshold?: number
+          created_at?: string
+          created_by?: string | null
+          default_next_action: string
+          default_owner_role: string
+          entity_extractors?: string[]
+          event_family: string
+          failure_transitions?: string[]
+          forbidden_previous_events?: string[]
+          human_review_below?: number
+          id?: string
+          modifiers_to_add?: string[]
+          movement_effect?: number
+          negative_patterns?: Json
+          observed_count?: number
+          positive_patterns?: Json
+          priority?: string
+          required_previous_events?: string[]
+          rule_key: string
+          semantic_examples?: Json
+          sla_minutes?: number | null
+          source?: string
+          stage_after: string
+          success_transitions?: string[]
+          updated_at?: string
+          version?: number
+          waiting_on: string
+        }
+        Update: {
+          active?: boolean
+          allowed_directions?: string[]
+          blocker?: string | null
+          canonical_event?: string
+          confidence_threshold?: number
+          created_at?: string
+          created_by?: string | null
+          default_next_action?: string
+          default_owner_role?: string
+          entity_extractors?: string[]
+          event_family?: string
+          failure_transitions?: string[]
+          forbidden_previous_events?: string[]
+          human_review_below?: number
+          id?: string
+          modifiers_to_add?: string[]
+          movement_effect?: number
+          negative_patterns?: Json
+          observed_count?: number
+          positive_patterns?: Json
+          priority?: string
+          required_previous_events?: string[]
+          rule_key?: string
+          semantic_examples?: Json
+          sla_minutes?: number | null
+          source?: string
+          stage_after?: string
+          success_transitions?: string[]
+          updated_at?: string
+          version?: number
+          waiting_on?: string
+        }
+        Relationships: []
+      }
+      conversation_states: {
+        Row: {
+          action_due_at: string | null
+          automation_safe: boolean
+          blocker: string | null
+          canonical_event: string
+          confidence: number
+          conversation_stage: string
+          event_family: string
+          evidence_quality: number
+          extracted_entities: Json
+          health: string
+          intent: string
+          last_screenshot_at: string | null
+          latest_compilation_id: string | null
+          latest_observation_id: string | null
+          lead_id: string
+          modifiers: string[]
+          momentum: number
+          movement: string
+          needs_review: boolean
+          next_action: string
+          next_action_owner: string
+          priority: string
+          requirement_id: string | null
+          screenshot_due_at: string | null
+          screenshot_status: string
+          sla_status: string
+          updated_at: string
+          waiting_on: string
+        }
+        Insert: {
+          action_due_at?: string | null
+          automation_safe?: boolean
+          blocker?: string | null
+          canonical_event: string
+          confidence: number
+          conversation_stage: string
+          event_family: string
+          evidence_quality: number
+          extracted_entities?: Json
+          health: string
+          intent: string
+          last_screenshot_at?: string | null
+          latest_compilation_id?: string | null
+          latest_observation_id?: string | null
+          lead_id: string
+          modifiers?: string[]
+          momentum?: number
+          movement: string
+          needs_review?: boolean
+          next_action: string
+          next_action_owner: string
+          priority: string
+          requirement_id?: string | null
+          screenshot_due_at?: string | null
+          screenshot_status: string
+          sla_status: string
+          updated_at?: string
+          waiting_on: string
+        }
+        Update: {
+          action_due_at?: string | null
+          automation_safe?: boolean
+          blocker?: string | null
+          canonical_event?: string
+          confidence?: number
+          conversation_stage?: string
+          event_family?: string
+          evidence_quality?: number
+          extracted_entities?: Json
+          health?: string
+          intent?: string
+          last_screenshot_at?: string | null
+          latest_compilation_id?: string | null
+          latest_observation_id?: string | null
+          lead_id?: string
+          modifiers?: string[]
+          momentum?: number
+          movement?: string
+          needs_review?: boolean
+          next_action?: string
+          next_action_owner?: string
+          priority?: string
+          requirement_id?: string | null
+          screenshot_due_at?: string | null
+          screenshot_status?: string
+          sla_status?: string
+          updated_at?: string
+          waiting_on?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_states_latest_compilation_id_fkey"
+            columns: ["latest_compilation_id"]
+            isOneToOne: false
+            referencedRelation: "conversation_compilations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_states_latest_observation_id_fkey"
+            columns: ["latest_observation_id"]
+            isOneToOne: false
+            referencedRelation: "flow_three_day_truth"
+            referencedColumns: ["observation_id"]
+          },
+          {
+            foreignKeyName: "conversation_states_latest_observation_id_fkey"
+            columns: ["latest_observation_id"]
+            isOneToOne: false
+            referencedRelation: "screenshot_observations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_states_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: true
+            referencedRelation: "flow_checkin_status"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "conversation_states_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: true
+            referencedRelation: "flow_three_day_truth"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "conversation_states_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: true
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversation_transitions: {
+        Row: {
+          blocker: string | null
+          from_compilation_id: string | null
+          from_event: string | null
+          id: string
+          lead_id: string
+          momentum_delta: number
+          movement: string
+          occurred_at: string
+          to_compilation_id: string
+          to_event: string
+        }
+        Insert: {
+          blocker?: string | null
+          from_compilation_id?: string | null
+          from_event?: string | null
+          id?: string
+          lead_id: string
+          momentum_delta?: number
+          movement: string
+          occurred_at?: string
+          to_compilation_id: string
+          to_event: string
+        }
+        Update: {
+          blocker?: string | null
+          from_compilation_id?: string | null
+          from_event?: string | null
+          id?: string
+          lead_id?: string
+          momentum_delta?: number
+          movement?: string
+          occurred_at?: string
+          to_compilation_id?: string
+          to_event?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_transitions_from_compilation_id_fkey"
+            columns: ["from_compilation_id"]
+            isOneToOne: false
+            referencedRelation: "conversation_compilations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_transitions_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "flow_checkin_status"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "conversation_transitions_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "flow_three_day_truth"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "conversation_transitions_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conversation_transitions_to_compilation_id_fkey"
+            columns: ["to_compilation_id"]
+            isOneToOne: true
+            referencedRelation: "conversation_compilations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       crib_bookings: {
         Row: {
           agreement_duration: number
