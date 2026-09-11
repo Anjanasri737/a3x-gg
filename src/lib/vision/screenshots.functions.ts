@@ -253,7 +253,7 @@ async function persistRows(admin: any, args: { screenshotId: string; batchId: st
       detected_label: row.detectedLabel,
       handler_hint: row.handlerHint,
       stage_inference: intelligence.inferredPipelineHint,
-      stage_confidence: intelligence.confidence,
+      stage_confidence: compiled.confidence,
       ocr_confidence: row.ocrConfidence,
       raw_text: row.rawText,
       captured_at: new Date().toISOString(),

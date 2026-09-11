@@ -281,7 +281,7 @@ export async function ingestManualBatch(params: {
       detected_label: row.detectedLabel ?? null,
       handler_hint: row.handlerHint ?? null,
       stage_inference: intelligence.inferredPipelineHint,
-      stage_confidence: intelligence.confidence,
+      stage_confidence: compiled.confidence,
       ocr_confidence: 100,
       raw_text: row.rawText || [row.contactName, row.phone, row.lastMessage].filter(Boolean).join(" | "),
       captured_at: now,

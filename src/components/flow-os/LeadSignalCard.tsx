@@ -52,6 +52,8 @@ export function LeadSignalCard({ lead, onPrimary, primaryLabel, compact = false 
             <Badge variant="secondary" className="text-[10px] flex gap-1 items-center"><SeenIcon state={lead.seen_state} /> {lead.seen_state || "unknown"}</Badge>
             {lead.color_hint && <Badge variant="outline" className="text-[10px]">Colour: {lead.color_hint}</Badge>}
             {lead.detected_label && <Badge className="text-[10px]">{lead.detected_label}</Badge>}
+            {lead.canonical_event && <Badge variant="outline" className="text-[10px] border-primary/40">{lead.canonical_event.replaceAll("_", " ")}</Badge>}
+            {lead.compiler_needs_review && <Badge variant="destructive" className="text-[10px]">Review</Badge>}
           </div>
           <div className="text-[11px] text-muted-foreground mt-0.5">{lead.phone}</div>
         </div>
@@ -82,7 +84,8 @@ export function LeadSignalCard({ lead, onPrimary, primaryLabel, compact = false 
           </div>
           <div className="rounded-md border bg-background/70 p-2">
             <div className="text-muted-foreground uppercase tracking-wide text-[9px]">Why now / mission</div>
-            <div className="font-medium mt-0.5">{intelligence.primaryMission}</div>
+            <div className="font-medium mt-0.5">{lead.compiled_next_action || intelligence.primaryMission}</div>
+            {lead.waiting_on && <div className="text-muted-foreground mt-0.5">Waiting on {lead.waiting_on.replaceAll("_", " ")} · {lead.conversation_health || "UNKNOWN"}</div>}
             {mismatch && <div className="text-amber-600 flex gap-1 items-center mt-0.5"><AlertTriangle className="h-3 w-3" /> CRM saved stage and message hint differ</div>}
           </div>
         </div>
