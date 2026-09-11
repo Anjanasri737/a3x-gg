@@ -1,14 +1,14 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
-import { FlowOSHome } from "@/components/flow-os/FlowOSHome";
 import { LegacyOverlayGuard } from "@/components/flow-os/LegacyOverlayGuard";
+import { EndToEndLeadManagementPage } from "@/components/lead-os/EndToEndLeadManagementPage";
 
 export const Route = createFileRoute("/flow-os")({
   head: () => ({
     meta: [
-      { title: "Flow OS 100x — OCR to Check-in | Gharpayy" },
-      { name: "description", content: "One canonical screenshot-to-check-in operating system: zero-miss WhatsApp truth, Draft 30, Active 13, collision-safe work, revenue leakage and verified physical check-in." },
+      { title: "Lead OS — End-to-End Lead Management | Gharpayy" },
+      { name: "description", content: "One canonical lead-management surface from intake and WhatsApp truth through qualification, property match, tour, booking and verified physical check-in." },
     ],
   }),
-  component: () => <AppShell><LegacyOverlayGuard /><FlowOSHome /></AppShell>,
+  component: () => <AppShell><LegacyOverlayGuard /><EndToEndLeadManagementPage /></AppShell>,
 });
