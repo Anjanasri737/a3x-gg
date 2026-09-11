@@ -1,7 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { normalizePhoneIN } from "@/lib/lead-identity/normalize";
-import { inferMessageIntelligence } from "@/lib/flow-os/message-intelligence";
+import { compileConversationState, compilationAsIntelligence } from "@/lib/flow-os/conversation-state-compiler";
+import { compileAndPersistObservation } from "@/lib/flow-os/conversation-state-persistence";
 import {
   EXTRACTION_MODEL,
   EXTRACTION_VERSION,
@@ -196,14 +197,18 @@ async function persistRows(admin: any, args: { screenshotId: string; batchId: st
 
   for (const row of args.rows) {
     const phone = row.phoneRaw ? normalizePhoneIN(row.phoneRaw) : "";
-    const intelligence = inferMessageIntelligence({
+    const compiled = compileConversationState({
       lastMessage: row.lastMessagePreview,
+      rawText: row.rawText,
       direction: row.previewDirection,
       unreadVisible: row.unreadVisible,
       seenState: row.seenState,
       colorHint: row.colorHint,
       detectedLabel: row.detectedLabel,
+      handlerHint: row.handlerHint,
+      ocrConfidence: row.ocrConfidence,
     });
+    const intelligence = compiled.legacy;
     let leadId: string | null = null;
     let state: "matched_existing" | "new_customer" | "duplicate_observation" | "needs_review" = "needs_review";
     let reason = "Identity needs operator review";
@@ -258,7 +263,7 @@ async function persistRows(admin: any, args: { screenshotId: string; batchId: st
       work_bucket: intelligence.inferredWorkBucket,
       primary_mission: intelligence.primaryMission,
       blocker_hint: intelligence.blockerHint,
-      intelligence: { reasons: intelligence.reasons, primaryAction: intelligence.primaryAction, advisoryOnly: true },
+      intelligence: compilationAsIntelligence(compiled),
     });
 
     if (leadId) {
@@ -277,6 +282,7 @@ async function persistRows(admin: any, args: { screenshotId: string; batchId: st
   if (!payload.length) return [] as ObservationRecord[];
   const { data, error } = await admin.from("screenshot_observations").insert(payload).select("*");
   if (error) throw new Error(`Could not save extracted rows: ${error.message}`);
+  for (const observation of data ?? []) await compileAndPersistObservation(admin, observation);
   return (data ?? []) as ObservationRecord[];
 }
 
@@ -427,11 +433,12 @@ export const updateVisionObservation = createServerFn({ method: "POST" })
     if (data.reconciliationReason !== undefined) patch.reconciliation_reason = data.reconciliationReason;
     if (data.leadId !== undefined) patch.lead_id = data.leadId;
     if (data.lastMessagePreview !== undefined) {
-      const intelligence = inferMessageIntelligence({ lastMessage: data.lastMessagePreview, detectedLabel: data.detectedLabel ?? null, seenState: data.seenState ?? "unknown" });
-      Object.assign(patch, { stage_inference: intelligence.inferredPipelineHint, stage_confidence: intelligence.confidence, work_bucket: intelligence.inferredWorkBucket, primary_mission: intelligence.primaryMission, blocker_hint: intelligence.blockerHint, intelligence: { reasons: intelligence.reasons, primaryAction: intelligence.primaryAction, advisoryOnly: true, recomputedAfterEdit: true } });
+      const compiled = compileConversationState({ lastMessage: data.lastMessagePreview, detectedLabel: data.detectedLabel ?? null, seenState: data.seenState ?? "unknown" });
+      Object.assign(patch, { stage_inference: compiled.legacy.inferredPipelineHint, stage_confidence: compiled.confidence, work_bucket: compiled.legacy.inferredWorkBucket, primary_mission: compiled.legacy.primaryMission, blocker_hint: compiled.blocker, intelligence: { ...compilationAsIntelligence(compiled), recomputedAfterEdit: true } });
     }
     const { data: updated, error } = await admin.from("screenshot_observations").update(patch).eq("id", data.observationId).select("*").single();
     if (error) throw new Error(`Could not save row correction: ${error.message}`);
+    if (data.lastMessagePreview !== undefined) await compileAndPersistObservation(admin, updated);
     return updated as ObservationRecord;
   });
 
