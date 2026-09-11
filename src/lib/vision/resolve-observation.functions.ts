@@ -1,7 +1,8 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { normalizePhoneIN } from "@/lib/lead-identity/normalize";
-import { inferMessageIntelligence } from "@/lib/flow-os/message-intelligence";
+import { compileConversationState, compilationAsIntelligence } from "@/lib/flow-os/conversation-state-compiler";
+import { compileAndPersistObservation } from "@/lib/flow-os/conversation-state-persistence";
 import type { ObservationRecord } from "./types";
 
 const ResolveInput = z.object({
@@ -90,15 +91,20 @@ export const resolveVisionObservation = createServerFn({ method: "POST" })
     const seenState = data.seenState ?? existingObs.seen_state ?? "unknown";
     const colorHint = data.colorHint ?? existingObs.color_hint ?? null;
     const detectedLabel = data.detectedLabel ?? existingObs.detected_label ?? null;
-    const intelligence = inferMessageIntelligence({
+    const compiled = compileConversationState({
       lastMessage,
+      rawText: existingObs.raw_text,
       direction: existingObs.preview_direction ?? "unknown",
       unreadVisible: existingObs.unread_visible ?? false,
       seenState,
       colorHint,
       detectedLabel,
+      handlerHint: data.handlerHint ?? existingObs.handler_hint ?? null,
+      ocrConfidence: existingObs.ocr_confidence,
+      capturedAt: existingObs.captured_at,
       savedStage: lead.current_pipeline_stage ?? null,
     });
+    const intelligence = compiled.legacy;
 
     const patch = {
       operator_edited: true,
@@ -113,17 +119,18 @@ export const resolveVisionObservation = createServerFn({ method: "POST" })
       detected_label: detectedLabel,
       handler_hint: data.handlerHint ?? existingObs.handler_hint ?? null,
       stage_inference: intelligence.inferredPipelineHint,
-      stage_confidence: intelligence.confidence,
+      stage_confidence: compiled.confidence,
       work_bucket: intelligence.inferredWorkBucket,
       primary_mission: intelligence.primaryMission,
       blocker_hint: intelligence.blockerHint,
       reconciliation_state: reconciliationState,
       reconciliation_reason: data.reason?.trim() || reconciliationReason,
       movement_signal: intelligence.isPriorityInterrupt ? "PRIORITY_INTERRUPT" : (existingObs.movement_signal ?? "OBSERVED"),
-      intelligence: { reasons: intelligence.reasons, primaryAction: intelligence.primaryAction, advisoryOnly: true, resolvedAfterReview: true },
+      intelligence: { ...compilationAsIntelligence(compiled), resolvedAfterReview: true },
     };
     const { data: updated, error } = await admin.from("screenshot_observations").update(patch).eq("id", data.observationId).select("*").single();
     if (error) throw new Error(`Could not resolve observation: ${error.message}`);
+    await compileAndPersistObservation(admin, updated, { savedStage: lead.current_pipeline_stage ?? null });
 
     // Passive screenshot truth updates evidence fields only. It deliberately
     // does NOT touch leads.updated_at or last_operator_action_at.

@@ -1,6 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { normalizePhoneIN } from "@/lib/lead-identity/normalize";
-import { inferMessageIntelligence } from "./message-intelligence";
+import { compileConversationState, compilationAsIntelligence } from "./conversation-state-compiler";
 import { reconcileCounts, type LabelRule } from "./reconciliation";
 import { selectDraftPortfolio } from "./drafting-algorithm";
 
@@ -250,8 +250,9 @@ export async function ingestManualBatch(params: {
     }
 
     const savedStage = lead?.current_pipeline_stage ?? null;
-    const intelligence = inferMessageIntelligence({
+    const compiled = compileConversationState({
       lastMessage: row.lastMessage,
+      rawText: row.rawText,
       direction: row.direction,
       unreadVisible: row.unreadVisible,
       seenState: row.seenState,
@@ -259,6 +260,7 @@ export async function ingestManualBatch(params: {
       detectedLabel: row.detectedLabel,
       savedStage,
     });
+    const intelligence = compiled.legacy;
     const screenshot = screenshots[rowIndex % screenshots.length];
     const { data: obs, error: obsError } = await db.from("screenshot_observations").insert({
       screenshot_id: screenshot.id,
@@ -279,13 +281,17 @@ export async function ingestManualBatch(params: {
       detected_label: row.detectedLabel ?? null,
       handler_hint: row.handlerHint ?? null,
       stage_inference: intelligence.inferredPipelineHint,
-      stage_confidence: intelligence.confidence,
+      stage_confidence: compiled.confidence,
       ocr_confidence: 100,
       raw_text: row.rawText || [row.contactName, row.phone, row.lastMessage].filter(Boolean).join(" | "),
       captured_at: now,
       reconciliation_state: reconciliationState,
       reconciliation_reason: reason,
       movement_signal: intelligence.isPriorityInterrupt ? "PRIORITY_INTERRUPT" : "OBSERVED",
+      work_bucket: intelligence.inferredWorkBucket,
+      primary_mission: intelligence.primaryMission,
+      blocker_hint: compiled.blocker,
+      intelligence: compilationAsIntelligence(compiled),
     }).select("*").single();
     if (obsError) throw obsError;
     states.push(reconciliationState);

@@ -113,6 +113,9 @@ export function UnifiedCustomerWorkspace({
             <Badge variant="outline">{(lead.current_pipeline_stage || "DOSSIER").replaceAll("_", " ")}</Badge>
             {lead.sync_state === "RED" && <Badge variant="destructive">Revenue leak</Badge>}
             {lead.sync_state === "AMBER" && <Badge variant="outline" className="border-amber-500">Sync required</Badge>}
+            {lead.canonical_event && <Badge variant="secondary">{lead.canonical_event.replaceAll("_", " ")}</Badge>}
+            {lead.waiting_on && <Badge variant="outline">Waiting on {lead.waiting_on.replaceAll("_", " ")}</Badge>}
+            {lead.compiler_needs_review && <Badge variant="destructive">Compiler review</Badge>}
           </div>
           <p className="mt-1 text-sm text-muted-foreground">{lead.phone} · Owner {lead.current_owner_name || lead.current_owner || "unassigned"} · {lead.reservation_operator_name ? `Drafted by ${lead.reservation_operator_name}` : "not reserved"}</p>
         </div>

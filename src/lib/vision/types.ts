@@ -62,6 +62,31 @@ export interface ObservationRecord {
   intelligence: Record<string, any>;
 }
 
+export interface ConversationStateRecord {
+  lead_id: string;
+  latest_observation_id: string | null;
+  canonical_event: string;
+  event_family: string;
+  modifiers: string[];
+  extracted_entities: Record<string, unknown>;
+  conversation_stage: string;
+  waiting_on: string;
+  blocker: string | null;
+  health: string;
+  movement: string;
+  momentum: number;
+  next_action: string;
+  next_action_owner: string;
+  action_due_at: string | null;
+  sla_status: string;
+  priority: string;
+  screenshot_status: string;
+  evidence_quality: number;
+  confidence: number;
+  automation_safe: boolean;
+  needs_review: boolean;
+}
+
 export interface ScreenshotRecord {
   id: string;
   batch_id: string;
