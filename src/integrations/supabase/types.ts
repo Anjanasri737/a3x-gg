@@ -3100,10 +3100,20 @@ export type Database = {
       }
       flow_three_day_truth: {
         Row: {
+          canonical_event: string | null
           claim_expires_at: string | null
           claim_id: string | null
           claim_state: string | null
           color_hint: string | null
+          compiled_action_due_at: string | null
+          compiled_next_action: string | null
+          compiled_priority: string | null
+          compiler_confidence: number | null
+          compiler_needs_review: boolean | null
+          conversation_health: string | null
+          conversation_momentum: number | null
+          conversation_movement: string | null
+          conversation_stage: string | null
           current_batch_id: string | null
           current_handler: string | null
           current_handler_name: string | null
@@ -3111,6 +3121,7 @@ export type Database = {
           current_owner_name: string | null
           current_pipeline_stage: string | null
           detected_label: string | null
+          evidence_quality: number | null
           handler_hint: string | null
           last_message_preview: string | null
           latest_observation_at: string | null
@@ -3123,6 +3134,7 @@ export type Database = {
           phone: string | null
           preview_direction: string | null
           priority: Database["public"]["Enums"]["lead_priority"] | null
+          screenshot_status: string | null
           seen_state: string | null
           stage_confidence: number | null
           stage_inference: string | null
@@ -3130,6 +3142,7 @@ export type Database = {
           unread_count: number | null
           unread_visible: boolean | null
           wa_name: string | null
+          waiting_on: string | null
         }
         Relationships: [
           {
