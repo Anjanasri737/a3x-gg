@@ -8,6 +8,9 @@ const includes = (text, value) => text.includes(value);
 const flowRoute = read("src/routes/flow-os.tsx");
 const workRoute = read("src/routes/my-work.tsx");
 const visionRoute = read("src/routes/vision.tsx");
+const leadPage = read("src/components/lead-os/EndToEndLeadManagementPage.tsx");
+const leadQualification = read("src/components/lead-os/LeadQualificationEditor.tsx");
+const leadService = read("src/lib/lead-os/service.ts");
 const workPage = read("src/components/flow-os/FlowWorkPage.tsx");
 const vision = read("src/components/flow-os/LiveVisionSyncPage.tsx");
 const workspace = read("src/components/flow-os/UnifiedCustomerWorkspace.tsx");
@@ -22,8 +25,14 @@ const truthSql = read("supabase/migrations/20260910043000_flow_os_10x_truth_view
 const commercialSql = read("supabase/migrations/20260910020000_flow_os_quote_booking_checkin.sql");
 const legacyLockdown = read("supabase/migrations/20260910045000_flow_os_100x_legacy_lockdown.sql");
 
-check("/flow-os uses the canonical home", includes(flowRoute, "FlowOSHome") && !includes(flowRoute, "RevenueGuaranteeOS"));
+check("/flow-os is the end-to-end Lead OS front door", includes(flowRoute, "EndToEndLeadManagementPage") && !includes(flowRoute, "RevenueGuaranteeOS"));
 check("Canonical routes suppress the legacy CRM drawer", [flowRoute, workRoute, visionRoute].every((route) => includes(route, "LegacyOverlayGuard")));
+check("Lead OS lists the canonical truth universe", includes(leadPage, "listTruthRows") && includes(leadPage, "All Leads"));
+check("Lead OS opens the unified customer workspace", includes(leadPage, "UnifiedCustomerWorkspace") && includes(leadPage, "END-TO-END LEAD OS"));
+check("Lead OS keeps WhatsApp Truth and Draft 30 as supporting engines", includes(leadPage, 'to="/vision"') && includes(leadPage, 'to="/my-work"'));
+check("Lead OS supports duplicate-safe direct intake", includes(leadPage, "createOrOpenCanonicalLead") && includes(leadService, "normalizePhoneIN") && includes(leadService, 'String(inserted.error.code || "") === "23505"'));
+check("New direct lead is immediately owned and actionable", includes(leadService, "current_owner: user.id") && includes(leadService, '.from("next_actions")') && includes(leadService, 'source: "lead_os_direct"'));
+check("Lead qualification is editable in the same customer surface", includes(leadPage, "LeadQualificationEditor") && includes(leadQualification, "updateCanonicalLeadProfile") && includes(leadQualification, "Save qualification"));
 check("My Work opens the unified customer workspace", includes(workPage, "UnifiedCustomerWorkspace"));
 check("Vision opens the unified customer workspace", includes(vision, "UnifiedCustomerWorkspace"));
 check("Vision requires independent expected-row count", includes(vision, "Independent expected visible rows") && includes(vision, "expectedOverride: expected"));
@@ -53,5 +62,5 @@ check("Canonical table generation is explicitly documented", includes(legacyLock
 
 const failed = checks.filter((x) => !x.ok);
 for (const row of checks) console.log(`${row.ok ? "✅" : "❌"} ${row.name}${row.detail ? ` — ${row.detail}` : ""}`);
-console.log(`\nFlow OS invariant checks: ${checks.length - failed.length}/${checks.length} passed.`);
+console.log(`\nLead OS invariant checks: ${checks.length - failed.length}/${checks.length} passed.`);
 if (failed.length) process.exit(1);
