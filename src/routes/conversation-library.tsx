@@ -139,7 +139,7 @@ function ConversationLibraryPage() {
                 </div>
                 <div className="flex justify-end">
                   {row.lead_id
-                    ? <Button asChild size="sm" variant="outline"><Link to="/flow-os">Open customer</Link></Button>
+                    ? <Button asChild size="sm" variant="outline"><Link to="/flow-os" search={{ bucket: undefined }}>Open customer</Link></Button>
                     : <Badge variant="outline">Unlinked</Badge>}
                 </div>
               </div>
