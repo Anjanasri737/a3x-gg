@@ -54,7 +54,7 @@ export function LeadConversationLibraryPanel({ leadId, stepIndex }: { leadId: st
             Steps come from the workflow library; chat lines are captured screenshot evidence, not a status the customer confirmed.
           </p>
         </div>
-        <Button asChild variant="outline" size="sm"><Link to="/conversation-library">Conversation library</Link></Button>
+        <Button asChild variant="outline" size="sm"><Link to="/conversation-library" search={{ bucket: undefined }}>Conversation library</Link></Button>
       </div>
 
       <LeadJourneyStrip steps={steps} currentIndex={currentIndex} />
