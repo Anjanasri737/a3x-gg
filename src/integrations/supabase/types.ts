@@ -293,6 +293,167 @@ export type Database = {
           },
         ]
       }
+      conversation_library_buckets: {
+        Row: {
+          bucket: string
+          created_at: string
+          default_next_action: string | null
+          example_1: string | null
+          example_2: string | null
+          example_3: string | null
+          expected_direction: string | null
+          family: string
+          journey_step: string | null
+          movement_effect: string | null
+          observed_count: number
+          priority: string | null
+          rule_confidence: number | null
+          rule_reason: string | null
+          sla_min: number | null
+          stage: string | null
+          waiting_on: string | null
+        }
+        Insert: {
+          bucket: string
+          created_at?: string
+          default_next_action?: string | null
+          example_1?: string | null
+          example_2?: string | null
+          example_3?: string | null
+          expected_direction?: string | null
+          family: string
+          journey_step?: string | null
+          movement_effect?: string | null
+          observed_count?: number
+          priority?: string | null
+          rule_confidence?: number | null
+          rule_reason?: string | null
+          sla_min?: number | null
+          stage?: string | null
+          waiting_on?: string | null
+        }
+        Update: {
+          bucket?: string
+          created_at?: string
+          default_next_action?: string | null
+          example_1?: string | null
+          example_2?: string | null
+          example_3?: string | null
+          expected_direction?: string | null
+          family?: string
+          journey_step?: string | null
+          movement_effect?: string | null
+          observed_count?: number
+          priority?: string | null
+          rule_confidence?: number | null
+          rule_reason?: string | null
+          sla_min?: number | null
+          stage?: string | null
+          waiting_on?: string | null
+        }
+        Relationships: []
+      }
+      conversation_library_rows: {
+        Row: {
+          bucket: string | null
+          capture_date: string | null
+          confidence_band: string | null
+          created_at: string
+          direction: string | null
+          display_contact: string | null
+          draft_detected: boolean
+          identity_status: string | null
+          labels_ocr: string | null
+          last_message: string | null
+          lead_id: string | null
+          next_action: string | null
+          ocr_confidence: number | null
+          phone_e164: string | null
+          priority: string | null
+          row_id: string
+          screenshot: string | null
+          unread_ocr: string | null
+          visible_time: string | null
+          waiting_on: string | null
+          zone: string | null
+        }
+        Insert: {
+          bucket?: string | null
+          capture_date?: string | null
+          confidence_band?: string | null
+          created_at?: string
+          direction?: string | null
+          display_contact?: string | null
+          draft_detected?: boolean
+          identity_status?: string | null
+          labels_ocr?: string | null
+          last_message?: string | null
+          lead_id?: string | null
+          next_action?: string | null
+          ocr_confidence?: number | null
+          phone_e164?: string | null
+          priority?: string | null
+          row_id: string
+          screenshot?: string | null
+          unread_ocr?: string | null
+          visible_time?: string | null
+          waiting_on?: string | null
+          zone?: string | null
+        }
+        Update: {
+          bucket?: string | null
+          capture_date?: string | null
+          confidence_band?: string | null
+          created_at?: string
+          direction?: string | null
+          display_contact?: string | null
+          draft_detected?: boolean
+          identity_status?: string | null
+          labels_ocr?: string | null
+          last_message?: string | null
+          lead_id?: string | null
+          next_action?: string | null
+          ocr_confidence?: number | null
+          phone_e164?: string | null
+          priority?: string | null
+          row_id?: string
+          screenshot?: string | null
+          unread_ocr?: string | null
+          visible_time?: string | null
+          waiting_on?: string | null
+          zone?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversation_library_rows_bucket_fkey"
+            columns: ["bucket"]
+            isOneToOne: false
+            referencedRelation: "conversation_library_buckets"
+            referencedColumns: ["bucket"]
+          },
+          {
+            foreignKeyName: "conversation_library_rows_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "flow_checkin_status"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "conversation_library_rows_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "flow_three_day_truth"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "conversation_library_rows_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversation_pattern_clusters: {
         Row: {
           first_seen_at: string
@@ -1762,6 +1923,86 @@ export type Database = {
           },
         ]
       }
+      lead_journey_progress: {
+        Row: {
+          at: string | null
+          evidence: string | null
+          lead_id: string
+          status: string
+          step_code: string
+        }
+        Insert: {
+          at?: string | null
+          evidence?: string | null
+          lead_id: string
+          status?: string
+          step_code: string
+        }
+        Update: {
+          at?: string | null
+          evidence?: string | null
+          lead_id?: string
+          status?: string
+          step_code?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lead_journey_progress_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "flow_checkin_status"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "lead_journey_progress_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "flow_three_day_truth"
+            referencedColumns: ["lead_id"]
+          },
+          {
+            foreignKeyName: "lead_journey_progress_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "lead_journey_progress_step_code_fkey"
+            columns: ["step_code"]
+            isOneToOne: false
+            referencedRelation: "lead_journey_steps"
+            referencedColumns: ["code"]
+          },
+        ]
+      }
+      lead_journey_steps: {
+        Row: {
+          code: string
+          done_when: string
+          name: string
+          ordinal: number
+          owner_role: string
+          purpose: string
+        }
+        Insert: {
+          code: string
+          done_when: string
+          name: string
+          ordinal: number
+          owner_role: string
+          purpose: string
+        }
+        Update: {
+          code?: string
+          done_when?: string
+          name?: string
+          ordinal?: number
+          owner_role?: string
+          purpose?: string
+        }
+        Relationships: []
+      }
       lead_scenarios_log: {
         Row: {
           assignment_id: string | null
@@ -1919,6 +2160,7 @@ export type Database = {
       }
       leads: {
         Row: {
+          conversation_bucket: string | null
           created_at: string
           current_handler_id: string | null
           current_handler_name: string | null
@@ -1929,12 +2171,15 @@ export type Database = {
           id: string
           inferred_label: string | null
           inferred_stage: string | null
+          journey_step: string | null
+          journey_step_index: number | null
           last_operator_action_at: string | null
           last_wa_message: string | null
           last_wa_seen_at: string | null
           latest_whatsapp_observation_at: string | null
           latest_whatsapp_preview: string | null
           lead_source: string | null
+          library_rows_count: number
           location_score: number
           location_text: string | null
           movein_bucket: Database["public"]["Enums"]["move_in_bucket"] | null
@@ -1963,6 +2208,7 @@ export type Database = {
           zone_id: string | null
         }
         Insert: {
+          conversation_bucket?: string | null
           created_at?: string
           current_handler_id?: string | null
           current_handler_name?: string | null
@@ -1973,12 +2219,15 @@ export type Database = {
           id?: string
           inferred_label?: string | null
           inferred_stage?: string | null
+          journey_step?: string | null
+          journey_step_index?: number | null
           last_operator_action_at?: string | null
           last_wa_message?: string | null
           last_wa_seen_at?: string | null
           latest_whatsapp_observation_at?: string | null
           latest_whatsapp_preview?: string | null
           lead_source?: string | null
+          library_rows_count?: number
           location_score?: number
           location_text?: string | null
           movein_bucket?: Database["public"]["Enums"]["move_in_bucket"] | null
@@ -2007,6 +2256,7 @@ export type Database = {
           zone_id?: string | null
         }
         Update: {
+          conversation_bucket?: string | null
           created_at?: string
           current_handler_id?: string | null
           current_handler_name?: string | null
@@ -2017,12 +2267,15 @@ export type Database = {
           id?: string
           inferred_label?: string | null
           inferred_stage?: string | null
+          journey_step?: string | null
+          journey_step_index?: number | null
           last_operator_action_at?: string | null
           last_wa_message?: string | null
           last_wa_seen_at?: string | null
           latest_whatsapp_observation_at?: string | null
           latest_whatsapp_preview?: string | null
           lead_source?: string | null
+          library_rows_count?: number
           location_score?: number
           location_text?: string | null
           movein_bucket?: Database["public"]["Enums"]["move_in_bucket"] | null
