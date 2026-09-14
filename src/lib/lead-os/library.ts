@@ -99,3 +99,28 @@ export async function listJourneyProgressCounts(): Promise<Record<string, number
   for (const row of data ?? []) counts[row.journey_step] = (counts[row.journey_step] || 0) + 1;
   return counts;
 }
+
+export interface LeadJourneyMeta {
+  journey_step: string | null;
+  journey_step_index: number | null;
+  conversation_bucket: string | null;
+  library_rows_count: number | null;
+}
+
+export async function listLeadJourneyMap(): Promise<Record<string, LeadJourneyMeta>> {
+  const { data, error } = await db
+    .from("leads")
+    .select("id,journey_step,journey_step_index,conversation_bucket,library_rows_count")
+    .limit(2000);
+  if (error) throw error;
+  const map: Record<string, LeadJourneyMeta> = {};
+  for (const row of data ?? []) {
+    map[row.id] = {
+      journey_step: row.journey_step,
+      journey_step_index: row.journey_step_index,
+      conversation_bucket: row.conversation_bucket,
+      library_rows_count: row.library_rows_count,
+    };
+  }
+  return map;
+}
