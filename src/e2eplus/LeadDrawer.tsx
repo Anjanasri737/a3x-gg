@@ -76,6 +76,15 @@ export function LeadDrawer({
   const [nextAt, setNextAt] = useState("");
   const [outcome, setOutcome] = useState("");
 
+  // Ownership uses the signed-in Flow OS operator, so a claim here is the same
+  // claim the rest of the app sees.
+  const adoptOperator = useE2EPlus((s) => s.adoptOperator);
+  useEffect(() => {
+    void loadOperator().then((op) => {
+      if (op) adoptOperator({ id: op.id, name: op.name });
+    });
+  }, [adoptOperator]);
+
   const heartbeat = screenshotHeartbeat(
     row?.latest_whatsapp_observation_at ?? row?.updated_at,
     String(row?.status || "").toLowerCase() === "closed",
