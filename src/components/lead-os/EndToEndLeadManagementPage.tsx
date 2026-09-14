@@ -340,6 +340,10 @@ export function EndToEndLeadManagementPage() {
             <LeadJourneyStrip currentIndex={journey[row.lead_id]?.journey_step_index ?? 1} compact />
             <div className="flex flex-wrap items-center gap-1.5 text-[10px] text-muted-foreground">
               {journey[row.lead_id]?.conversation_bucket && <Badge variant="secondary" className="text-[10px]">{String(journey[row.lead_id]?.conversation_bucket).replaceAll("_", " ")}</Badge>}
+              {slaMap[row.lead_id] && <Badge variant="outline" className={`text-[10px] ${slaMap[row.lead_id].sla.tone === "danger" ? "border-red-500/60 bg-red-500/10 text-red-600" : slaMap[row.lead_id].sla.tone === "warn" ? "border-amber-500/50 bg-amber-500/10 text-amber-700" : ""}`}>{slaMap[row.lead_id].sla.label}</Badge>}
+              {slaMap[row.lead_id] && <Badge variant="outline" className="text-[10px]">Waiting on {pretty(slaMap[row.lead_id].waiting)}</Badge>}
+              {slaMap[row.lead_id]?.sla.escalate && <Badge variant="outline" className="border-red-500/60 bg-red-500/10 text-[10px] text-red-600">Escalated to Control Tower</Badge>}
+              <span>Idle {humanAge(slaMap[row.lead_id]?.sla.ageMin ?? 0)}</span>
               {Boolean(journey[row.lead_id]?.library_rows_count) && <span>{journey[row.lead_id]?.library_rows_count} captured chat lines</span>}
             </div>
           </div>
