@@ -296,11 +296,31 @@ export function DraftVisionPanel({ onAdd, inDraft, remaining }: Props) {
                         {r.reasons.slice(0, 2).join(" · ")}
                       </div>
                     </td>
+                    <td className="px-2 py-2">
+                      <Button
+                        size="sm"
+                        variant={storyPhone === r.phoneDigits ? "secondary" : "outline"}
+                        className="h-7 text-[11px]"
+                        disabled={!r.phoneDigits || r.phoneDigits.length < 10}
+                        onClick={() => setStoryPhone(storyPhone === r.phoneDigits ? null : r.phoneDigits)}
+                      >
+                        Open story
+                      </Button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+
+          {storyPhone && (
+            <div className="space-y-2 rounded-lg border p-3">
+              <h3 className="text-sm font-semibold">
+                Full story — steps, last message, labels, next step, how to approach next
+              </h3>
+              <LeadStoryByPhone phone={storyPhone} />
+            </div>
+          )}
         </>
       )}
     </section>
