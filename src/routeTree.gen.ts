@@ -61,6 +61,7 @@ import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as TowerWorkflowGuaranteeRouteImport } from './routes/tower.workflow-guarantee'
 import { Route as TowerVisionRouteImport } from './routes/tower.vision'
 import { Route as TowerTeamRouteImport } from './routes/tower.team'
+import { Route as TowerSlaRouteImport } from './routes/tower.sla'
 import { Route as TowerScreenshotSyncRouteImport } from './routes/tower.screenshot-sync'
 import { Route as TowerQualityRouteImport } from './routes/tower.quality'
 import { Route as TowerMyLeadsRouteImport } from './routes/tower.my-leads'
@@ -115,6 +116,7 @@ import { Route as CribbookingTokenRouteImport } from './routes/cribbooking/$toke
 import { Route as AdminWatchtowerRouteImport } from './routes/admin.watchtower'
 import { Route as AdminWarRoomRouteImport } from './routes/admin.war-room'
 import { Route as AdminVisionRouteImport } from './routes/admin.vision'
+import { Route as AdminSlaRouteImport } from './routes/admin.sla'
 import { Route as AdminSimulatorRouteImport } from './routes/admin.simulator'
 import { Route as AdminSheetRouteImport } from './routes/admin.sheet'
 import { Route as AdminReportCenterRouteImport } from './routes/admin.report-center'
@@ -395,6 +397,11 @@ const TowerTeamRoute = TowerTeamRouteImport.update({
   path: '/team',
   getParentRoute: () => TowerRoute,
 } as any)
+const TowerSlaRoute = TowerSlaRouteImport.update({
+  id: '/sla',
+  path: '/sla',
+  getParentRoute: () => TowerRoute,
+} as any)
 const TowerScreenshotSyncRoute = TowerScreenshotSyncRouteImport.update({
   id: '/screenshot-sync',
   path: '/screenshot-sync',
@@ -665,6 +672,11 @@ const AdminVisionRoute = AdminVisionRouteImport.update({
   path: '/vision',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminSlaRoute = AdminSlaRouteImport.update({
+  id: '/sla',
+  path: '/sla',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminSimulatorRoute = AdminSimulatorRouteImport.update({
   id: '/simulator',
   path: '/simulator',
@@ -814,6 +826,7 @@ export interface FileRoutesByFullPath {
   '/admin/report-center': typeof AdminReportCenterRoute
   '/admin/sheet': typeof AdminSheetRoute
   '/admin/simulator': typeof AdminSimulatorRoute
+  '/admin/sla': typeof AdminSlaRoute
   '/admin/vision': typeof AdminVisionRoute
   '/admin/war-room': typeof AdminWarRoomRoute
   '/admin/watchtower': typeof AdminWatchtowerRoute
@@ -868,6 +881,7 @@ export interface FileRoutesByFullPath {
   '/tower/my-leads': typeof TowerMyLeadsRoute
   '/tower/quality': typeof TowerQualityRoute
   '/tower/screenshot-sync': typeof TowerScreenshotSyncRoute
+  '/tower/sla': typeof TowerSlaRoute
   '/tower/team': typeof TowerTeamRoute
   '/tower/vision': typeof TowerVisionRoute
   '/tower/workflow-guarantee': typeof TowerWorkflowGuaranteeRoute
@@ -939,6 +953,7 @@ export interface FileRoutesByTo {
   '/admin/report-center': typeof AdminReportCenterRoute
   '/admin/sheet': typeof AdminSheetRoute
   '/admin/simulator': typeof AdminSimulatorRoute
+  '/admin/sla': typeof AdminSlaRoute
   '/admin/vision': typeof AdminVisionRoute
   '/admin/war-room': typeof AdminWarRoomRoute
   '/admin/watchtower': typeof AdminWatchtowerRoute
@@ -993,6 +1008,7 @@ export interface FileRoutesByTo {
   '/tower/my-leads': typeof TowerMyLeadsRoute
   '/tower/quality': typeof TowerQualityRoute
   '/tower/screenshot-sync': typeof TowerScreenshotSyncRoute
+  '/tower/sla': typeof TowerSlaRoute
   '/tower/team': typeof TowerTeamRoute
   '/tower/vision': typeof TowerVisionRoute
   '/tower/workflow-guarantee': typeof TowerWorkflowGuaranteeRoute
@@ -1067,6 +1083,7 @@ export interface FileRoutesById {
   '/admin/report-center': typeof AdminReportCenterRoute
   '/admin/sheet': typeof AdminSheetRoute
   '/admin/simulator': typeof AdminSimulatorRoute
+  '/admin/sla': typeof AdminSlaRoute
   '/admin/vision': typeof AdminVisionRoute
   '/admin/war-room': typeof AdminWarRoomRoute
   '/admin/watchtower': typeof AdminWatchtowerRoute
@@ -1121,6 +1138,7 @@ export interface FileRoutesById {
   '/tower/my-leads': typeof TowerMyLeadsRoute
   '/tower/quality': typeof TowerQualityRoute
   '/tower/screenshot-sync': typeof TowerScreenshotSyncRoute
+  '/tower/sla': typeof TowerSlaRoute
   '/tower/team': typeof TowerTeamRoute
   '/tower/vision': typeof TowerVisionRoute
   '/tower/workflow-guarantee': typeof TowerWorkflowGuaranteeRoute
@@ -1196,6 +1214,7 @@ export interface FileRouteTypes {
     | '/admin/report-center'
     | '/admin/sheet'
     | '/admin/simulator'
+    | '/admin/sla'
     | '/admin/vision'
     | '/admin/war-room'
     | '/admin/watchtower'
@@ -1250,6 +1269,7 @@ export interface FileRouteTypes {
     | '/tower/my-leads'
     | '/tower/quality'
     | '/tower/screenshot-sync'
+    | '/tower/sla'
     | '/tower/team'
     | '/tower/vision'
     | '/tower/workflow-guarantee'
@@ -1321,6 +1341,7 @@ export interface FileRouteTypes {
     | '/admin/report-center'
     | '/admin/sheet'
     | '/admin/simulator'
+    | '/admin/sla'
     | '/admin/vision'
     | '/admin/war-room'
     | '/admin/watchtower'
@@ -1375,6 +1396,7 @@ export interface FileRouteTypes {
     | '/tower/my-leads'
     | '/tower/quality'
     | '/tower/screenshot-sync'
+    | '/tower/sla'
     | '/tower/team'
     | '/tower/vision'
     | '/tower/workflow-guarantee'
@@ -1448,6 +1470,7 @@ export interface FileRouteTypes {
     | '/admin/report-center'
     | '/admin/sheet'
     | '/admin/simulator'
+    | '/admin/sla'
     | '/admin/vision'
     | '/admin/war-room'
     | '/admin/watchtower'
@@ -1502,6 +1525,7 @@ export interface FileRouteTypes {
     | '/tower/my-leads'
     | '/tower/quality'
     | '/tower/screenshot-sync'
+    | '/tower/sla'
     | '/tower/team'
     | '/tower/vision'
     | '/tower/workflow-guarantee'
@@ -1978,6 +2002,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TowerTeamRouteImport
       parentRoute: typeof TowerRoute
     }
+    '/tower/sla': {
+      id: '/tower/sla'
+      path: '/sla'
+      fullPath: '/tower/sla'
+      preLoaderRoute: typeof TowerSlaRouteImport
+      parentRoute: typeof TowerRoute
+    }
     '/tower/screenshot-sync': {
       id: '/tower/screenshot-sync'
       path: '/screenshot-sync'
@@ -2356,6 +2387,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminVisionRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/sla': {
+      id: '/admin/sla'
+      path: '/sla'
+      fullPath: '/admin/sla'
+      preLoaderRoute: typeof AdminSlaRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/simulator': {
       id: '/admin/simulator'
       path: '/simulator'
@@ -2503,6 +2541,7 @@ interface AdminRouteChildren {
   AdminReportCenterRoute: typeof AdminReportCenterRoute
   AdminSheetRoute: typeof AdminSheetRoute
   AdminSimulatorRoute: typeof AdminSimulatorRoute
+  AdminSlaRoute: typeof AdminSlaRoute
   AdminVisionRoute: typeof AdminVisionRoute
   AdminWarRoomRoute: typeof AdminWarRoomRoute
   AdminWatchtowerRoute: typeof AdminWatchtowerRoute
@@ -2520,6 +2559,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminReportCenterRoute: AdminReportCenterRoute,
   AdminSheetRoute: AdminSheetRoute,
   AdminSimulatorRoute: AdminSimulatorRoute,
+  AdminSlaRoute: AdminSlaRoute,
   AdminVisionRoute: AdminVisionRoute,
   AdminWarRoomRoute: AdminWarRoomRoute,
   AdminWatchtowerRoute: AdminWatchtowerRoute,
@@ -2563,6 +2603,7 @@ interface TowerRouteChildren {
   TowerMyLeadsRoute: typeof TowerMyLeadsRoute
   TowerQualityRoute: typeof TowerQualityRoute
   TowerScreenshotSyncRoute: typeof TowerScreenshotSyncRoute
+  TowerSlaRoute: typeof TowerSlaRoute
   TowerTeamRoute: typeof TowerTeamRoute
   TowerVisionRoute: typeof TowerVisionRoute
   TowerWorkflowGuaranteeRoute: typeof TowerWorkflowGuaranteeRoute
@@ -2586,6 +2627,7 @@ const TowerRouteChildren: TowerRouteChildren = {
   TowerMyLeadsRoute: TowerMyLeadsRoute,
   TowerQualityRoute: TowerQualityRoute,
   TowerScreenshotSyncRoute: TowerScreenshotSyncRoute,
+  TowerSlaRoute: TowerSlaRoute,
   TowerTeamRoute: TowerTeamRoute,
   TowerVisionRoute: TowerVisionRoute,
   TowerWorkflowGuaranteeRoute: TowerWorkflowGuaranteeRoute,
