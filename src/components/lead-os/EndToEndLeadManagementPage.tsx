@@ -183,6 +183,7 @@ export function EndToEndLeadManagementPage() {
           <Badge variant="outline" className="px-3">END-TO-END LEAD OS</Badge>
         </div>
       </div>
+      <LeadConversationLibraryPanel leadId={selected.lead_id} stepIndex={journey[selected.lead_id]?.journey_step_index} />
       <LeadQualificationEditor
         lead={selected}
         onSaved={async (fresh) => {
