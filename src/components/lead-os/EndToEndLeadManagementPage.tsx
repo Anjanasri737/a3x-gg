@@ -320,6 +320,8 @@ export function EndToEndLeadManagementPage() {
           <select className="h-10 rounded-md border bg-background px-3 text-sm" value={stage} onChange={(e) => setStage(e.target.value)}><option value="ALL">All stages</option>{PIPELINE.map((key) => <option key={key} value={key}>{pretty(key)}</option>)}<option value="LOST">Lost</option></select>
           <select className="h-10 rounded-md border bg-background px-3 text-sm" value={ownership} onChange={(e) => setOwnership(e.target.value)}><option value="ALL">All ownership</option><option value="MINE">My universe</option><option value="UNOWNED">Unowned only</option></select>
           <select className="h-10 rounded-md border bg-background px-3 text-sm" value={sync} onChange={(e) => setSync(e.target.value)}><option value="ALL">All truth states</option><option value="RED">RED — leakage</option><option value="AMBER">AMBER — sync</option><option value="GREEN">GREEN</option><option value="GREY">GREY — future</option></select>
+          <select className="h-10 rounded-md border bg-background px-3 text-sm" value={slaFilter} onChange={(e) => setSlaFilter(e.target.value as SlaFilter)}>{SLA_FILTERS.map((f) => <option key={f} value={f}>{f === "ALL" ? "All SLA states" : pretty(f)}</option>)}</select>
+          <select className="h-10 rounded-md border bg-background px-3 text-sm" value={waitingFilter} onChange={(e) => setWaitingFilter(e.target.value)}><option value="ALL">All waiting parties</option>{WAITING_PARTIES.map((w) => <option key={w} value={w}>Waiting on {pretty(w)}</option>)}</select>
         </div>
       </div>
 
