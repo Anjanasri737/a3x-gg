@@ -315,7 +315,7 @@ export function EndToEndLeadManagementPage() {
           <div><h2 className="font-semibold">All Leads</h2><p className="text-xs text-muted-foreground">Search, filter, open, work and move one canonical customer through the full lifecycle.</p></div>
           <Badge variant="secondary">{filtered.length} shown</Badge>
         </div>
-        <div className="grid gap-2 md:grid-cols-[1.6fr_repeat(3,1fr)]">
+        <div className="grid gap-2 md:grid-cols-[1.6fr_repeat(3,1fr)] lg:grid-cols-[1.6fr_repeat(5,1fr)]">
           <label className="relative"><Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /><Input className="pl-9" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search name, phone, location, owner or last message…" /></label>
           <select className="h-10 rounded-md border bg-background px-3 text-sm" value={stage} onChange={(e) => setStage(e.target.value)}><option value="ALL">All stages</option>{PIPELINE.map((key) => <option key={key} value={key}>{pretty(key)}</option>)}<option value="LOST">Lost</option></select>
           <select className="h-10 rounded-md border bg-background px-3 text-sm" value={ownership} onChange={(e) => setOwnership(e.target.value)}><option value="ALL">All ownership</option><option value="MINE">My universe</option><option value="UNOWNED">Unowned only</option></select>
