@@ -76,6 +76,9 @@ export function EndToEndLeadManagementPage() {
   const [selected, setSelected] = useState<TruthRow | null>(null);
   const [me, setMe] = useState<string | null>(null);
   const [journey, setJourney] = useState<Record<string, LeadJourneyMeta>>({});
+  const [buckets, setBuckets] = useState<LibraryBucket[]>([]);
+  const [slaFilter, setSlaFilter] = useState<SlaFilter>("ALL");
+  const [waitingFilter, setWaitingFilter] = useState("ALL");
   const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState("");
   const [stage, setStage] = useState("ALL");
@@ -93,14 +96,16 @@ export function EndToEndLeadManagementPage() {
   async function load() {
     setLoading(true);
     try {
-      const [truth, userId, journeyMap] = await Promise.all([
+      const [truth, userId, journeyMap, libBuckets] = await Promise.all([
         listTruthRows(),
         currentUserId(),
         listLeadJourneyMap().catch(() => ({} as Record<string, LeadJourneyMeta>)),
+        listLibraryBuckets().catch(() => [] as LibraryBucket[]),
       ]);
       setRows(truth);
       setMe(userId);
       setJourney(journeyMap);
+      setBuckets(libBuckets);
       if (selected) {
         const fresh = await getTruthRow(selected.lead_id);
         if (fresh) setSelected(fresh);
