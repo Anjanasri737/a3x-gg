@@ -39,10 +39,13 @@ export function OnboardingWalkthrough() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const inTower = pathname.startsWith('/tower');
 
+  // The welcome tour used to auto-open over the data on first visit and made
+  // the app look empty. It now only opens on request.
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const done = localStorage.getItem(STORAGE_KEY);
-    if (!done) setOpen(true);
+    const onOpen = () => { setStep(0); setOpen(true); };
+    window.addEventListener('gharpayy:open-walkthrough', onOpen);
+    return () => window.removeEventListener('gharpayy:open-walkthrough', onOpen);
   }, []);
 
   if (!open || inTower) return null;
