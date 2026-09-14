@@ -53,6 +53,7 @@ export interface LeadExec {
 
 interface State {
   me: { id: string; name: string };
+  adoptOperator: (me: { id: string; name: string }) => void;
   leads: Record<string, LeadExec>;
   get: (leadId: string) => LeadExec;
   patch: (leadId: string, patch: Partial<LeadExec>, note?: string) => void;
@@ -67,6 +68,8 @@ export const useE2EPlus = create<State>()(
   persist(
     (set, get) => ({
       me: { id: "me", name: "Me" },
+      // Identity comes from the signed-in Flow OS operator, not a local guess.
+      adoptOperator: (me) => set({ me }),
       leads: {},
       get: (leadId) => get().leads[leadId] ?? blank(leadId),
       log: (leadId, text) =>
@@ -129,6 +132,6 @@ export const useE2EPlus = create<State>()(
           };
         }),
     }),
-    { name: "gharpayy-e2e-plus-v1" },
+    { name: "gharpayy-e2e-plus-v1", partialize: (s) => ({ leads: s.leads }) as unknown as State },
   ),
 );
