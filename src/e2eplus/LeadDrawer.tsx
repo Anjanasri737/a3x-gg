@@ -1,6 +1,6 @@
 // The execution drawer. Every lead answers the same five questions before the
 // operator is allowed to do anything else.
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import {
   AlertTriangle, CheckCircle2, Circle, ClipboardList, Clock, ExternalLink, Flag, ShieldCheck, User,
@@ -20,6 +20,7 @@ import {
   URGENCY, VISIT_STATUSES, masterStageIndex, redSignals, suggestLabels,
 } from "./journey";
 import { CHANNEL_OPTIONS, WHEN_OPTIONS, WHERE_OPTIONS, useE2EPlus } from "./store";
+import { BOOKING_STAGE, VISIT_STAGE, loadOperator, publishNextAction, publishStage } from "./bridge";
 
 const pretty = (v?: string | null) => (v || "—").replaceAll("_", " ");
 
@@ -74,6 +75,15 @@ export function LeadDrawer({
   const [nextAction, setNextAction] = useState("");
   const [nextAt, setNextAt] = useState("");
   const [outcome, setOutcome] = useState("");
+
+  // Ownership uses the signed-in Flow OS operator, so a claim here is the same
+  // claim the rest of the app sees.
+  const adoptOperator = useE2EPlus((s) => s.adoptOperator);
+  useEffect(() => {
+    void loadOperator().then((op) => {
+      if (op) adoptOperator({ id: op.id, name: op.name });
+    });
+  }, [adoptOperator]);
 
   const heartbeat = screenshotHeartbeat(
     row?.latest_whatsapp_observation_at ?? row?.updated_at,
@@ -262,8 +272,14 @@ export function LeadDrawer({
                 if (!outcome.trim() || !nextAction.trim() || !nextAt) { toast.error("Outcome, next action and due time are all required"); return; }
                 store.patch(row.id, { lastOutcome: outcome.trim(), nextAction: nextAction.trim(), nextActionAt: nextAt },
                   `${outcome.trim()} → next: ${nextAction.trim()} at ${new Date(nextAt).toLocaleString()}`);
+                const kind = nextAction.trim();
+                const dueAt = nextAt;
+                const notes = outcome.trim();
                 setOutcome(""); setNextAction(""); setNextAt("");
-                toast.success("Outcome logged — one next action, one deadline");
+                void publishNextAction({ leadId: row.id, kind, dueAt, notes }).then((r) => {
+                  if (r.ok) toast.success("Outcome logged — next action is live for the whole team");
+                  else toast.warning(`Saved here, but the shared next action did not update: ${r.message}`);
+                });
               }}>
               Save outcome
             </Button>
@@ -285,7 +301,10 @@ export function LeadDrawer({
                   );
                 })}
                 <Button size="sm" className="mt-1 w-full" disabled={TOUR_GATE.some((g) => !exec?.tourGate?.[g])}
-                  onClick={() => store.patch(row.id, { visitStatus: "UPCOMING" }, "Tour confirmed — commercially ready")}>
+                  onClick={() => {
+                    store.patch(row.id, { visitStatus: "UPCOMING" }, "Tour confirmed — commercially ready");
+                    void publishStage({ leadId: row.id, stage: "TOUR_CONFIRMED", mission: "Tour confirmed from Final E2E Plus" });
+                  }}>
                   CONFIRM TOUR
                 </Button>
               </div>
@@ -293,7 +312,13 @@ export function LeadDrawer({
 
             <Section title="Live visit room" icon={Flag}>
               <Chips options={VISIT_STATUSES} value={exec?.visitStatus}
-                onPick={(v) => store.patch(row.id, { visitStatus: v }, `Visit status → ${v}`)} />
+                onPick={(v) => {
+                  store.patch(row.id, { visitStatus: v }, `Visit status → ${v}`);
+                  const stage = VISIT_STAGE[v];
+                  if (stage) void publishStage({ leadId: row.id, stage, mission: `Visit status ${v}` }).then((r) => {
+                    if (!r.ok) toast.warning(`Visit status saved here only: ${r.message}`);
+                  });
+                }} />
               <div className="mt-2 rounded border border-amber-500/50 bg-amber-500/10 p-2 text-[10px] text-amber-700 dark:text-amber-400">
                 One active visit POC only. Property team message: DO NOT DISCLOSE OR NEGOTIATE PRICE.
               </div>
@@ -301,7 +326,13 @@ export function LeadDrawer({
 
             <Section title="Booking ladder" icon={ShieldCheck}>
               <Chips options={BOOKING_LADDER} value={exec?.bookingStatus}
-                onPick={(v) => store.patch(row.id, { bookingStatus: v }, `Booking → ${v}`)} />
+                onPick={(v) => {
+                  store.patch(row.id, { bookingStatus: v }, `Booking → ${v}`);
+                  const stage = BOOKING_STAGE[v];
+                  if (stage) void publishStage({ leadId: row.id, stage, mission: `Booking ${v}` }).then((r) => {
+                    if (!r.ok) toast.warning(`Booking step saved here only: ${r.message}`);
+                  });
+                }} />
               <div className="mt-2 text-[10px] text-muted-foreground">
                 Inventory approval first, then payment / reservation. The commercial snapshot never changes silently.
               </div>
@@ -334,9 +365,16 @@ export function LeadDrawer({
             lastActivityAt={row.last_operator_action_at || row.latest_whatsapp_observation_at || row.updated_at}
           />
 
-          <Button asChild variant="outline" size="sm" className="mb-6">
-            <Link to="/flow-os"><ExternalLink className="mr-1.5 h-3.5 w-3.5" />Open in Lead OS</Link>
-          </Button>
+          <div className="mb-6 flex flex-wrap gap-2">
+            <Button asChild variant="outline" size="sm">
+              <Link to="/tower/leads/$id" params={{ id: row.id }}>
+                <ExternalLink className="mr-1.5 h-3.5 w-3.5" />Open full lead record
+              </Link>
+            </Button>
+            <Button asChild variant="outline" size="sm">
+              <Link to="/flow-os"><ExternalLink className="mr-1.5 h-3.5 w-3.5" />Open in Lead OS</Link>
+            </Button>
+          </div>
         </div>
       </SheetContent>
     </Sheet>
