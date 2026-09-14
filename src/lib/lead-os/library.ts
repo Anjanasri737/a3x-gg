@@ -100,6 +100,34 @@ export async function listJourneyProgressCounts(): Promise<Record<string, number
   return counts;
 }
 
+export interface LeadOpsRow {
+  id: string;
+  wa_name: string | null;
+  phone: string | null;
+  status: string | null;
+  current_owner: string | null;
+  current_pipeline_stage: string | null;
+  conversation_bucket: string | null;
+  journey_step: string | null;
+  journey_step_index: number | null;
+  library_rows_count: number | null;
+  latest_whatsapp_preview: string | null;
+  latest_whatsapp_observation_at: string | null;
+  last_operator_action_at: string | null;
+  updated_at: string | null;
+}
+
+export async function listLeadOpsRows(limit = 2000): Promise<LeadOpsRow[]> {
+  const { data, error } = await db
+    .from("leads")
+    .select(
+      "id,wa_name,phone,status,current_owner,current_pipeline_stage,conversation_bucket,journey_step,journey_step_index,library_rows_count,latest_whatsapp_preview,latest_whatsapp_observation_at,last_operator_action_at,updated_at",
+    )
+    .limit(limit);
+  if (error) throw error;
+  return data ?? [];
+}
+
 export interface LeadJourneyMeta {
   journey_step: string | null;
   journey_step_index: number | null;
