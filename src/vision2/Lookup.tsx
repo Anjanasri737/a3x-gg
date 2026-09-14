@@ -7,6 +7,7 @@ import { Separator } from "@/components/ui/separator";
 import { Search } from "lucide-react";
 import { useMovement } from "@/movement/store";
 import { useOcrEngine } from "./engine";
+import { LeadStoryByPhone } from "@/components/lead-os/LeadStoryByPhone";
 
 export function Lookup({ preset }: { preset?: string | null }) {
   const eng = useOcrEngine();
@@ -117,6 +118,10 @@ export function Lookup({ preset }: { preset?: string | null }) {
             ))}
             {!obs.length && <li className="text-xs text-muted-foreground">No screenshot observations.</li>}
           </ul>
+
+          <Separator />
+          <h3 className="text-sm font-semibold">Full customer story — steps, labels, next step, how to approach</h3>
+          <LeadStoryByPhone phone={cust.normalizedPhone} fallbackName={cust.name} />
 
           <Separator />
           <h3 className="text-sm font-semibold">CRM history</h3>

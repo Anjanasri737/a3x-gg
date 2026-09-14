@@ -128,6 +128,21 @@ export async function listLeadOpsRows(limit = 2000): Promise<LeadOpsRow[]> {
   return data ?? [];
 }
 
+/** Find the one canonical customer behind a number seen in a screenshot. */
+export async function findLeadOpsRowByPhone(phoneRaw: string): Promise<LeadOpsRow | null> {
+  const digits = (phoneRaw || "").replace(/\D/g, "").slice(-10);
+  if (digits.length < 10) return null;
+  const { data, error } = await db
+    .from("leads")
+    .select(
+      "id,wa_name,phone,status,current_owner,current_pipeline_stage,conversation_bucket,journey_step,journey_step_index,library_rows_count,latest_whatsapp_preview,latest_whatsapp_observation_at,last_operator_action_at,updated_at",
+    )
+    .like("phone", `%${digits}`)
+    .limit(1);
+  if (error) throw error;
+  return data?.[0] ?? null;
+}
+
 export interface LeadJourneyMeta {
   journey_step: string | null;
   journey_step_index: number | null;

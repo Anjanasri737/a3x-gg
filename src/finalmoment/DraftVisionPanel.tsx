@@ -12,6 +12,7 @@ import { useMovement } from "@/movement/store";
 import type { MovementState } from "@/movement/types";
 import { buildVisionRows, type VisionRow } from "./vision";
 import { ingestMessage, WA_ACCOUNTS } from "./bridge";
+import { LeadStoryByPhone } from "@/components/lead-os/LeadStoryByPhone";
 
 interface Props {
   onAdd: (s: MovementState) => void;
@@ -42,6 +43,7 @@ export function DraftVisionPanel({ onAdd, inDraft, remaining }: Props) {
   const extract = useServerFn(extractWhatsappRows);
   const [shots, setShots] = useState<string[]>([]);
   const [rows, setRows] = useState<VisionRow[]>([]);
+  const [storyPhone, setStoryPhone] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [account, setAccount] = useState<string>(WA_ACCOUNTS[0]);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -224,6 +226,7 @@ export function DraftVisionPanel({ onAdd, inDraft, remaining }: Props) {
                   <th className="px-2 py-2 text-left">Identity</th>
                   <th className="px-2 py-2 text-left">Status</th>
                   <th className="px-2 py-2 text-left">Draft</th>
+                  <th className="px-2 py-2 text-left">Story</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
@@ -295,11 +298,31 @@ export function DraftVisionPanel({ onAdd, inDraft, remaining }: Props) {
                         {r.reasons.slice(0, 2).join(" · ")}
                       </div>
                     </td>
+                    <td className="px-2 py-2">
+                      <Button
+                        size="sm"
+                        variant={storyPhone === r.phoneDigits ? "secondary" : "outline"}
+                        className="h-7 text-[11px]"
+                        disabled={!r.phoneDigits || r.phoneDigits.length < 10}
+                        onClick={() => setStoryPhone(storyPhone === r.phoneDigits ? null : r.phoneDigits)}
+                      >
+                        Open story
+                      </Button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+
+          {storyPhone && (
+            <div className="space-y-2 rounded-lg border p-3">
+              <h3 className="text-sm font-semibold">
+                Full story — steps, last message, labels, next step, how to approach next
+              </h3>
+              <LeadStoryByPhone phone={storyPhone} />
+            </div>
+          )}
         </>
       )}
     </section>
