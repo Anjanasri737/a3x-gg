@@ -365,9 +365,16 @@ export function LeadDrawer({
             lastActivityAt={row.last_operator_action_at || row.latest_whatsapp_observation_at || row.updated_at}
           />
 
-          <Button asChild variant="outline" size="sm" className="mb-6">
-            <Link to="/flow-os"><ExternalLink className="mr-1.5 h-3.5 w-3.5" />Open in Lead OS</Link>
-          </Button>
+          <div className="mb-6 flex flex-wrap gap-2">
+            <Button asChild variant="outline" size="sm">
+              <Link to="/tower/leads/$id" params={{ id: row.id }}>
+                <ExternalLink className="mr-1.5 h-3.5 w-3.5" />Open full lead record
+              </Link>
+            </Button>
+            <Button asChild variant="outline" size="sm">
+              <Link to="/flow-os"><ExternalLink className="mr-1.5 h-3.5 w-3.5" />Open in Lead OS</Link>
+            </Button>
+          </div>
         </div>
       </SheetContent>
     </Sheet>
