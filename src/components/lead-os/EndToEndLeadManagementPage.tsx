@@ -74,6 +74,7 @@ export function EndToEndLeadManagementPage() {
   const [rows, setRows] = useState<TruthRow[]>([]);
   const [selected, setSelected] = useState<TruthRow | null>(null);
   const [me, setMe] = useState<string | null>(null);
+  const [journey, setJourney] = useState<Record<string, LeadJourneyMeta>>({});
   const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState("");
   const [stage, setStage] = useState("ALL");
