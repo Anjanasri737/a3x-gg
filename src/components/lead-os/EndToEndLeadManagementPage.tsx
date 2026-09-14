@@ -292,6 +292,13 @@ export function EndToEndLeadManagementPage() {
           <div className="min-w-0"><div className="text-[10px] uppercase text-muted-foreground">Owner / handler</div><div className="mt-1 truncate text-sm">{row.current_owner_name || "Unowned"}</div><div className="truncate text-xs text-muted-foreground">{row.current_handler_name ? `Live: ${row.current_handler_name}` : row.reservation_operator_name ? `Draft: ${row.reservation_operator_name}` : "No live handler"}</div></div>
           <div className="min-w-0"><div className="text-[10px] uppercase text-muted-foreground">What happens next</div><div className="mt-1 truncate text-sm">{row.next_action_kind || row.current_mission || "No dated next action"}</div><div className={`text-xs ${row.next_action_at && Date.parse(row.next_action_at) <= Date.now() ? "text-red-600" : "text-muted-foreground"}`}>{row.next_action_at ? new Date(row.next_action_at).toLocaleString() : "Missing"}</div></div>
           <div className="flex justify-end"><Button size="sm">Open customer <ArrowRight className="ml-1.5 h-3.5 w-3.5" /></Button></div>
+          <div className="lg:col-span-6 space-y-1.5">
+            <LeadJourneyStrip currentIndex={journey[row.lead_id]?.journey_step_index ?? 1} compact />
+            <div className="flex flex-wrap items-center gap-1.5 text-[10px] text-muted-foreground">
+              {journey[row.lead_id]?.conversation_bucket && <Badge variant="secondary" className="text-[10px]">{String(journey[row.lead_id]?.conversation_bucket).replaceAll("_", " ")}</Badge>}
+              {Boolean(journey[row.lead_id]?.library_rows_count) && <span>{journey[row.lead_id]?.library_rows_count} captured chat lines</span>}
+            </div>
+          </div>
         </button>)}
         {filtered.length > visibleLimit && <div className="flex justify-center p-4"><Button variant="outline" onClick={() => setVisibleLimit((value) => value + 75)}>Show 75 more</Button></div>}
         {!filtered.length && <div className="p-10 text-center text-sm text-muted-foreground"><Filter className="mx-auto mb-2 h-5 w-5" />No leads match these filters.</div>}
