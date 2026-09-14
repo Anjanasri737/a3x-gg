@@ -162,10 +162,10 @@ export function EndToEndLeadManagementPage() {
       if (ownership === "MINE" && row.current_owner !== me && row.current_handler !== me && row.reservation_operator !== me) return false;
       if (ownership === "UNOWNED" && row.current_owner) return false;
       return true;
-    });
-  }, [rows, query, stage, sync, ownership, cohort, me]);
+    }).sort((a, b) => (slaMap[b.lead_id]?.sla.overdueMin ?? 0) - (slaMap[a.lead_id]?.sla.overdueMin ?? 0));
+  }, [rows, query, stage, sync, ownership, cohort, me, slaMap, slaFilter, waitingFilter]);
 
-  useEffect(() => { setVisibleLimit(75); }, [query, stage, sync, ownership, cohort]);
+  useEffect(() => { setVisibleLimit(75); }, [query, stage, sync, ownership, cohort, slaFilter, waitingFilter]);
 
   const stats = useMemo(() => ({
     open: rows.filter((row) => !["CHECKED_IN", "LOST"].includes(row.current_pipeline_stage || "")).length,
