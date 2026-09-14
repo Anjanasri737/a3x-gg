@@ -224,6 +224,7 @@ export function DraftVisionPanel({ onAdd, inDraft, remaining }: Props) {
                   <th className="px-2 py-2 text-left">Identity</th>
                   <th className="px-2 py-2 text-left">Status</th>
                   <th className="px-2 py-2 text-left">Draft</th>
+                  <th className="px-2 py-2 text-left">Story</th>
                 </tr>
               </thead>
               <tbody className="divide-y">
