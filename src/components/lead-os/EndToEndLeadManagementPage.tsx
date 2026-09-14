@@ -216,7 +216,15 @@ export function EndToEndLeadManagementPage() {
           <Badge variant="outline" className="px-3">END-TO-END LEAD OS</Badge>
         </div>
       </div>
-      <LeadConversationLibraryPanel leadId={selected.lead_id} stepIndex={journey[selected.lead_id]?.journey_step_index} />
+      <LeadStoryPanel
+        leadId={selected.lead_id}
+        name={selected.wa_name}
+        stepIndex={journey[selected.lead_id]?.journey_step_index}
+        bucketCode={journey[selected.lead_id]?.conversation_bucket}
+        owned={Boolean(selected.current_owner)}
+        closed={isExpired(selected)}
+        lastActivityAt={activityAt(selected)}
+      />
       <LeadQualificationEditor
         lead={selected}
         onSaved={async (fresh) => {
