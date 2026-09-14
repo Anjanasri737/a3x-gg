@@ -119,9 +119,36 @@ export function EndToEndLeadManagementPage() {
 
   useEffect(() => { void load(); }, []);
 
+  const bucketMap = useMemo(() => new Map(buckets.map((b) => [b.bucket, b])), [buckets]);
+
+  const slaMap = useMemo(() => {
+    const map: Record<string, { sla: SlaVerdict; waiting: string }> = {};
+    for (const row of rows) {
+      const code = journey[row.lead_id]?.conversation_bucket || null;
+      const bucket = code ? bucketMap.get(code) ?? null : null;
+      map[row.lead_id] = {
+        sla: computeSla({
+          lastActivityAt: activityAt(row),
+          bucket,
+          owned: Boolean(row.current_owner),
+          closed: isExpired(row) || row.current_pipeline_stage === "CHECKED_IN",
+        }),
+        waiting: String(bucket?.waiting_on || "REVIEW").toUpperCase(),
+      };
+    }
+    return map;
+  }, [rows, journey, bucketMap]);
+
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
     return rows.filter((row) => {
+      const verdict = slaMap[row.lead_id];
+      if (slaFilter === "BREACH" && !(verdict?.sla.state === "BREACH" || verdict?.sla.state === "CRITICAL")) return false;
+      if (slaFilter === "DUE" && verdict?.sla.state !== "DUE") return false;
+      if (slaFilter === "OK" && verdict?.sla.state !== "OK") return false;
+      if (slaFilter === "REVIEW" && verdict?.sla.state !== "REVIEW") return false;
+      if (slaFilter === "ESCALATED" && !verdict?.sla.escalate) return false;
+      if (waitingFilter !== "ALL" && verdict?.waiting !== waitingFilter) return false;
       if (needle && ![
         row.wa_name,
         row.phone,
