@@ -41,6 +41,7 @@ import { Route as FollowUpsRouteImport } from './routes/follow-ups'
 import { Route as FlowOsRouteImport } from './routes/flow-os'
 import { Route as FinalMomentRouteImport } from './routes/final-moment'
 import { Route as ExecutionRouteImport } from './routes/execution'
+import { Route as ConversationLibraryRouteImport } from './routes/conversation-library'
 import { Route as ControlTowerTeamRouteImport } from './routes/control-tower-team'
 import { Route as CompanionRouteImport } from './routes/companion'
 import { Route as CoachRouteImport } from './routes/coach'
@@ -292,6 +293,11 @@ const FinalMomentRoute = FinalMomentRouteImport.update({
 const ExecutionRoute = ExecutionRouteImport.update({
   id: '/execution',
   path: '/execution',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ConversationLibraryRoute = ConversationLibraryRouteImport.update({
+  id: '/conversation-library',
+  path: '/conversation-library',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ControlTowerTeamRoute = ControlTowerTeamRouteImport.update({
@@ -765,6 +771,7 @@ export interface FileRoutesByFullPath {
   '/coach': typeof CoachRoute
   '/companion': typeof CompanionRoute
   '/control-tower-team': typeof ControlTowerTeamRoute
+  '/conversation-library': typeof ConversationLibraryRoute
   '/execution': typeof ExecutionRoute
   '/final-moment': typeof FinalMomentRoute
   '/flow-os': typeof FlowOsRouteWithChildren
@@ -890,6 +897,7 @@ export interface FileRoutesByTo {
   '/coach': typeof CoachRoute
   '/companion': typeof CompanionRoute
   '/control-tower-team': typeof ControlTowerTeamRoute
+  '/conversation-library': typeof ConversationLibraryRoute
   '/execution': typeof ExecutionRoute
   '/final-moment': typeof FinalMomentRoute
   '/flow-os': typeof FlowOsRouteWithChildren
@@ -1016,6 +1024,7 @@ export interface FileRoutesById {
   '/coach': typeof CoachRoute
   '/companion': typeof CompanionRoute
   '/control-tower-team': typeof ControlTowerTeamRoute
+  '/conversation-library': typeof ConversationLibraryRoute
   '/execution': typeof ExecutionRoute
   '/final-moment': typeof FinalMomentRoute
   '/flow-os': typeof FlowOsRouteWithChildren
@@ -1144,6 +1153,7 @@ export interface FileRouteTypes {
     | '/coach'
     | '/companion'
     | '/control-tower-team'
+    | '/conversation-library'
     | '/execution'
     | '/final-moment'
     | '/flow-os'
@@ -1269,6 +1279,7 @@ export interface FileRouteTypes {
     | '/coach'
     | '/companion'
     | '/control-tower-team'
+    | '/conversation-library'
     | '/execution'
     | '/final-moment'
     | '/flow-os'
@@ -1394,6 +1405,7 @@ export interface FileRouteTypes {
     | '/coach'
     | '/companion'
     | '/control-tower-team'
+    | '/conversation-library'
     | '/execution'
     | '/final-moment'
     | '/flow-os'
@@ -1521,6 +1533,7 @@ export interface RootRouteChildren {
   CoachRoute: typeof CoachRoute
   CompanionRoute: typeof CompanionRoute
   ControlTowerTeamRoute: typeof ControlTowerTeamRoute
+  ConversationLibraryRoute: typeof ConversationLibraryRoute
   ExecutionRoute: typeof ExecutionRoute
   FinalMomentRoute: typeof FinalMomentRoute
   FlowOsRoute: typeof FlowOsRouteWithChildren
@@ -1823,6 +1836,13 @@ declare module '@tanstack/react-router' {
       path: '/execution'
       fullPath: '/execution'
       preLoaderRoute: typeof ExecutionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/conversation-library': {
+      id: '/conversation-library'
+      path: '/conversation-library'
+      fullPath: '/conversation-library'
+      preLoaderRoute: typeof ConversationLibraryRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/control-tower-team': {
@@ -2612,6 +2632,7 @@ const rootRouteChildren: RootRouteChildren = {
   CoachRoute: CoachRoute,
   CompanionRoute: CompanionRoute,
   ControlTowerTeamRoute: ControlTowerTeamRoute,
+  ConversationLibraryRoute: ConversationLibraryRoute,
   ExecutionRoute: ExecutionRoute,
   FinalMomentRoute: FinalMomentRoute,
   FlowOsRoute: FlowOsRouteWithChildren,
