@@ -1,6 +1,6 @@
 // The execution drawer. Every lead answers the same five questions before the
 // operator is allowed to do anything else.
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
 import {
   AlertTriangle, CheckCircle2, Circle, ClipboardList, Clock, ExternalLink, Flag, ShieldCheck, User,
@@ -20,6 +20,7 @@ import {
   URGENCY, VISIT_STATUSES, masterStageIndex, redSignals, suggestLabels,
 } from "./journey";
 import { CHANNEL_OPTIONS, WHEN_OPTIONS, WHERE_OPTIONS, useE2EPlus } from "./store";
+import { BOOKING_STAGE, VISIT_STAGE, loadOperator, publishNextAction, publishStage } from "./bridge";
 
 const pretty = (v?: string | null) => (v || "—").replaceAll("_", " ");
 
