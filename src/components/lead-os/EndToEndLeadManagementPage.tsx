@@ -25,6 +25,9 @@ import { UnifiedCustomerWorkspace } from "@/components/flow-os/UnifiedCustomerWo
 import { LeadQualificationEditor } from "./LeadQualificationEditor";
 import { currentUserId, getTruthRow, listTruthRows, type TruthRow } from "@/lib/flow-os/service";
 import { createOrOpenCanonicalLead } from "@/lib/lead-os/service";
+import { listLeadJourneyMap, type LeadJourneyMeta } from "@/lib/lead-os/library";
+import { LeadJourneyStrip } from "./LeadJourneyStrip";
+import { LeadConversationLibraryPanel } from "./LeadConversationLibraryPanel";
 
 const PIPELINE = [
   "DOSSIER",
