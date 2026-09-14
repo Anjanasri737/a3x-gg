@@ -92,9 +92,14 @@ export function EndToEndLeadManagementPage() {
   async function load() {
     setLoading(true);
     try {
-      const [truth, userId] = await Promise.all([listTruthRows(), currentUserId()]);
+      const [truth, userId, journeyMap] = await Promise.all([
+        listTruthRows(),
+        currentUserId(),
+        listLeadJourneyMap().catch(() => ({} as Record<string, LeadJourneyMeta>)),
+      ]);
       setRows(truth);
       setMe(userId);
+      setJourney(journeyMap);
       if (selected) {
         const fresh = await getTruthRow(selected.lead_id);
         if (fresh) setSelected(fresh);
