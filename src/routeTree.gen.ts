@@ -40,6 +40,7 @@ import { Route as HandoffsRouteImport } from './routes/handoffs'
 import { Route as FollowUpsRouteImport } from './routes/follow-ups'
 import { Route as FlowOsRouteImport } from './routes/flow-os'
 import { Route as FinalMomentRouteImport } from './routes/final-moment'
+import { Route as FinalE2ePlusRouteImport } from './routes/final-e2e-plus'
 import { Route as ExecutionRouteImport } from './routes/execution'
 import { Route as ConversationLibraryRouteImport } from './routes/conversation-library'
 import { Route as ControlTowerTeamRouteImport } from './routes/control-tower-team'
@@ -290,6 +291,11 @@ const FlowOsRoute = FlowOsRouteImport.update({
 const FinalMomentRoute = FinalMomentRouteImport.update({
   id: '/final-moment',
   path: '/final-moment',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FinalE2ePlusRoute = FinalE2ePlusRouteImport.update({
+  id: '/final-e2e-plus',
+  path: '/final-e2e-plus',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ExecutionRoute = ExecutionRouteImport.update({
@@ -785,6 +791,7 @@ export interface FileRoutesByFullPath {
   '/control-tower-team': typeof ControlTowerTeamRoute
   '/conversation-library': typeof ConversationLibraryRoute
   '/execution': typeof ExecutionRoute
+  '/final-e2e-plus': typeof FinalE2ePlusRoute
   '/final-moment': typeof FinalMomentRoute
   '/flow-os': typeof FlowOsRouteWithChildren
   '/follow-ups': typeof FollowUpsRoute
@@ -913,6 +920,7 @@ export interface FileRoutesByTo {
   '/control-tower-team': typeof ControlTowerTeamRoute
   '/conversation-library': typeof ConversationLibraryRoute
   '/execution': typeof ExecutionRoute
+  '/final-e2e-plus': typeof FinalE2ePlusRoute
   '/final-moment': typeof FinalMomentRoute
   '/flow-os': typeof FlowOsRouteWithChildren
   '/follow-ups': typeof FollowUpsRoute
@@ -1042,6 +1050,7 @@ export interface FileRoutesById {
   '/control-tower-team': typeof ControlTowerTeamRoute
   '/conversation-library': typeof ConversationLibraryRoute
   '/execution': typeof ExecutionRoute
+  '/final-e2e-plus': typeof FinalE2ePlusRoute
   '/final-moment': typeof FinalMomentRoute
   '/flow-os': typeof FlowOsRouteWithChildren
   '/follow-ups': typeof FollowUpsRoute
@@ -1173,6 +1182,7 @@ export interface FileRouteTypes {
     | '/control-tower-team'
     | '/conversation-library'
     | '/execution'
+    | '/final-e2e-plus'
     | '/final-moment'
     | '/flow-os'
     | '/follow-ups'
@@ -1301,6 +1311,7 @@ export interface FileRouteTypes {
     | '/control-tower-team'
     | '/conversation-library'
     | '/execution'
+    | '/final-e2e-plus'
     | '/final-moment'
     | '/flow-os'
     | '/follow-ups'
@@ -1429,6 +1440,7 @@ export interface FileRouteTypes {
     | '/control-tower-team'
     | '/conversation-library'
     | '/execution'
+    | '/final-e2e-plus'
     | '/final-moment'
     | '/flow-os'
     | '/follow-ups'
@@ -1559,6 +1571,7 @@ export interface RootRouteChildren {
   ControlTowerTeamRoute: typeof ControlTowerTeamRoute
   ConversationLibraryRoute: typeof ConversationLibraryRoute
   ExecutionRoute: typeof ExecutionRoute
+  FinalE2ePlusRoute: typeof FinalE2ePlusRoute
   FinalMomentRoute: typeof FinalMomentRoute
   FlowOsRoute: typeof FlowOsRouteWithChildren
   FollowUpsRoute: typeof FollowUpsRoute
@@ -1853,6 +1866,13 @@ declare module '@tanstack/react-router' {
       path: '/final-moment'
       fullPath: '/final-moment'
       preLoaderRoute: typeof FinalMomentRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/final-e2e-plus': {
+      id: '/final-e2e-plus'
+      path: '/final-e2e-plus'
+      fullPath: '/final-e2e-plus'
+      preLoaderRoute: typeof FinalE2ePlusRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/execution': {
@@ -2676,6 +2696,7 @@ const rootRouteChildren: RootRouteChildren = {
   ControlTowerTeamRoute: ControlTowerTeamRoute,
   ConversationLibraryRoute: ConversationLibraryRoute,
   ExecutionRoute: ExecutionRoute,
+  FinalE2ePlusRoute: FinalE2ePlusRoute,
   FinalMomentRoute: FinalMomentRoute,
   FlowOsRoute: FlowOsRouteWithChildren,
   FollowUpsRoute: FollowUpsRoute,
