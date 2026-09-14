@@ -1934,6 +1934,7 @@ export type Database = {
           last_wa_seen_at: string | null
           latest_whatsapp_observation_at: string | null
           latest_whatsapp_preview: string | null
+          lead_source: string | null
           location_score: number
           location_text: string | null
           movein_bucket: Database["public"]["Enums"]["move_in_bucket"] | null
@@ -1977,6 +1978,7 @@ export type Database = {
           last_wa_seen_at?: string | null
           latest_whatsapp_observation_at?: string | null
           latest_whatsapp_preview?: string | null
+          lead_source?: string | null
           location_score?: number
           location_text?: string | null
           movein_bucket?: Database["public"]["Enums"]["move_in_bucket"] | null
@@ -2020,6 +2022,7 @@ export type Database = {
           last_wa_seen_at?: string | null
           latest_whatsapp_observation_at?: string | null
           latest_whatsapp_preview?: string | null
+          lead_source?: string | null
           location_score?: number
           location_text?: string | null
           movein_bucket?: Database["public"]["Enums"]["move_in_bucket"] | null
