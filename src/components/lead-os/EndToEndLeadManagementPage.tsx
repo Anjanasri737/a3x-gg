@@ -25,9 +25,10 @@ import { UnifiedCustomerWorkspace } from "@/components/flow-os/UnifiedCustomerWo
 import { LeadQualificationEditor } from "./LeadQualificationEditor";
 import { currentUserId, getTruthRow, listTruthRows, type TruthRow } from "@/lib/flow-os/service";
 import { createOrOpenCanonicalLead } from "@/lib/lead-os/service";
-import { listLeadJourneyMap, type LeadJourneyMeta } from "@/lib/lead-os/library";
+import { listLeadJourneyMap, listLibraryBuckets, type LeadJourneyMeta, type LibraryBucket } from "@/lib/lead-os/library";
+import { computeSla, humanAge, SLA_FILTERS, WAITING_PARTIES, type SlaFilter, type SlaVerdict } from "@/lib/lead-os/sla";
 import { LeadJourneyStrip } from "./LeadJourneyStrip";
-import { LeadConversationLibraryPanel } from "./LeadConversationLibraryPanel";
+import { LeadStoryPanel } from "./LeadStoryPanel";
 
 const PIPELINE = [
   "DOSSIER",
@@ -75,6 +76,9 @@ export function EndToEndLeadManagementPage() {
   const [selected, setSelected] = useState<TruthRow | null>(null);
   const [me, setMe] = useState<string | null>(null);
   const [journey, setJourney] = useState<Record<string, LeadJourneyMeta>>({});
+  const [buckets, setBuckets] = useState<LibraryBucket[]>([]);
+  const [slaFilter, setSlaFilter] = useState<SlaFilter>("ALL");
+  const [waitingFilter, setWaitingFilter] = useState("ALL");
   const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState("");
   const [stage, setStage] = useState("ALL");
@@ -92,14 +96,16 @@ export function EndToEndLeadManagementPage() {
   async function load() {
     setLoading(true);
     try {
-      const [truth, userId, journeyMap] = await Promise.all([
+      const [truth, userId, journeyMap, libBuckets] = await Promise.all([
         listTruthRows(),
         currentUserId(),
         listLeadJourneyMap().catch(() => ({} as Record<string, LeadJourneyMeta>)),
+        listLibraryBuckets().catch(() => [] as LibraryBucket[]),
       ]);
       setRows(truth);
       setMe(userId);
       setJourney(journeyMap);
+      setBuckets(libBuckets);
       if (selected) {
         const fresh = await getTruthRow(selected.lead_id);
         if (fresh) setSelected(fresh);
@@ -113,9 +119,36 @@ export function EndToEndLeadManagementPage() {
 
   useEffect(() => { void load(); }, []);
 
+  const bucketMap = useMemo(() => new Map(buckets.map((b) => [b.bucket, b])), [buckets]);
+
+  const slaMap = useMemo(() => {
+    const map: Record<string, { sla: SlaVerdict; waiting: string }> = {};
+    for (const row of rows) {
+      const code = journey[row.lead_id]?.conversation_bucket || null;
+      const bucket = code ? bucketMap.get(code) ?? null : null;
+      map[row.lead_id] = {
+        sla: computeSla({
+          lastActivityAt: activityAt(row),
+          bucket,
+          owned: Boolean(row.current_owner),
+          closed: isExpired(row) || row.current_pipeline_stage === "CHECKED_IN",
+        }),
+        waiting: String(bucket?.waiting_on || "REVIEW").toUpperCase(),
+      };
+    }
+    return map;
+  }, [rows, journey, bucketMap]);
+
   const filtered = useMemo(() => {
     const needle = query.trim().toLowerCase();
     return rows.filter((row) => {
+      const verdict = slaMap[row.lead_id];
+      if (slaFilter === "BREACH" && !(verdict?.sla.state === "BREACH" || verdict?.sla.state === "CRITICAL")) return false;
+      if (slaFilter === "DUE" && verdict?.sla.state !== "DUE") return false;
+      if (slaFilter === "OK" && verdict?.sla.state !== "OK") return false;
+      if (slaFilter === "REVIEW" && verdict?.sla.state !== "REVIEW") return false;
+      if (slaFilter === "ESCALATED" && !verdict?.sla.escalate) return false;
+      if (waitingFilter !== "ALL" && verdict?.waiting !== waitingFilter) return false;
       if (needle && ![
         row.wa_name,
         row.phone,
@@ -129,10 +162,10 @@ export function EndToEndLeadManagementPage() {
       if (ownership === "MINE" && row.current_owner !== me && row.current_handler !== me && row.reservation_operator !== me) return false;
       if (ownership === "UNOWNED" && row.current_owner) return false;
       return true;
-    });
-  }, [rows, query, stage, sync, ownership, cohort, me]);
+    }).sort((a, b) => (slaMap[b.lead_id]?.sla.overdueMin ?? 0) - (slaMap[a.lead_id]?.sla.overdueMin ?? 0));
+  }, [rows, query, stage, sync, ownership, cohort, me, slaMap, slaFilter, waitingFilter]);
 
-  useEffect(() => { setVisibleLimit(75); }, [query, stage, sync, ownership, cohort]);
+  useEffect(() => { setVisibleLimit(75); }, [query, stage, sync, ownership, cohort, slaFilter, waitingFilter]);
 
   const stats = useMemo(() => ({
     open: rows.filter((row) => !["CHECKED_IN", "LOST"].includes(row.current_pipeline_stage || "")).length,
@@ -183,7 +216,15 @@ export function EndToEndLeadManagementPage() {
           <Badge variant="outline" className="px-3">END-TO-END LEAD OS</Badge>
         </div>
       </div>
-      <LeadConversationLibraryPanel leadId={selected.lead_id} stepIndex={journey[selected.lead_id]?.journey_step_index} />
+      <LeadStoryPanel
+        leadId={selected.lead_id}
+        name={selected.wa_name}
+        stepIndex={journey[selected.lead_id]?.journey_step_index}
+        bucketCode={journey[selected.lead_id]?.conversation_bucket}
+        owned={Boolean(selected.current_owner)}
+        closed={isExpired(selected)}
+        lastActivityAt={activityAt(selected)}
+      />
       <LeadQualificationEditor
         lead={selected}
         onSaved={async (fresh) => {
@@ -274,16 +315,18 @@ export function EndToEndLeadManagementPage() {
           <div><h2 className="font-semibold">All Leads</h2><p className="text-xs text-muted-foreground">Search, filter, open, work and move one canonical customer through the full lifecycle.</p></div>
           <Badge variant="secondary">{filtered.length} shown</Badge>
         </div>
-        <div className="grid gap-2 md:grid-cols-[1.6fr_repeat(3,1fr)]">
+        <div className="grid gap-2 md:grid-cols-[1.6fr_repeat(3,1fr)] lg:grid-cols-[1.6fr_repeat(5,1fr)]">
           <label className="relative"><Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" /><Input className="pl-9" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search name, phone, location, owner or last message…" /></label>
           <select className="h-10 rounded-md border bg-background px-3 text-sm" value={stage} onChange={(e) => setStage(e.target.value)}><option value="ALL">All stages</option>{PIPELINE.map((key) => <option key={key} value={key}>{pretty(key)}</option>)}<option value="LOST">Lost</option></select>
           <select className="h-10 rounded-md border bg-background px-3 text-sm" value={ownership} onChange={(e) => setOwnership(e.target.value)}><option value="ALL">All ownership</option><option value="MINE">My universe</option><option value="UNOWNED">Unowned only</option></select>
           <select className="h-10 rounded-md border bg-background px-3 text-sm" value={sync} onChange={(e) => setSync(e.target.value)}><option value="ALL">All truth states</option><option value="RED">RED — leakage</option><option value="AMBER">AMBER — sync</option><option value="GREEN">GREEN</option><option value="GREY">GREY — future</option></select>
+          <select className="h-10 rounded-md border bg-background px-3 text-sm" value={slaFilter} onChange={(e) => setSlaFilter(e.target.value as SlaFilter)}>{SLA_FILTERS.map((f) => <option key={f} value={f}>{f === "ALL" ? "All SLA states" : pretty(f)}</option>)}</select>
+          <select className="h-10 rounded-md border bg-background px-3 text-sm" value={waitingFilter} onChange={(e) => setWaitingFilter(e.target.value)}><option value="ALL">All waiting parties</option>{WAITING_PARTIES.map((w) => <option key={w} value={w}>Waiting on {pretty(w)}</option>)}</select>
         </div>
       </div>
 
       <div className="divide-y">
-        {filtered.slice(0, visibleLimit).map((row) => <button key={row.lead_id} onClick={() => setSelected(row)} className="grid w-full gap-3 p-4 text-left hover:bg-muted/30 lg:grid-cols-[1.25fr_.8fr_.9fr_.9fr_1.6fr_auto] lg:items-center">
+        {filtered.slice(0, visibleLimit).map((row) => <button key={row.lead_id} onClick={() => setSelected(row)} className={`grid w-full gap-3 p-4 text-left hover:bg-muted/30 lg:grid-cols-[1.25fr_.8fr_.9fr_.9fr_1.6fr_auto] lg:items-center ${slaMap[row.lead_id]?.sla.tone === "danger" ? "border-l-4 border-l-red-500 bg-red-500/5" : slaMap[row.lead_id]?.sla.tone === "warn" ? "border-l-4 border-l-amber-500" : ""}`}>
           <div className="min-w-0">
             <div className="flex items-center gap-2"><span className="truncate font-semibold">{row.wa_name || "Unnamed customer"}</span><SyncDot state={row.sync_state} /></div>
             <div className="mt-0.5 text-xs text-muted-foreground">{row.phone}</div><div className="mt-1 text-[10px] uppercase text-muted-foreground">{pretty(cohortOf(row))} · {activityAt(row) ? new Date(activityAt(row) as string).toLocaleDateString() : "No activity"}</div>
@@ -297,6 +340,10 @@ export function EndToEndLeadManagementPage() {
             <LeadJourneyStrip currentIndex={journey[row.lead_id]?.journey_step_index ?? 1} compact />
             <div className="flex flex-wrap items-center gap-1.5 text-[10px] text-muted-foreground">
               {journey[row.lead_id]?.conversation_bucket && <Badge variant="secondary" className="text-[10px]">{String(journey[row.lead_id]?.conversation_bucket).replaceAll("_", " ")}</Badge>}
+              {slaMap[row.lead_id] && <Badge variant="outline" className={`text-[10px] ${slaMap[row.lead_id].sla.tone === "danger" ? "border-red-500/60 bg-red-500/10 text-red-600" : slaMap[row.lead_id].sla.tone === "warn" ? "border-amber-500/50 bg-amber-500/10 text-amber-700" : ""}`}>{slaMap[row.lead_id].sla.label}</Badge>}
+              {slaMap[row.lead_id] && <Badge variant="outline" className="text-[10px]">Waiting on {pretty(slaMap[row.lead_id].waiting)}</Badge>}
+              {slaMap[row.lead_id]?.sla.escalate && <Badge variant="outline" className="border-red-500/60 bg-red-500/10 text-[10px] text-red-600">Escalated to Control Tower</Badge>}
+              <span>Idle {humanAge(slaMap[row.lead_id]?.sla.ageMin ?? 0)}</span>
               {Boolean(journey[row.lead_id]?.library_rows_count) && <span>{journey[row.lead_id]?.library_rows_count} captured chat lines</span>}
             </div>
           </div>

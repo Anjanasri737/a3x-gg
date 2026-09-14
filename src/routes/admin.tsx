@@ -21,6 +21,7 @@ const TABS = [
   { to: "/admin/flow", label: "Role Flow" },
   { to: "/admin/playbooks", label: "Playbooks" },
   { to: "/admin/report-center", label: "Report Centre" },
+  { to: "/admin/sla", label: "SLA Analytics" },
 ];
 
 export const Route = createFileRoute("/admin")({
