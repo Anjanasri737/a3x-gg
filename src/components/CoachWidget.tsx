@@ -47,16 +47,10 @@ export function CoachWidget() {
       })
     : null;
 
-  // Open the coach automatically on first visit (welcome nudge)
+  // The coach never opens by itself — it covered the page. Open it from the
+  // coach button or with Shift+C.
   useEffect(() => {
-    if (!mounted) return;
-    if (!shownIntro) {
-      const t = setTimeout(() => {
-        setOpen(true);
-        setShownIntro(true);
-      }, 1200);
-      return () => clearTimeout(t);
-    }
+    if (mounted && !shownIntro) setShownIntro(true);
   }, [mounted, shownIntro, setShownIntro]);
 
   // Day rollover via effect (no store writes from render).

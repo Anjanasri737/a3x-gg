@@ -1105,6 +1105,102 @@ export type Database = {
           },
         ]
       }
+      e2e_lead_execution: {
+        Row: {
+          booking_status: string | null
+          channel: string | null
+          claimed_at: string | null
+          created_at: string
+          follow_up_at: string | null
+          last_outcome: string | null
+          lead_id: string
+          next_action: string | null
+          next_action_at: string | null
+          owner_id: string | null
+          owner_name: string | null
+          ownership_mode: string | null
+          probability: string | null
+          situation: string | null
+          tour_gate: Json
+          updated_at: string
+          urgency: string | null
+          verified: Json
+          visit_status: string | null
+          when_bucket: string | null
+          where_state: string | null
+        }
+        Insert: {
+          booking_status?: string | null
+          channel?: string | null
+          claimed_at?: string | null
+          created_at?: string
+          follow_up_at?: string | null
+          last_outcome?: string | null
+          lead_id: string
+          next_action?: string | null
+          next_action_at?: string | null
+          owner_id?: string | null
+          owner_name?: string | null
+          ownership_mode?: string | null
+          probability?: string | null
+          situation?: string | null
+          tour_gate?: Json
+          updated_at?: string
+          urgency?: string | null
+          verified?: Json
+          visit_status?: string | null
+          when_bucket?: string | null
+          where_state?: string | null
+        }
+        Update: {
+          booking_status?: string | null
+          channel?: string | null
+          claimed_at?: string | null
+          created_at?: string
+          follow_up_at?: string | null
+          last_outcome?: string | null
+          lead_id?: string
+          next_action?: string | null
+          next_action_at?: string | null
+          owner_id?: string | null
+          owner_name?: string | null
+          ownership_mode?: string | null
+          probability?: string | null
+          situation?: string | null
+          tour_gate?: Json
+          updated_at?: string
+          urgency?: string | null
+          verified?: Json
+          visit_status?: string | null
+          when_bucket?: string | null
+          where_state?: string | null
+        }
+        Relationships: []
+      }
+      e2e_lead_timeline: {
+        Row: {
+          actor: string
+          created_at: string
+          id: string
+          lead_id: string
+          text: string
+        }
+        Insert: {
+          actor?: string
+          created_at?: string
+          id?: string
+          lead_id: string
+          text: string
+        }
+        Update: {
+          actor?: string
+          created_at?: string
+          id?: string
+          lead_id?: string
+          text?: string
+        }
+        Relationships: []
+      }
       eod_reports: {
         Row: {
           checklist: Json

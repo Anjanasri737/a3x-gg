@@ -29,15 +29,18 @@ export function AllLeadsBoard() {
   const [limit, setLimit] = useState(50);
   const [openId, setOpenId] = useState<string | null>(null);
   const execs = useE2EPlus((s) => s.leads);
+  const hydrate = useE2EPlus((s) => s.hydrate);
 
   useEffect(() => {
     void (async () => {
       try {
         const [r, b] = await Promise.all([listLeadOpsRows(), listLibraryBuckets().catch(() => [])]);
         setRows(r); setBuckets(b);
+        // Ownership, next actions and timelines are team-wide, not per browser.
+        await hydrate();
       } finally { setLoading(false); }
     })();
-  }, []);
+  }, [hydrate]);
 
   const bucketMap = useMemo(() => {
     const m = new Map<string, LibraryBucket>();
