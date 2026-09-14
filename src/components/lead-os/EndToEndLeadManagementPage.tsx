@@ -5,6 +5,8 @@ import {
   ArrowRight,
   CheckCircle2,
   Clock3,
+  CalendarCheck2,
+  History,
   Filter,
   Layers3,
   MessageSquare,
@@ -37,6 +39,30 @@ const PIPELINE = [
   "CHECKED_IN",
 ] as const;
 
+type Cohort = "ALL" | "CURRENT" | "OLD" | "EXPIRED" | "TOURS";
+
+const TOUR_STAGES = new Set(["TOUR_SCHEDULED", "TOUR_CONFIRMED", "TOUR_IN_PROGRESS"]);
+
+function activityAt(row: TruthRow) {
+  return row.last_operator_action_at || row.latest_observation_at || row.updated_at || row.created_at || null;
+}
+
+function isExpired(row: TruthRow) {
+  return ["expired", "closed", "lost"].includes(String(row.lead_status || "").toLowerCase()) || row.current_pipeline_stage === "LOST";
+}
+
+function isOld(row: TruthRow) {
+  const value = activityAt(row);
+  return !isExpired(row) && Boolean(value && Date.parse(value) < Date.now() - 30 * 24 * 60 * 60 * 1000);
+}
+
+function cohortOf(row: TruthRow): Exclude<Cohort, "ALL"> {
+  if (isExpired(row)) return "EXPIRED";
+  if (TOUR_STAGES.has(row.current_pipeline_stage || "")) return "TOURS";
+  if (isOld(row)) return "OLD";
+  return "CURRENT";
+}
+
 function pretty(value?: string | null) {
   return (value || "—").replaceAll("_", " ");
 }
@@ -50,6 +76,8 @@ export function EndToEndLeadManagementPage() {
   const [stage, setStage] = useState("ALL");
   const [ownership, setOwnership] = useState("ALL");
   const [sync, setSync] = useState("ALL");
+  const [cohort, setCohort] = useState<Cohort>("ALL");
+  const [visibleLimit, setVisibleLimit] = useState(75);
   const [newOpen, setNewOpen] = useState(false);
   const [newBusy, setNewBusy] = useState(false);
   const [name, setName] = useState("");
@@ -88,11 +116,14 @@ export function EndToEndLeadManagementPage() {
       ].some((value) => String(value || "").toLowerCase().includes(needle))) return false;
       if (stage !== "ALL" && row.current_pipeline_stage !== stage) return false;
       if (sync !== "ALL" && row.sync_state !== sync) return false;
+      if (cohort !== "ALL" && cohortOf(row) !== cohort) return false;
       if (ownership === "MINE" && row.current_owner !== me && row.current_handler !== me && row.reservation_operator !== me) return false;
       if (ownership === "UNOWNED" && row.current_owner) return false;
       return true;
     });
-  }, [rows, query, stage, sync, ownership, me]);
+  }, [rows, query, stage, sync, ownership, cohort, me]);
+
+  useEffect(() => { setVisibleLimit(75); }, [query, stage, sync, ownership, cohort]);
 
   const stats = useMemo(() => ({
     open: rows.filter((row) => !["CHECKED_IN", "LOST"].includes(row.current_pipeline_stage || "")).length,
@@ -101,6 +132,10 @@ export function EndToEndLeadManagementPage() {
     due: rows.filter((row) => row.next_action_at && Date.parse(row.next_action_at) <= Date.now()).length,
     booked: rows.filter((row) => row.current_pipeline_stage === "BOOKED").length,
     checkedIn: rows.filter((row) => row.current_pipeline_stage === "CHECKED_IN").length,
+    current: rows.filter((row) => cohortOf(row) === "CURRENT").length,
+    old: rows.filter((row) => cohortOf(row) === "OLD").length,
+    expired: rows.filter((row) => cohortOf(row) === "EXPIRED").length,
+    tours: rows.filter((row) => cohortOf(row) === "TOURS").length,
   }), [rows, me]);
 
   const stageCounts = useMemo(() => Object.fromEntries(
@@ -172,10 +207,19 @@ export function EndToEndLeadManagementPage() {
       <div className="flex flex-wrap gap-2">
         <Button asChild variant="outline"><Link to="/vision"><MessageSquare className="mr-2 h-4 w-4" />Sync WhatsApp</Link></Button>
         <Button asChild variant="outline"><Link to="/my-work"><Layers3 className="mr-2 h-4 w-4" />My 30 / Active 13</Link></Button>
+        <Button asChild variant="outline"><Link to="/tower/final-moment"><CalendarCheck2 className="mr-2 h-4 w-4" />Control Tower</Link></Button>
         <Button variant="outline" onClick={() => void load()} disabled={loading}><RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />Refresh</Button>
         <Button onClick={() => setNewOpen((value) => !value)}><Plus className="mr-2 h-4 w-4" />New / Find Lead</Button>
       </div>
     </header>
+
+    <div className="grid grid-cols-2 gap-2 lg:grid-cols-5">
+      <CohortButton label="All leads" value={rows.length} active={cohort === "ALL"} onClick={() => setCohort("ALL")} icon={Layers3} />
+      <CohortButton label="Current" value={stats.current} active={cohort === "CURRENT"} onClick={() => setCohort("CURRENT")} icon={UserRound} />
+      <CohortButton label="Old · 30+ days" value={stats.old} active={cohort === "OLD"} onClick={() => setCohort("OLD")} icon={History} />
+      <CohortButton label="Expired / lost" value={stats.expired} active={cohort === "EXPIRED"} onClick={() => setCohort("EXPIRED")} icon={Clock3} />
+      <CohortButton label="Tours live" value={stats.tours} active={cohort === "TOURS"} onClick={() => setCohort("TOURS")} icon={CalendarCheck2} />
+    </div>
 
     <div className="grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-6">
       <Stat label="Active customers" value={stats.open} icon={UserRound} />
@@ -228,10 +272,10 @@ export function EndToEndLeadManagementPage() {
       </div>
 
       <div className="divide-y">
-        {filtered.map((row) => <button key={row.lead_id} onClick={() => setSelected(row)} className="grid w-full gap-3 p-4 text-left hover:bg-muted/30 lg:grid-cols-[1.25fr_.8fr_.9fr_.9fr_1.6fr_auto] lg:items-center">
+        {filtered.slice(0, visibleLimit).map((row) => <button key={row.lead_id} onClick={() => setSelected(row)} className="grid w-full gap-3 p-4 text-left hover:bg-muted/30 lg:grid-cols-[1.25fr_.8fr_.9fr_.9fr_1.6fr_auto] lg:items-center">
           <div className="min-w-0">
             <div className="flex items-center gap-2"><span className="truncate font-semibold">{row.wa_name || "Unnamed customer"}</span><SyncDot state={row.sync_state} /></div>
-            <div className="mt-0.5 text-xs text-muted-foreground">{row.phone}</div>
+            <div className="mt-0.5 text-xs text-muted-foreground">{row.phone}</div><div className="mt-1 text-[10px] uppercase text-muted-foreground">{pretty(cohortOf(row))} · {activityAt(row) ? new Date(activityAt(row) as string).toLocaleDateString() : "No activity"}</div>
           </div>
           <div><div className="text-[10px] uppercase text-muted-foreground">Stage</div><Badge variant="outline" className="mt-1">{pretty(row.current_pipeline_stage)}</Badge></div>
           <div className="min-w-0"><div className="text-[10px] uppercase text-muted-foreground">Requirement</div><div className="mt-1 truncate text-sm">{row.location_text || "Location missing"}</div><div className="text-xs text-muted-foreground">{row.movein_date || "Move-in missing"}</div></div>
@@ -239,10 +283,17 @@ export function EndToEndLeadManagementPage() {
           <div className="min-w-0"><div className="text-[10px] uppercase text-muted-foreground">What happens next</div><div className="mt-1 truncate text-sm">{row.next_action_kind || row.current_mission || "No dated next action"}</div><div className={`text-xs ${row.next_action_at && Date.parse(row.next_action_at) <= Date.now() ? "text-red-600" : "text-muted-foreground"}`}>{row.next_action_at ? new Date(row.next_action_at).toLocaleString() : "Missing"}</div></div>
           <div className="flex justify-end"><Button size="sm">Open customer <ArrowRight className="ml-1.5 h-3.5 w-3.5" /></Button></div>
         </button>)}
+        {filtered.length > visibleLimit && <div className="flex justify-center p-4"><Button variant="outline" onClick={() => setVisibleLimit((value) => value + 75)}>Show 75 more</Button></div>}
         {!filtered.length && <div className="p-10 text-center text-sm text-muted-foreground"><Filter className="mx-auto mb-2 h-5 w-5" />No leads match these filters.</div>}
       </div>
     </Card>
   </div>;
+}
+
+function CohortButton({ label, value, active, onClick, icon: Icon }: { label: string; value: number; active: boolean; onClick: () => void; icon: React.ComponentType<{ className?: string }> }) {
+  return <Button variant={active ? "default" : "outline"} className="h-auto min-h-16 justify-between px-3 py-2 text-left" onClick={onClick}>
+    <span><span className="block text-xl font-bold tabular-nums">{value}</span><span className="block text-[10px] uppercase">{label}</span></span><Icon className="h-4 w-4 opacity-70" />
+  </Button>;
 }
 
 function SyncDot({ state }: { state: TruthRow["sync_state"] }) {

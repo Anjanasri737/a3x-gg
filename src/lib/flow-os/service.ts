@@ -40,6 +40,8 @@ export interface TruthRow {
   primary_blocker?: string | null;
   last_operator_action_at?: string | null;
   lead_status: string;
+  created_at?: string | null;
+  updated_at?: string | null;
   priority: string | null;
   latest_observation_at: string | null;
   last_message_preview: string | null;
@@ -101,15 +103,36 @@ export async function listScreenshotBatches(limit = 20): Promise<ScreenshotBatch
 }
 
 export async function listTruthRows(): Promise<TruthRow[]> {
-  const { data, error } = await db.from("flow_three_day_truth").select("*").order("latest_observation_at", { ascending: false, nullsFirst: false });
-  if (error) throw error;
-  return (data ?? []) as TruthRow[];
+  const [truthResult, leadResult] = await Promise.all([
+    db.from("flow_three_day_truth").select("*").order("latest_observation_at", { ascending: false, nullsFirst: false }),
+    db.from("leads").select("id, location_text, movein_date, lead_source, opportunity_score, current_mission, primary_blocker, last_operator_action_at, latest_whatsapp_preview, created_at, updated_at"),
+  ]);
+  if (truthResult.error) throw truthResult.error;
+  if (leadResult.error) throw leadResult.error;
+  const details = new Map((leadResult.data ?? []).map((lead: any) => [lead.id, lead]));
+  return (truthResult.data ?? []).map((row: TruthRow) => {
+    const detail = details.get(row.lead_id) as Record<string, any> | undefined;
+    return {
+      ...row,
+      ...(detail ?? {}),
+      last_message_preview: row.last_message_preview ?? detail?.latest_whatsapp_preview ?? null,
+    };
+  }) as TruthRow[];
 }
 
 export async function getTruthRow(leadId: string): Promise<TruthRow | null> {
-  const { data, error } = await db.from("flow_three_day_truth").select("*").eq("lead_id", leadId).maybeSingle();
-  if (error) throw error;
-  return (data ?? null) as TruthRow | null;
+  const [truthResult, leadResult] = await Promise.all([
+    db.from("flow_three_day_truth").select("*").eq("lead_id", leadId).maybeSingle(),
+    db.from("leads").select("id, location_text, movein_date, lead_source, opportunity_score, current_mission, primary_blocker, last_operator_action_at, latest_whatsapp_preview, created_at, updated_at").eq("id", leadId).maybeSingle(),
+  ]);
+  if (truthResult.error) throw truthResult.error;
+  if (leadResult.error) throw leadResult.error;
+  if (!truthResult.data) return null;
+  return {
+    ...truthResult.data,
+    ...(leadResult.data ?? {}),
+    last_message_preview: truthResult.data.last_message_preview ?? leadResult.data?.latest_whatsapp_preview ?? null,
+  } as TruthRow;
 }
 
 export async function listLabelRules(): Promise<LabelRule[]> {
