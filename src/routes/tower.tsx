@@ -42,6 +42,13 @@ function TowerShell() {
               >
                 Flow OS · Revenue Guarantee
               </Link>
+              <Link
+                to="/tower/sla"
+                className={`px-3 py-1.5 rounded text-sm font-semibold ${pathname.startsWith("/tower/sla") ? "bg-red-600 text-white" : "bg-red-500/10 text-red-600 hover:bg-red-500/15"}`}
+                title="Leads nobody picked up and conversations past their SLA"
+              >
+                SLA Escalations
+              </Link>
               {tabs.map((t) => {
                 const active = t.exact ? pathname === t.to : pathname.startsWith(t.to);
                 return (
