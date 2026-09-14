@@ -216,6 +216,7 @@ export function EndToEndLeadManagementPage() {
       </div>
       <div className="flex flex-wrap gap-2">
         <Button asChild variant="outline"><Link to="/vision"><MessageSquare className="mr-2 h-4 w-4" />Sync WhatsApp</Link></Button>
+        <Button asChild variant="outline"><Link to="/conversation-library"><MessageSquare className="mr-2 h-4 w-4" />Conversation Library</Link></Button>
         <Button asChild variant="outline"><Link to="/my-work"><Layers3 className="mr-2 h-4 w-4" />My 30 / Active 13</Link></Button>
         <Button asChild variant="outline"><Link to="/tower/final-moment"><CalendarCheck2 className="mr-2 h-4 w-4" />Control Tower</Link></Button>
         <Button variant="outline" onClick={() => void load()} disabled={loading}><RefreshCw className={`mr-2 h-4 w-4 ${loading ? "animate-spin" : ""}`} />Refresh</Button>
