@@ -326,7 +326,13 @@ export function LeadDrawer({
 
             <Section title="Booking ladder" icon={ShieldCheck}>
               <Chips options={BOOKING_LADDER} value={exec?.bookingStatus}
-                onPick={(v) => store.patch(row.id, { bookingStatus: v }, `Booking → ${v}`)} />
+                onPick={(v) => {
+                  store.patch(row.id, { bookingStatus: v }, `Booking → ${v}`);
+                  const stage = BOOKING_STAGE[v];
+                  if (stage) void publishStage({ leadId: row.id, stage, mission: `Booking ${v}` }).then((r) => {
+                    if (!r.ok) toast.warning(`Booking step saved here only: ${r.message}`);
+                  });
+                }} />
               <div className="mt-2 text-[10px] text-muted-foreground">
                 Inventory approval first, then payment / reservation. The commercial snapshot never changes silently.
               </div>
