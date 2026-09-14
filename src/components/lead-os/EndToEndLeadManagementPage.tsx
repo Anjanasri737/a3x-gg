@@ -326,7 +326,7 @@ export function EndToEndLeadManagementPage() {
       </div>
 
       <div className="divide-y">
-        {filtered.slice(0, visibleLimit).map((row) => <button key={row.lead_id} onClick={() => setSelected(row)} className="grid w-full gap-3 p-4 text-left hover:bg-muted/30 lg:grid-cols-[1.25fr_.8fr_.9fr_.9fr_1.6fr_auto] lg:items-center">
+        {filtered.slice(0, visibleLimit).map((row) => <button key={row.lead_id} onClick={() => setSelected(row)} className={`grid w-full gap-3 p-4 text-left hover:bg-muted/30 lg:grid-cols-[1.25fr_.8fr_.9fr_.9fr_1.6fr_auto] lg:items-center ${slaMap[row.lead_id]?.sla.tone === "danger" ? "border-l-4 border-l-red-500 bg-red-500/5" : slaMap[row.lead_id]?.sla.tone === "warn" ? "border-l-4 border-l-amber-500" : ""}`}>
           <div className="min-w-0">
             <div className="flex items-center gap-2"><span className="truncate font-semibold">{row.wa_name || "Unnamed customer"}</span><SyncDot state={row.sync_state} /></div>
             <div className="mt-0.5 text-xs text-muted-foreground">{row.phone}</div><div className="mt-1 text-[10px] uppercase text-muted-foreground">{pretty(cohortOf(row))} · {activityAt(row) ? new Date(activityAt(row) as string).toLocaleDateString() : "No activity"}</div>
