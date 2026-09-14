@@ -12,6 +12,7 @@ import { useMovement } from "@/movement/store";
 import type { MovementState } from "@/movement/types";
 import { buildVisionRows, type VisionRow } from "./vision";
 import { ingestMessage, WA_ACCOUNTS } from "./bridge";
+import { LeadStoryByPhone } from "@/components/lead-os/LeadStoryByPhone";
 
 interface Props {
   onAdd: (s: MovementState) => void;
@@ -42,6 +43,7 @@ export function DraftVisionPanel({ onAdd, inDraft, remaining }: Props) {
   const extract = useServerFn(extractWhatsappRows);
   const [shots, setShots] = useState<string[]>([]);
   const [rows, setRows] = useState<VisionRow[]>([]);
+  const [storyPhone, setStoryPhone] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [account, setAccount] = useState<string>(WA_ACCOUNTS[0]);
   const fileRef = useRef<HTMLInputElement>(null);
