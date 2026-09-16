@@ -23,6 +23,7 @@ import { Route as RevenueRouteImport } from './routes/revenue'
 import { Route as QueueRouteImport } from './routes/queue'
 import { Route as ProductivityRouteImport } from './routes/productivity'
 import { Route as OsRouteImport } from './routes/os'
+import { Route as MymovesRouteImport } from './routes/mymoves'
 import { Route as MyWorkRouteImport } from './routes/my-work'
 import { Route as MovementRouteImport } from './routes/movement'
 import { Route as MonitoringRouteImport } from './routes/monitoring'
@@ -206,6 +207,11 @@ const ProductivityRoute = ProductivityRouteImport.update({
 const OsRoute = OsRouteImport.update({
   id: '/os',
   path: '/os',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MymovesRoute = MymovesRouteImport.update({
+  id: '/mymoves',
+  path: '/mymoves',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MyWorkRoute = MyWorkRouteImport.update({
@@ -809,6 +815,7 @@ export interface FileRoutesByFullPath {
   '/monitoring': typeof MonitoringRoute
   '/movement': typeof MovementRoute
   '/my-work': typeof MyWorkRoute
+  '/mymoves': typeof MymovesRoute
   '/os': typeof OsRoute
   '/productivity': typeof ProductivityRoute
   '/queue': typeof QueueRoute
@@ -938,6 +945,7 @@ export interface FileRoutesByTo {
   '/monitoring': typeof MonitoringRoute
   '/movement': typeof MovementRoute
   '/my-work': typeof MyWorkRoute
+  '/mymoves': typeof MymovesRoute
   '/os': typeof OsRoute
   '/productivity': typeof ProductivityRoute
   '/queue': typeof QueueRoute
@@ -1068,6 +1076,7 @@ export interface FileRoutesById {
   '/monitoring': typeof MonitoringRoute
   '/movement': typeof MovementRoute
   '/my-work': typeof MyWorkRoute
+  '/mymoves': typeof MymovesRoute
   '/os': typeof OsRoute
   '/productivity': typeof ProductivityRoute
   '/queue': typeof QueueRoute
@@ -1200,6 +1209,7 @@ export interface FileRouteTypes {
     | '/monitoring'
     | '/movement'
     | '/my-work'
+    | '/mymoves'
     | '/os'
     | '/productivity'
     | '/queue'
@@ -1329,6 +1339,7 @@ export interface FileRouteTypes {
     | '/monitoring'
     | '/movement'
     | '/my-work'
+    | '/mymoves'
     | '/os'
     | '/productivity'
     | '/queue'
@@ -1458,6 +1469,7 @@ export interface FileRouteTypes {
     | '/monitoring'
     | '/movement'
     | '/my-work'
+    | '/mymoves'
     | '/os'
     | '/productivity'
     | '/queue'
@@ -1589,6 +1601,7 @@ export interface RootRouteChildren {
   MonitoringRoute: typeof MonitoringRoute
   MovementRoute: typeof MovementRoute
   MyWorkRoute: typeof MyWorkRoute
+  MymovesRoute: typeof MymovesRoute
   OsRoute: typeof OsRoute
   ProductivityRoute: typeof ProductivityRoute
   QueueRoute: typeof QueueRoute
@@ -1747,6 +1760,13 @@ declare module '@tanstack/react-router' {
       path: '/os'
       fullPath: '/os'
       preLoaderRoute: typeof OsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/mymoves': {
+      id: '/mymoves'
+      path: '/mymoves'
+      fullPath: '/mymoves'
+      preLoaderRoute: typeof MymovesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/my-work': {
@@ -2714,6 +2734,7 @@ const rootRouteChildren: RootRouteChildren = {
   MonitoringRoute: MonitoringRoute,
   MovementRoute: MovementRoute,
   MyWorkRoute: MyWorkRoute,
+  MymovesRoute: MymovesRoute,
   OsRoute: OsRoute,
   ProductivityRoute: ProductivityRoute,
   QueueRoute: QueueRoute,
