@@ -130,6 +130,7 @@ export function LeadWorkspace({ lead }: { lead: Lead }) {
           </Card>
         </TabsContent>
 
+        <TabsContent value="requirement" className="space-y-3">
           <Card className="p-4">
             <div className="mb-2 flex items-center justify-between text-sm">
               <span className="font-medium">Requirement completeness</span>
