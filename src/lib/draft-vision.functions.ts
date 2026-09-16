@@ -21,6 +21,7 @@ export interface VisionRawRow {
   muted: boolean | null;
   chatType: "individual" | "group" | "unknown" | null;
   mention: boolean | null;
+  visibleLabels: Array<{ text: string; colour: string | null }>;
   avatarPresent: boolean | null;
   avatarCrop: {
     leftPct: number;
@@ -40,7 +41,7 @@ const SYSTEM = `You read WhatsApp Web/desktop screenshots.
 Look ONLY at the left-hand chat list panel. Ignore the open conversation on the right, the browser chrome, the tab bar, the sidebar icons and the search box.
 
 For EVERY visible chat row in that list, in top-to-bottom order, return one object with exactly these keys:
-screenshotIndex (0-based input image index), position (1-based within that screenshot), displayName, phoneVisible, lastMessageText, lastMessageType, lastMessageDirection, deliveryTicks, visibleTimestampText, unreadCount, unread, pinned, muted, chatType, mention, avatarPresent, avatarCrop, ocrConfidence.
+screenshotIndex (0-based input image index), position (1-based within that screenshot), displayName, phoneVisible, lastMessageText, lastMessageType, lastMessageDirection, deliveryTicks, visibleTimestampText, unreadCount, unread, pinned, muted, chatType, mention, visibleLabels, avatarPresent, avatarCrop, ocrConfidence.
 
 Rules:
 - displayName is exactly what is printed (a saved name, a company name, or a phone number).
@@ -49,6 +50,7 @@ Rules:
 - lastMessageDirection is "us" only when outgoing ticks are visible before the preview, "customer" when clearly incoming, otherwise "unknown".
 - visibleTimestampText is the raw right-aligned value exactly as shown: "4:22 pm", "Friday", "2/9/2026", "Yesterday". Never convert it.
 - unreadCount is the green badge number, null when there is no badge.
+- visibleLabels contains every coloured label printed under the message preview, preserving its exact text and naming its visible colour. Return [] when there is no label.
 - avatarPresent is true when the row has a visible profile photo or avatar. avatarCrop is the tight square around that avatar as percentages of the full screenshot: {"leftPct":0-100,"topPct":0-100,"rightPct":0-100,"bottomPct":0-100}. Return null when the bounds are uncertain. Do not include any floating app button or sidebar icon.
 - ocrConfidence is 0-1, your confidence that you read this row correctly.
 - Never invent a value. Unreadable or absent fields are null.

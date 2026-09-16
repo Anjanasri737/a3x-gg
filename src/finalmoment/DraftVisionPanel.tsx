@@ -274,13 +274,14 @@ export function DraftVisionPanel({ onAdd, inDraft, remaining }: Props) {
                 const visiblePhone = r.phoneDigits ? `+${r.phoneDigits}` : null;
                 return (
                   <div key={r.id} className="border-t border-sidebar-border/70">
-                    <button
+                    <Button
                       type="button"
+                      variant="ghost"
                       disabled={disabled}
                       aria-pressed={r.include}
                       onClick={() => toggle(r.id)}
                       className={cn(
-                        "grid w-full grid-cols-[52px_minmax(0,1fr)_auto] gap-3 px-3 py-3 text-left transition-colors",
+                        "grid h-auto w-full grid-cols-[52px_minmax(0,1fr)_auto] items-start gap-3 rounded-none px-3 py-3 text-left transition-colors",
                         r.include ? "bg-sidebar-accent/80" : "hover:bg-sidebar-accent/45",
                         disabled && "cursor-not-allowed opacity-55",
                       )}
@@ -300,7 +301,7 @@ export function DraftVisionPanel({ onAdd, inDraft, remaining }: Props) {
                           <span className="truncate">{r.raw.lastMessageText ?? "Message preview unavailable"}</span>
                         </div>
                         <div className="mt-1.5 flex flex-wrap items-center gap-1">
-                          {r.raw.displayName && r.raw.displayName !== displayIdentity && <span className={cn("rounded border px-1.5 py-0.5 text-[9px] font-semibold uppercase", labelTone(r.raw.displayName))}>{r.raw.displayName}</span>}
+                          {(r.raw.visibleLabels ?? []).map((label, index) => <span key={`${label.text}-${index}`} className={cn("rounded border px-1.5 py-0.5 text-[9px] font-semibold uppercase", labelTone(label.colour ?? label.text))}>{label.text}</span>)}
                           <span className={cn("rounded border px-1.5 py-0.5 text-[9px] font-semibold uppercase", labelTone(r.draft))}>{r.draft}</span>
                           <span className={cn("rounded border px-1.5 py-0.5 text-[9px] font-semibold uppercase", CLASS_STYLE[r.classification])}>{r.classification.replace("-", " ")}</span>
                         </div>
@@ -309,7 +310,7 @@ export function DraftVisionPanel({ onAdd, inDraft, remaining }: Props) {
                         <span className={cn("whitespace-nowrap text-[11px]", r.unread > 0 ? "font-medium text-success" : "text-sidebar-foreground/55")}>{r.timestampText ?? "—"}</span>
                         {r.unread > 0 && <span className="grid min-h-5 min-w-5 place-items-center rounded-full bg-success px-1 text-[10px] font-bold text-success-foreground">{r.unread}</span>}
                       </div>
-                    </button>
+                    </Button>
                     {(r.lockedBy || r.identity === "ambiguous") && (
                       <div className="flex flex-wrap items-center gap-2 px-[76px] pb-2 text-[10px] text-sidebar-foreground/60">
                         {r.lockedBy && <span className="flex items-center gap-1 text-destructive"><ShieldAlert className="h-3 w-3" />Owned by {r.lockedBy}</span>}
