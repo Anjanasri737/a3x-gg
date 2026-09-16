@@ -343,7 +343,13 @@ export function LiveVisionSyncPage() {
       </TabsContent>
 
       <TabsContent value="leakage"><RevenueLeakagePanel onOpenLead={openLead} /></TabsContent>
-      <TabsContent value="truth" className="space-y-2">{truth.map((row) => <LeadSignalCard key={row.lead_id} lead={row} onPrimary={() => void openLead(row.lead_id)} primaryLabel="Open customer" />)}{!truth.length && <Card className="p-8 text-center text-sm text-muted-foreground">No CRM truth rows yet.</Card>}</TabsContent>
+      <TabsContent value="truth" className="space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2"><div><h2 className="font-semibold">WhatsApp view</h2><p className="text-xs text-muted-foreground">Exactly as the inbox looks — name, number, last message, time, labels and unread counts. Tap a chat to open the customer.</p></div><Button variant={waView ? "default" : "outline"} size="sm" onClick={() => setWaView((v) => !v)}>{waView ? "Switch to CRM cards" : "Switch to WhatsApp view"}</Button></div>
+        {waView
+          ? <WhatsAppInbox rows={truth} onOpen={(row) => void openLead(row.lead_id)} />
+          : <div className="space-y-2">{truth.map((row) => <LeadSignalCard key={row.lead_id} lead={row} onPrimary={() => void openLead(row.lead_id)} primaryLabel="Open customer" />)}</div>}
+        {!truth.length && <Card className="p-8 text-center text-sm text-muted-foreground">No CRM truth rows yet.</Card>}
+      </TabsContent>
       <TabsContent value="rules"><Card className="p-4 space-y-4 max-w-3xl"><div><h2 className="font-semibold">Colour + seen/unseen + message rules</h2><p className="text-xs text-muted-foreground">Colour remains raw evidence. Account-specific rules can infer a working label/priority without changing commercial truth automatically.</p></div><div className="grid grid-cols-1 sm:grid-cols-2 gap-3"><label className="text-xs space-y-1"><span>Colour hint</span><Input value={ruleColor} onChange={(e) => setRuleColor(e.target.value)} /></label><label className="text-xs space-y-1"><span>Seen state</span><select className="h-10 w-full rounded-md border bg-background px-3" value={ruleSeen} onChange={(e) => setRuleSeen(e.target.value as any)}><option value="unseen">Unseen</option><option value="seen">Seen</option><option value="unknown">Unknown</option></select></label><label className="text-xs space-y-1"><span>Message regex</span><Input value={rulePattern} onChange={(e) => setRulePattern(e.target.value)} /></label><label className="text-xs space-y-1"><span>Infer label</span><Input value={ruleLabel} onChange={(e) => setRuleLabel(e.target.value)} /></label></div><Button onClick={() => void saveRule()}>Save rule</Button></Card></TabsContent>
     </Tabs>
   </div>;
