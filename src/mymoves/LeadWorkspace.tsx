@@ -223,8 +223,8 @@ export function LeadWorkspace({ lead }: { lead: Lead }) {
                 <Row k="Property" v={`${lead.booking.propertyName} · ${lead.booking.room}`} />
                 <Row k="Rent (frozen)" v={money(lead.booking.rent)} />
                 <Row k="Discount" v={money(lead.booking.discount)} />
-                <Row k="Inventory approval" v={lead.booking.inventoryApproval} bad={lead.booking.inventoryApproval !== "YES"} />
-                <Row k="Commercial approval" v={lead.booking.commercialApproval} bad={lead.booking.commercialApproval !== "YES"} />
+                <Row k="Inventory approval" v={lead.booking.inventoryApproval ?? "PENDING"} bad={lead.booking.inventoryApproval !== "YES"} />
+                <Row k="Commercial approval" v={lead.booking.commercialApproval ?? "PENDING"} bad={lead.booking.commercialApproval !== "YES"} />
                 <Row k="Room hold" v={when(lead.booking.roomHeldUntil)} />
                 <Row k="Final room lock" v={lead.booking.finalRoomLock ? "YES" : "NO"} bad={!lead.booking.finalRoomLock} />
                 <Row k="Move-in" v={lead.booking.moveIn} />
