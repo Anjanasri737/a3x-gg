@@ -20,6 +20,7 @@ import {
   registerScreenshot,
 } from "@/lib/vision/screenshots.functions";
 import { resolveVisionObservation } from "@/lib/vision/resolve-observation.functions";
+import { loadVisionSampleData } from "@/lib/vision/sample-data.functions";
 import { LeadStoryByPhone } from "@/components/lead-os/LeadStoryByPhone";
 import type { ObservationRecord, ScreenshotRecord } from "@/lib/vision/types";
 import {
