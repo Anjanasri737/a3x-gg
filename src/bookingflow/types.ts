@@ -52,6 +52,14 @@ export interface FlowLead {
   lastActivityAt: string;
   unread: number;
   labels: string[];
+  /** every answer given on the journey, keyed by journey field */
+  f: Record<string, string>;
+  /** when somebody actually said "I own this lead" */
+  ownedAt?: string;
+  /** last time the operator did something */
+  lastActionAt?: string;
+  /** screenshot heartbeat — last fresh evidence for this chat */
+  lastEvidenceAt?: string;
   /** batch assignment */
   handler?: string;
   round?: number;

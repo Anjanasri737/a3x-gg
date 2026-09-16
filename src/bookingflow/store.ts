@@ -4,6 +4,7 @@ import { persist } from "zustand/middleware";
 import { BATCH_SIZE, HANDLERS, ROUNDS } from "./types";
 import type { Batch, CapturedRow, FlowLead, Mode, Qualification, Temp } from "./types";
 import { seedCapturedRows, seedLeads } from "./seed";
+import { JOURNEY, currentStep } from "./journey";
 
 const now = () => new Date().toISOString();
 const DAY = 86_400_000;
@@ -12,9 +13,11 @@ export const daysOld = (isoDate: string) => Math.floor((Date.now() - +new Date(i
 
 export function autoTemp(l: FlowLead): Temp {
   if (l.tempReason && l.temp) return l.temp;
-  const soon = l.q.moveIn ? +new Date(l.q.moveIn) - Date.now() < 20 * DAY : false;
-  if (l.q.when === "NOW" || l.q.when === "TODAY" || soon) return "HOT";
-  if (daysOld(l.lastActivityAt) >= 5 || l.q.when === "FUTURE") return "COLD";
+  const moveIn = l.f?.moveIn ?? l.q.moveIn;
+  const when = l.f?.when ?? l.q.when;
+  const soon = moveIn ? +new Date(moveIn) - Date.now() < 20 * DAY : false;
+  if (when === "NOW" || when === "TODAY" || soon) return "HOT";
+  if (daysOld(l.lastActivityAt) >= 5 || when === "FUTURE") return "COLD";
   return "HOT";
 }
 
@@ -42,9 +45,15 @@ interface State {
   buildAllRounds: () => number;
   stuckCount: () => number;
 
-  // qualification
+  // qualification (legacy short flow, kept for compatibility)
   answer: (leadId: string, key: keyof Qualification, value: string) => void;
   finishQualification: (leadId: string, nextAction: string, nextActionAt: string) => void;
+
+  // the journey
+  answerStep: (leadId: string, stepKey: string, values: Record<string, string>) => void;
+  setNext: (leadId: string, nextAction: string, nextActionAt: string) => void;
+  editFields: (leadId: string, values: Record<string, string>, reason: string) => void;
+  claim: (leadId: string) => void;
 
   // expert powers
   setTemp: (leadId: string, temp: Temp, reason: string) => void;
@@ -84,8 +93,10 @@ export const useBookingFlow = create<State>()(
             lastActivityAt: now(),
             unread: row.unread,
             labels: row.labels,
-            stage: "CAPTURED",
+            stage: "WHERE",
             q: {},
+            f: { captured: "YES" },
+            lastEvidenceAt: now(),
             events: [ev("Draft Vision", "Added to CRM from screenshot", row.screenshot)],
           };
           return {
@@ -200,6 +211,84 @@ export const useBookingFlow = create<State>()(
           }),
         })),
 
+      answerStep: (leadId, stepKey, values) =>
+        set((s) => {
+          const step = JOURNEY.find((j) => j.key === stepKey);
+          if (!step) return s;
+          const chosen = values[step.field];
+          const opt = step.options?.find((o) => o.value === chosen);
+          return {
+            leads: s.leads.map((l) => {
+              if (l.id !== leadId) return l;
+              const f = { ...l.f, ...values };
+              const next = currentStep(f);
+              const escalate = opt?.effect === "ESCALATE";
+              const close = opt?.effect === "CLOSE";
+              const owner = stepKey === "OWN" && chosen === "OWN" ? s.me : l.owner;
+              return {
+                ...l,
+                f,
+                owner,
+                handler: owner ?? l.handler,
+                ownedAt: stepKey === "OWN" && chosen === "OWN" ? now() : l.ownedAt,
+                stage: close ? "CLOSED" : next ? next.key : "SETTLED",
+                escalated: escalate ? true : l.escalated,
+                closedReason: close ? (values["ownershipNote"] || opt?.label || "Closed") : l.closedReason,
+                lastActionAt: now(),
+                qualifiedAt: stepKey === "INTENT" ? now() : l.qualifiedAt,
+                temp: l.tempReason ? l.temp : autoTemp({ ...l, f }),
+                events: [
+                  ...l.events,
+                  ev(s.me, step.title, opt ? opt.label : Object.values(values).filter(Boolean).join(" · ")),
+                  ...(escalate ? [ev(s.me, "Sent to Control Tower", values["ownershipNote"] || opt?.label)] : []),
+                  ...(close ? [ev(s.me, "Journey closed", opt?.label)] : []),
+                ],
+              };
+            }),
+          };
+        }),
+
+      setNext: (leadId, nextAction, nextActionAt) =>
+        set((s) => ({
+          leads: s.leads.map((l) =>
+            l.id === leadId
+              ? {
+                  ...l,
+                  nextAction,
+                  nextActionAt,
+                  lastActionAt: now(),
+                  events: [...l.events, ev(s.me, "Next step locked", `${nextAction} by ${new Date(nextActionAt).toLocaleString()}`)],
+                }
+              : l,
+          ),
+        })),
+
+      editFields: (leadId, values, reason) =>
+        set((s) => ({
+          leads: s.leads.map((l) =>
+            l.id === leadId
+              ? {
+                  ...l,
+                  f: { ...l.f, ...values },
+                  lastActionAt: now(),
+                  events: [
+                    ...l.events,
+                    ev(s.me, "Details edited", `${Object.entries(values).map(([k, v]) => `${k}: ${v}`).join(" · ")}${reason ? ` — ${reason}` : ""}`),
+                  ],
+                }
+              : l,
+          ),
+        })),
+
+      claim: (leadId) =>
+        set((s) => ({
+          leads: s.leads.map((l) =>
+            l.id === leadId && !l.owner
+              ? { ...l, owner: s.me, handler: s.me, ownedAt: now(), events: [...l.events, ev(s.me, "Took ownership")] }
+              : l,
+          ),
+        })),
+
       setTemp: (leadId, temp, reason) =>
         set((s) => ({
           leads: s.leads.map((l) =>
@@ -250,6 +339,6 @@ export const useBookingFlow = create<State>()(
 
       reset: () => set({ rows: seedCapturedRows(), leads: seedLeads(), batches: [] }),
     }),
-    { name: "gharpayy-booking-flow-v1", version: 1 },
+    { name: "gharpayy-booking-flow-v2", version: 2 },
   ),
 );

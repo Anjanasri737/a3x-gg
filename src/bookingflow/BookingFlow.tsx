@@ -4,11 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Capture } from "./Capture";
 import { BatchBoard } from "./BatchBoard";
-import { Guided } from "./Guided";
-import { Expert } from "./Expert";
+import { Board } from "./Board";
+import { Workspace } from "./Workspace";
 import { useBookingFlow } from "./store";
 
-type Screen = "CAPTURE" | "BATCH" | "LEAD";
+type Screen = "CAPTURE" | "BATCH" | "BOARD" | "LEAD";
 
 export function BookingFlow() {
   const { mode, setMode, leads, batches, me, round } = useBookingFlow();
@@ -21,8 +21,10 @@ export function BookingFlow() {
 
   function openNextUnmarked() {
     const batch = batches.find((b) => b.handler === me && b.round === round);
-    const next = batch?.leadIds.map((id) => leads.find((l) => l.id === id)).find((l) => l && !l.qualifiedAt);
-    if (next) { setLeadId(next.id); setScreen("LEAD"); } else { setScreen("BATCH"); }
+    const next = batch?.leadIds.map((id) => leads.find((l) => l.id === id)).find((l) => l && l.id !== leadId && (!l.nextAction || !l.owner));
+    const fallback = leads.find((l) => l.id !== leadId && (!l.owner || !l.nextAction)) ?? leads[0];
+    const pick = next ?? fallback;
+    if (pick) { setLeadId(pick.id); setScreen("LEAD"); } else { setScreen("BOARD"); }
   }
 
   return (
@@ -41,22 +43,21 @@ export function BookingFlow() {
       </div>
 
       <div className="flex flex-wrap gap-1.5">
-        {(["CAPTURE", "BATCH", "LEAD"] as Screen[]).map((s, i) => (
+        {(["CAPTURE", "BATCH", "BOARD", "LEAD"] as Screen[]).map((s, i) => (
           <Button key={s} size="sm" variant={screen === s ? "secondary" : "ghost"} className="h-7 px-2 text-[11px]"
             onClick={() => (s === "LEAD" ? openNextUnmarked() : setScreen(s))}>
-            {i + 1}. {s === "CAPTURE" ? "Bring chats in" : s === "BATCH" ? "My 30 for this round" : "Work a customer"}
+            {i + 1}. {s === "CAPTURE" ? "Bring chats in" : s === "BATCH" ? "My 30 for this round" : s === "BOARD" ? "All customers" : "Work a customer"}
           </Button>
         ))}
-        {mounted && <Badge variant="outline" className="ml-auto text-[10px]">{mode === "GUIDED" ? "one question at a time" : "everything editable at once"}</Badge>}
+        {mounted && <Badge variant="outline" className="ml-auto text-[10px]">{mode === "GUIDED" ? "step by step, nothing skipped" : "expert — every step editable"}</Badge>}
       </div>
 
       {screen === "CAPTURE" && <Capture onDone={() => setScreen("BATCH")} />}
       {screen === "BATCH" && <BatchBoard onOpenLead={(id) => { setLeadId(id); setScreen("LEAD"); }} />}
+      {screen === "BOARD" && <Board onOpenLead={(id) => { setLeadId(id); setScreen("LEAD"); }} />}
       {screen === "LEAD" && (lead
-        ? mode === "GUIDED"
-          ? <Guided lead={lead} onBack={() => setScreen("BATCH")} onNext={openNextUnmarked} />
-          : <Expert lead={lead} onBack={() => setScreen("BATCH")} />
-        : <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">Pick a customer from your batch first.</div>)}
+        ? <Workspace lead={lead} onBack={() => setScreen("BOARD")} onNext={openNextUnmarked} />
+        : <div className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">Pick a customer from the board first.</div>)}
     </div>
   );
 }
