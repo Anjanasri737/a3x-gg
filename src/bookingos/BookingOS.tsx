@@ -54,7 +54,7 @@ export function BookingOS() {
         <Card className="p-6 text-sm text-muted-foreground">Loading the journey…</Card>
       ) : (
         <div className="grid gap-4 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)]">
-          <div className="lg:max-h-[80vh] lg:overflow-y-auto lg:pr-1">
+          <div className="max-h-[42vh] overflow-y-auto rounded-lg border p-1 lg:max-h-[80vh] lg:border-0 lg:p-0 lg:pr-1">
             <AllMovesBoard leads={leads} me={me.name} selectedId={leadId} onOpen={open} />
           </div>
 
