@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useMyMoves, type Role } from "./store";
@@ -9,6 +9,19 @@ export function MyMoves() {
   const { leads, me, setMe, reset } = useMyMoves();
   const [selected, setSelected] = useState<string | undefined>(leads[0]?.id);
   const lead = leads.find((l) => l.id === selected);
+  // Deadlines are relative to "now", so the server HTML can never match the
+  // browser. Render the board only after mount to keep the page interactive.
+  const [ready, setReady] = useState(false);
+  useEffect(() => setReady(true), []);
+  const workspaceRef = useRef<HTMLDivElement>(null);
+
+  const open = (id: string) => {
+    setSelected(id);
+    if (window.matchMedia("(max-width: 1023px)").matches) {
+      workspaceRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
 
   return (
     <div className="mx-auto max-w-7xl space-y-4 p-4">
@@ -27,14 +40,18 @@ export function MyMoves() {
         </div>
       </div>
 
+      {!ready ? (
+        <Card className="p-6 text-sm text-muted-foreground">Loading your moves…</Card>
+      ) : (
       <div className="grid gap-4 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)]">
         <div className="lg:max-h-[80vh] lg:overflow-y-auto lg:pr-1">
-          <AllMovesBoard leads={leads} me={me.name} selectedId={selected} onOpen={setSelected} />
+          <AllMovesBoard leads={leads} me={me.name} selectedId={selected} onOpen={open} />
         </div>
-        <div>
+        <div ref={workspaceRef} className="scroll-mt-4">
           {lead ? <LeadWorkspace lead={lead} /> : <Card className="p-6 text-sm text-muted-foreground">Pick a lead to open its workspace.</Card>}
         </div>
       </div>
+      )}
     </div>
   );
 }
