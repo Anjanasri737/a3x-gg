@@ -127,6 +127,7 @@ export function LiveVisionSyncPage() {
   const [nonCustomerReasons, setNonCustomerReasons] = useState<Record<string, string>>({});
   const [manualRows, setManualRows] = useState("");
   const [manualBusy, setManualBusy] = useState(false);
+  const [tab, setTab] = useState("analyze");
   const [ruleColor, setRuleColor] = useState("green");
   const [ruleSeen, setRuleSeen] = useState<"seen" | "unseen" | "unknown">("unseen");
   const [rulePattern, setRulePattern] = useState("visit|coming|tour");
