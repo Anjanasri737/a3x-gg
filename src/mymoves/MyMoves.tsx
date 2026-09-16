@@ -40,14 +40,18 @@ export function MyMoves() {
         </div>
       </div>
 
+      {!ready ? (
+        <Card className="p-6 text-sm text-muted-foreground">Loading your moves…</Card>
+      ) : (
       <div className="grid gap-4 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)]">
         <div className="lg:max-h-[80vh] lg:overflow-y-auto lg:pr-1">
-          <AllMovesBoard leads={leads} me={me.name} selectedId={selected} onOpen={setSelected} />
+          <AllMovesBoard leads={leads} me={me.name} selectedId={selected} onOpen={open} />
         </div>
-        <div>
+        <div ref={workspaceRef} className="scroll-mt-4">
           {lead ? <LeadWorkspace lead={lead} /> : <Card className="p-6 text-sm text-muted-foreground">Pick a lead to open its workspace.</Card>}
         </div>
       </div>
+      )}
     </div>
   );
 }
