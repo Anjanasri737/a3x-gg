@@ -5,6 +5,7 @@
 import { createServerFn } from "@tanstack/react-start";
 
 export interface VisionRawRow {
+  screenshotIndex: number | null;
   position: number;
   displayName: string | null;
   phoneVisible: string | null;
@@ -20,6 +21,13 @@ export interface VisionRawRow {
   muted: boolean | null;
   chatType: "individual" | "group" | "unknown" | null;
   mention: boolean | null;
+  avatarPresent: boolean | null;
+  avatarCrop: {
+    leftPct: number;
+    topPct: number;
+    rightPct: number;
+    bottomPct: number;
+  } | null;
   ocrConfidence: number | null;
 }
 
@@ -32,7 +40,7 @@ const SYSTEM = `You read WhatsApp Web/desktop screenshots.
 Look ONLY at the left-hand chat list panel. Ignore the open conversation on the right, the browser chrome, the tab bar, the sidebar icons and the search box.
 
 For EVERY visible chat row in that list, in top-to-bottom order, return one object with exactly these keys:
-position (1-based), displayName, phoneVisible, lastMessageText, lastMessageType, lastMessageDirection, deliveryTicks, visibleTimestampText, unreadCount, unread, pinned, muted, chatType, mention, ocrConfidence.
+screenshotIndex (0-based input image index), position (1-based within that screenshot), displayName, phoneVisible, lastMessageText, lastMessageType, lastMessageDirection, deliveryTicks, visibleTimestampText, unreadCount, unread, pinned, muted, chatType, mention, avatarPresent, avatarCrop, ocrConfidence.
 
 Rules:
 - displayName is exactly what is printed (a saved name, a company name, or a phone number).
@@ -41,6 +49,7 @@ Rules:
 - lastMessageDirection is "us" only when outgoing ticks are visible before the preview, "customer" when clearly incoming, otherwise "unknown".
 - visibleTimestampText is the raw right-aligned value exactly as shown: "4:22 pm", "Friday", "2/9/2026", "Yesterday". Never convert it.
 - unreadCount is the green badge number, null when there is no badge.
+- avatarPresent is true when the row has a visible profile photo or avatar. avatarCrop is the tight square around that avatar as percentages of the full screenshot: {"leftPct":0-100,"topPct":0-100,"rightPct":0-100,"bottomPct":0-100}. Return null when the bounds are uncertain. Do not include any floating app button or sidebar icon.
 - ocrConfidence is 0-1, your confidence that you read this row correctly.
 - Never invent a value. Unreadable or absent fields are null.
 - Banners, section headers, "Turn on background sync" cards and filter chips are NOT chat rows.

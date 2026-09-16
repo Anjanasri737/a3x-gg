@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import { ScanLine, Loader2, ImagePlus, ShieldAlert } from "lucide-react";
+import { CheckCheck, ImagePlus, Loader2, MoreVertical, Pin, ScanLine, Search, ShieldAlert, Users } from "lucide-react";
 import { extractWhatsappRows } from "@/lib/draft-vision.functions";
 import { useMovement } from "@/movement/store";
 import type { MovementState } from "@/movement/types";
@@ -37,6 +37,42 @@ const fileToDataUrl = (f: File) =>
     r.onerror = () => rej(new Error("Could not read image"));
     r.readAsDataURL(f);
   });
+
+async function cropAvatar(dataUrl: string, crop: VisionRow["raw"]["avatarCrop"]): Promise<string | null> {
+  if (!crop) return null;
+  const widthPct = crop.rightPct - crop.leftPct;
+  const heightPct = crop.bottomPct - crop.topPct;
+  if (widthPct <= 0 || heightPct <= 0) return null;
+  try {
+    const image = new Image();
+    image.src = dataUrl;
+    await image.decode();
+    const side = Math.max(widthPct * image.naturalWidth / 100, heightPct * image.naturalHeight / 100);
+    const centerX = ((crop.leftPct + crop.rightPct) / 2) * image.naturalWidth / 100;
+    const centerY = ((crop.topPct + crop.bottomPct) / 2) * image.naturalHeight / 100;
+    const canvas = document.createElement("canvas");
+    canvas.width = 96;
+    canvas.height = 96;
+    const context = canvas.getContext("2d");
+    if (!context) return null;
+    context.drawImage(image, centerX - side / 2, centerY - side / 2, side, side, 0, 0, 96, 96);
+    return canvas.toDataURL("image/jpeg", 0.86);
+  } catch {
+    return null;
+  }
+}
+
+const LABEL_TONES = [
+  "bg-success/20 text-success-foreground border-success/35",
+  "bg-info/20 text-info-foreground border-info/35",
+  "bg-warning/20 text-warning-foreground border-warning/35",
+  "bg-destructive/20 text-destructive-foreground border-destructive/35",
+];
+
+function labelTone(label: string) {
+  const score = [...label].reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  return LABEL_TONES[score % LABEL_TONES.length];
+}
 
 export function DraftVisionPanel({ onAdd, inDraft, remaining }: Props) {
   const mv = useMovement();
@@ -77,7 +113,13 @@ export function DraftVisionPanel({ onAdd, inDraft, remaining }: Props) {
         waAccount: account,
         alreadyPicked: Object.values(mv.states).filter((s) => inDraft(s.ulid)).map((s) => s.ulid),
       });
-      setRows(built);
+      const withAvatars = await Promise.all(built.map(async (row) => {
+        const imageIndex = row.raw.screenshotIndex ?? 0;
+        const source = shots[imageIndex];
+        if (!source || !row.raw.avatarPresent) return row;
+        return { ...row, avatarDataUrl: await cropAvatar(source, row.raw.avatarCrop) };
+      }));
+      setRows(withAvatars);
       if (!built.length) toast.error("No chat rows detected — try a sharper, uncropped screenshot.");
       else toast.success(`${built.length} chat rows detected`);
     } catch (err) {
@@ -214,105 +256,76 @@ export function DraftVisionPanel({ onAdd, inDraft, remaining }: Props) {
             </Button>
           </div>
 
-          <div className="overflow-x-auto rounded-lg border">
-            <table className="w-full text-xs">
-              <thead className="bg-muted/40 text-[10px] uppercase tracking-wider text-muted-foreground">
-                <tr>
-                  <th className="w-8 px-2 py-2"></th>
-                  <th className="px-2 py-2 text-left">#</th>
-                  <th className="px-2 py-2 text-left">Chat</th>
-                  <th className="px-2 py-2 text-left">Preview</th>
-                  <th className="px-2 py-2 text-left">Seen time</th>
-                  <th className="px-2 py-2 text-left">Identity</th>
-                  <th className="px-2 py-2 text-left">Status</th>
-                  <th className="px-2 py-2 text-left">Draft</th>
-                  <th className="px-2 py-2 text-left">Story</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y">
-                {rows.map((r) => (
-                  <tr key={r.id} className={cn("align-top", !r.include && "opacity-60")}>
-                    <td className="px-2 py-2">
-                      <input
-                        type="checkbox"
-                        checked={r.include}
-                        disabled={r.classification === "locked" || r.classification === "duplicate"}
-                        onChange={() => toggle(r.id)}
-                      />
-                    </td>
-                    <td className="px-2 py-2 font-mono text-muted-foreground">{r.raw.position}</td>
-                    <td className="px-2 py-2">
-                      <div className="font-medium">{r.name ?? "Unknown"}</div>
-                      <div className="font-mono text-[10px] text-muted-foreground">
-                        {r.phoneDigits ? `···${r.phoneDigits.slice(-4)}` : "no number visible"}
-                        {r.unread > 0 && <span className="ml-1 text-emerald-600">{r.unread} unread</span>}
-                        {r.pinned && <span className="ml-1">📌</span>}
-                        {r.isGroup && <span className="ml-1">group</span>}
+          <div className="mx-auto max-w-3xl overflow-hidden rounded-lg border border-sidebar-border bg-sidebar text-sidebar-foreground shadow-xl">
+            <div className="flex items-center justify-between px-4 py-3">
+              <div>
+                <div className="text-base font-semibold">WhatsApp</div>
+                <div className="text-[10px] text-sidebar-foreground/60">{rows.length} leads found · tap a row to include</div>
+              </div>
+              <MoreVertical className="h-5 w-5 text-sidebar-foreground/70" />
+            </div>
+            <div className="mx-3 mb-2 flex h-10 items-center gap-2 rounded-full bg-sidebar-accent px-4 text-xs text-sidebar-foreground/60">
+              <Search className="h-4 w-4" /> Search leads
+            </div>
+            <div className="max-h-[560px] overflow-y-auto scrollbar-thin">
+              {rows.map((r) => {
+                const disabled = r.classification === "locked" || r.classification === "duplicate";
+                const displayIdentity = r.name ?? (r.phoneDigits ? `+${r.phoneDigits}` : "Unknown contact");
+                const visiblePhone = r.phoneDigits ? `+${r.phoneDigits}` : null;
+                return (
+                  <div key={r.id} className="border-t border-sidebar-border/70">
+                    <button
+                      type="button"
+                      disabled={disabled}
+                      aria-pressed={r.include}
+                      onClick={() => toggle(r.id)}
+                      className={cn(
+                        "grid w-full grid-cols-[52px_minmax(0,1fr)_auto] gap-3 px-3 py-3 text-left transition-colors",
+                        r.include ? "bg-sidebar-accent/80" : "hover:bg-sidebar-accent/45",
+                        disabled && "cursor-not-allowed opacity-55",
+                      )}
+                    >
+                      <div className={cn("relative grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-full bg-muted text-lg font-semibold text-muted-foreground", r.include && "ring-2 ring-success ring-offset-2 ring-offset-sidebar")}>
+                        {r.avatarDataUrl ? <img src={r.avatarDataUrl} alt={`${displayIdentity} profile`} className="h-full w-full object-cover" /> : r.isGroup ? <Users className="h-5 w-5" /> : displayIdentity.charAt(0).toUpperCase()}
+                        {r.include && <span className="absolute bottom-0 right-0 grid h-4 w-4 place-items-center rounded-full bg-success text-[9px] text-success-foreground">✓</span>}
                       </div>
-                    </td>
-                    <td className="max-w-[220px] px-2 py-2">
-                      <div className="truncate">{r.raw.lastMessageText ?? "—"}</div>
-                      <div className="text-[10px] text-muted-foreground">OCR {pct(r.ocrConfidence)}</div>
-                    </td>
-                    <td className="px-2 py-2">
-                      <div className="font-mono">{r.timestampText ?? "—"}</div>
-                      <div className="text-[10px] text-muted-foreground">
-                        {r.timestampPrecision}
-                        {r.ageMins != null && ` · ${r.ageMins < 60 ? `${r.ageMins}m` : `${Math.round(r.ageMins / 60)}h`} old`}
-                      </div>
-                    </td>
-                    <td className="px-2 py-2">
-                      <div className="capitalize">{r.identity.replace("-", " ")}</div>
-                      <div className="text-[10px] text-muted-foreground">{pct(r.identityConfidence)}</div>
-                      {r.identity === "ambiguous" && (
-                        <div className="mt-1 flex flex-col gap-1">
-                          {r.candidates.slice(0, 3).map((c) => (
-                            <button
-                              key={c}
-                              className="rounded border px-1 py-0.5 text-left text-[10px] hover:bg-muted"
-                              onClick={() => resolveTo(r.id, c)}
-                            >
-                              use {mv.states[c]?.name ?? c.slice(-6)}
-                            </button>
-                          ))}
+                      <div className="min-w-0">
+                        <div className="flex min-w-0 items-baseline gap-2">
+                          <span className="truncate text-sm font-semibold text-sidebar-accent-foreground">{displayIdentity}</span>
+                          {r.pinned && <Pin className="h-3 w-3 shrink-0 text-sidebar-foreground/55" />}
                         </div>
-                      )}
-                    </td>
-                    <td className="px-2 py-2">
-                      <Badge variant="outline" className={cn("capitalize", CLASS_STYLE[r.classification])}>
-                        {r.classification.replace("-", " ")}
-                      </Badge>
-                      {r.lockedBy && (
-                        <div className="mt-1 flex items-center gap-1 text-[10px] text-destructive">
-                          <ShieldAlert className="h-3 w-3" /> {r.lockedBy}
+                        {r.name && visiblePhone && <div className="truncate text-[11px] text-sidebar-foreground/55">{visiblePhone}</div>}
+                        <div className="mt-0.5 flex min-w-0 items-center gap-1 text-xs text-sidebar-foreground/65">
+                          {r.raw.lastMessageDirection === "us" && <CheckCheck className={cn("h-3.5 w-3.5 shrink-0", r.raw.deliveryTicks === "read" ? "text-info" : "text-sidebar-foreground/45")} />}
+                          <span className="truncate">{r.raw.lastMessageText ?? "Message preview unavailable"}</span>
                         </div>
-                      )}
-                      {r.existingDraft && (
-                        <div className="text-[10px] text-muted-foreground">in {r.existingDraft}</div>
-                      )}
-                    </td>
-                    <td className="px-2 py-2">
-                      <Badge variant="secondary">{r.draft}</Badge>
-                      <div className="text-[10px] text-muted-foreground">{pct(r.draftConfidence)}</div>
-                      <div className="mt-1 max-w-[160px] text-[10px] text-muted-foreground">
-                        {r.reasons.slice(0, 2).join(" · ")}
+                        <div className="mt-1.5 flex flex-wrap items-center gap-1">
+                          {r.raw.displayName && r.raw.displayName !== displayIdentity && <span className={cn("rounded border px-1.5 py-0.5 text-[9px] font-semibold uppercase", labelTone(r.raw.displayName))}>{r.raw.displayName}</span>}
+                          <span className={cn("rounded border px-1.5 py-0.5 text-[9px] font-semibold uppercase", labelTone(r.draft))}>{r.draft}</span>
+                          <span className={cn("rounded border px-1.5 py-0.5 text-[9px] font-semibold uppercase", CLASS_STYLE[r.classification])}>{r.classification.replace("-", " ")}</span>
+                        </div>
                       </div>
-                    </td>
-                    <td className="px-2 py-2">
-                      <Button
-                        size="sm"
-                        variant={storyPhone === r.phoneDigits ? "secondary" : "outline"}
-                        className="h-7 text-[11px]"
-                        disabled={!r.phoneDigits || r.phoneDigits.length < 10}
-                        onClick={() => setStoryPhone(storyPhone === r.phoneDigits ? null : r.phoneDigits)}
-                      >
-                        Open story
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                      <div className="flex min-w-12 flex-col items-end gap-2">
+                        <span className={cn("whitespace-nowrap text-[11px]", r.unread > 0 ? "font-medium text-success" : "text-sidebar-foreground/55")}>{r.timestampText ?? "—"}</span>
+                        {r.unread > 0 && <span className="grid min-h-5 min-w-5 place-items-center rounded-full bg-success px-1 text-[10px] font-bold text-success-foreground">{r.unread}</span>}
+                      </div>
+                    </button>
+                    {(r.lockedBy || r.identity === "ambiguous") && (
+                      <div className="flex flex-wrap items-center gap-2 px-[76px] pb-2 text-[10px] text-sidebar-foreground/60">
+                        {r.lockedBy && <span className="flex items-center gap-1 text-destructive"><ShieldAlert className="h-3 w-3" />Owned by {r.lockedBy}</span>}
+                        {r.identity === "ambiguous" && r.candidates.slice(0, 3).map((candidate) => (
+                          <Button key={candidate} size="sm" variant="secondary" className="h-6 text-[10px]" onClick={() => resolveTo(r.id, candidate)}>Use {mv.states[candidate]?.name ?? candidate.slice(-6)}</Button>
+                        ))}
+                      </div>
+                    )}
+                    <div className="flex items-center justify-between px-[76px] pb-2 text-[9px] text-sidebar-foreground/40">
+                      <span>OCR {pct(r.ocrConfidence)} · identity {pct(r.identityConfidence)}</span>
+                      <Button size="sm" variant="ghost" className="h-6 px-2 text-[10px] text-sidebar-foreground hover:text-sidebar-accent-foreground" disabled={!r.phoneDigits || r.phoneDigits.length < 10} onClick={() => setStoryPhone(storyPhone === r.phoneDigits ? null : r.phoneDigits)}>{storyPhone === r.phoneDigits ? "Hide lead" : "Open lead"}</Button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
 
           {storyPhone && (
