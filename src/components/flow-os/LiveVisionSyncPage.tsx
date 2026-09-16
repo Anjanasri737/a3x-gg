@@ -12,6 +12,7 @@ import { LeadSignalCard } from "./LeadSignalCard";
 import { RevenueLeakagePanel } from "./RevenueLeakagePanel";
 import { UnifiedCustomerWorkspace } from "./UnifiedCustomerWorkspace";
 import { WhatsAppInbox } from "./WhatsAppInbox";
+import { CrmPreviewTable } from "./CrmPreviewTable";
 import { prepareScreenshot } from "@/lib/vision/image";
 import {
   analyzeScreenshot,
