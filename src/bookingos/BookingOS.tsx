@@ -18,6 +18,14 @@ export function BookingOS() {
   const [ready, setReady] = useState(false);
   useEffect(() => setReady(true), []);
   const paneRef = useRef<HTMLDivElement>(null);
+  const detailRef = useRef<HTMLDivElement>(null);
+
+  const selectStep = (stage: Stage) => {
+    setOpenStage(stage);
+    if (window.matchMedia("(max-width: 1279px)").matches) {
+      requestAnimationFrame(() => detailRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+    }
+  };
 
   const steps = useMemo(() => (lead ? buildSteps(lead) : []), [lead]);
   const now = steps.find((s) => s.status === "NOW");
@@ -54,7 +62,7 @@ export function BookingOS() {
         <Card className="p-6 text-sm text-muted-foreground">Loading the journey…</Card>
       ) : (
         <div className="grid gap-4 lg:grid-cols-[minmax(0,320px)_minmax(0,1fr)]">
-          <div className="lg:max-h-[80vh] lg:overflow-y-auto lg:pr-1">
+          <div className="max-h-[42vh] overflow-y-auto rounded-lg border p-1 lg:max-h-[80vh] lg:border-0 lg:p-0 lg:pr-1">
             <AllMovesBoard leads={leads} me={me.name} selectedId={leadId} onOpen={open} />
           </div>
 
@@ -65,10 +73,12 @@ export function BookingOS() {
               <>
                 <LeadHeader leadId={lead.id} />
                 <div className="grid gap-4 xl:grid-cols-[minmax(0,280px)_minmax(0,1fr)]">
-                  <Card className="p-3 xl:max-h-[70vh] xl:overflow-y-auto">
-                    <StepRail steps={steps} selected={selected.stage} onSelect={setOpenStage} />
+                  <Card className="max-h-[50vh] overflow-y-auto p-3 xl:max-h-[70vh]">
+                    <StepRail steps={steps} selected={selected.stage} onSelect={selectStep} />
                   </Card>
-                  <StepDetail lead={lead} step={selected} now={now} />
+                  <div ref={detailRef} className="scroll-mt-4">
+                    <StepDetail lead={lead} step={selected} now={now} />
+                  </div>
                 </div>
               </>
             )}
