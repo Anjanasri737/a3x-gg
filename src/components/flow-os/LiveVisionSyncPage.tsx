@@ -258,6 +258,19 @@ export function LiveVisionSyncPage() {
     finally { setManualBusy(false); }
   }
 
+  async function loadSampleData() {
+    const rows = parseManualRows(SAMPLE_ROWS.join("\n"));
+    setManualRows(SAMPLE_ROWS.join("\n"));
+    setExpectedRows(String(rows.length));
+    setManualBusy(true);
+    try {
+      const result = await ingestManualBatch({ whatsappAccount: account || "Gharpayy WhatsApp", screenshotNames: ["sample-inbox.png"], visibleRowsExpected: rows.length, rows });
+      toast.success(`Sample inbox loaded · ${result.counts.resolved + result.counts.review + result.counts.nonCustomer}/${result.counts.visibleRows} rows`);
+      await refreshTruth();
+    } catch (error: any) { toast.error(error?.message || "Could not load sample data"); }
+    finally { setManualBusy(false); }
+  }
+
   async function saveRule() {
     try {
       await createLabelRule({ whatsappAccount: account, colorHint: ruleColor || null, seenState: ruleSeen, textPattern: rulePattern || null, inferredLabel: ruleLabel, inferredPriority: ruleSeen === "unseen" ? "hot" : "active", inferredBucket: /visit|tour/i.test(rulePattern) ? "TOUR_READY" : "TODAY", rank: 10, isEnabled: true });
