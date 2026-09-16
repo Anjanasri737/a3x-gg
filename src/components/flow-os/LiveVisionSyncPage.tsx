@@ -302,7 +302,7 @@ export function LiveVisionSyncPage() {
       <div className="mt-3 rounded-lg border bg-muted/20 p-3 text-xs text-muted-foreground"><b>Control equation:</b> Expected visible rows = all extracted observations. Review rows still count as observations but prevent closure. Missing observations are silent drops. Recommended checkpoints: 10:30 AM · 1 PM · 5 PM · 8 PM, always preserving the last 3 days of evidence.</div>
     </Card>
 
-    <Tabs defaultValue="analyze" className="space-y-4">
+    <Tabs value={tab} onValueChange={setTab} className="space-y-4">
       <TabsList className="h-auto flex-wrap"><TabsTrigger value="analyze">Analyze screenshots</TabsTrigger><TabsTrigger value="review">Review {observations.filter((o) => o.reconciliation_state === "needs_review").length ? `(${observations.filter((o) => o.reconciliation_state === "needs_review").length})` : ""}</TabsTrigger><TabsTrigger value="leakage">Revenue leakage</TabsTrigger><TabsTrigger value="truth">3-day truth</TabsTrigger><TabsTrigger value="rules">Colour rules</TabsTrigger></TabsList>
 
       <TabsContent value="analyze" className="space-y-4">
