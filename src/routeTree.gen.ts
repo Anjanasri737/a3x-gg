@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as ZonesRouteImport } from './routes/zones'
 import { Route as ZoneBrainRouteImport } from './routes/zone-brain'
+import { Route as WaysRouteImport } from './routes/ways'
 import { Route as WaRouteImport } from './routes/wa'
 import { Route as VisionRouteImport } from './routes/vision'
 import { Route as TowerRouteImport } from './routes/tower'
@@ -148,6 +149,11 @@ const ZonesRoute = ZonesRouteImport.update({
 const ZoneBrainRoute = ZoneBrainRouteImport.update({
   id: '/zone-brain',
   path: '/zone-brain',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WaysRoute = WaysRouteImport.update({
+  id: '/ways',
+  path: '/ways',
   getParentRoute: () => rootRouteImport,
 } as any)
 const WaRoute = WaRouteImport.update({
@@ -835,6 +841,7 @@ export interface FileRoutesByFullPath {
   '/tower': typeof TowerRouteWithChildren
   '/vision': typeof VisionRoute
   '/wa': typeof WaRoute
+  '/ways': typeof WaysRoute
   '/zone-brain': typeof ZoneBrainRoute
   '/zones': typeof ZonesRoute
   '/admin/briefing': typeof AdminBriefingRoute
@@ -965,6 +972,7 @@ export interface FileRoutesByTo {
   '/tours': typeof ToursRoute
   '/vision': typeof VisionRoute
   '/wa': typeof WaRoute
+  '/ways': typeof WaysRoute
   '/zone-brain': typeof ZoneBrainRoute
   '/zones': typeof ZonesRoute
   '/admin/briefing': typeof AdminBriefingRoute
@@ -1098,6 +1106,7 @@ export interface FileRoutesById {
   '/tower': typeof TowerRouteWithChildren
   '/vision': typeof VisionRoute
   '/wa': typeof WaRoute
+  '/ways': typeof WaysRoute
   '/zone-brain': typeof ZoneBrainRoute
   '/zones': typeof ZonesRoute
   '/admin/briefing': typeof AdminBriefingRoute
@@ -1232,6 +1241,7 @@ export interface FileRouteTypes {
     | '/tower'
     | '/vision'
     | '/wa'
+    | '/ways'
     | '/zone-brain'
     | '/zones'
     | '/admin/briefing'
@@ -1362,6 +1372,7 @@ export interface FileRouteTypes {
     | '/tours'
     | '/vision'
     | '/wa'
+    | '/ways'
     | '/zone-brain'
     | '/zones'
     | '/admin/briefing'
@@ -1494,6 +1505,7 @@ export interface FileRouteTypes {
     | '/tower'
     | '/vision'
     | '/wa'
+    | '/ways'
     | '/zone-brain'
     | '/zones'
     | '/admin/briefing'
@@ -1627,6 +1639,7 @@ export interface RootRouteChildren {
   TowerRoute: typeof TowerRouteWithChildren
   VisionRoute: typeof VisionRoute
   WaRoute: typeof WaRoute
+  WaysRoute: typeof WaysRoute
   ZoneBrainRoute: typeof ZoneBrainRoute
   ZonesRoute: typeof ZonesRoute
   CribbookingTokenRoute: typeof CribbookingTokenRoute
@@ -1689,6 +1702,13 @@ declare module '@tanstack/react-router' {
       path: '/zone-brain'
       fullPath: '/zone-brain'
       preLoaderRoute: typeof ZoneBrainRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ways': {
+      id: '/ways'
+      path: '/ways'
+      fullPath: '/ways'
+      preLoaderRoute: typeof WaysRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/wa': {
@@ -2768,6 +2788,7 @@ const rootRouteChildren: RootRouteChildren = {
   TowerRoute: TowerRouteWithChildren,
   VisionRoute: VisionRoute,
   WaRoute: WaRoute,
+  WaysRoute: WaysRoute,
   ZoneBrainRoute: ZoneBrainRoute,
   ZonesRoute: ZonesRoute,
   CribbookingTokenRoute: CribbookingTokenRoute,
