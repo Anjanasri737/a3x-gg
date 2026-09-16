@@ -20,6 +20,7 @@ import {
   registerScreenshot,
 } from "@/lib/vision/screenshots.functions";
 import { resolveVisionObservation } from "@/lib/vision/resolve-observation.functions";
+import { loadVisionSampleData } from "@/lib/vision/sample-data.functions";
 import { LeadStoryByPhone } from "@/components/lead-os/LeadStoryByPhone";
 import type { ObservationRecord, ScreenshotRecord } from "@/lib/vision/types";
 import {
@@ -126,6 +127,7 @@ export function LiveVisionSyncPage() {
   const [nonCustomerReasons, setNonCustomerReasons] = useState<Record<string, string>>({});
   const [manualRows, setManualRows] = useState("");
   const [manualBusy, setManualBusy] = useState(false);
+  const [tab, setTab] = useState("analyze");
   const [ruleColor, setRuleColor] = useState("green");
   const [ruleSeen, setRuleSeen] = useState<"seen" | "unseen" | "unknown">("unseen");
   const [rulePattern, setRulePattern] = useState("visit|coming|tour");
@@ -259,14 +261,14 @@ export function LiveVisionSyncPage() {
   }
 
   async function loadSampleData() {
-    const rows = parseManualRows(SAMPLE_ROWS.join("\n"));
     setManualRows(SAMPLE_ROWS.join("\n"));
-    setExpectedRows(String(rows.length));
+    setExpectedRows(String(SAMPLE_ROWS.length));
     setManualBusy(true);
     try {
-      const result = await ingestManualBatch({ whatsappAccount: account || "Gharpayy WhatsApp", screenshotNames: ["sample-inbox.png"], visibleRowsExpected: rows.length, rows });
-      toast.success(`Sample inbox loaded · ${result.counts.resolved + result.counts.review + result.counts.nonCustomer}/${result.counts.visibleRows} rows`);
+      const result = await loadVisionSampleData();
       await refreshTruth();
+      setTab("truth");
+      toast.success(result.created ? `Sample inbox loaded · ${result.rows} chats` : `Sample inbox already loaded · ${result.rows} chats`);
     } catch (error: any) { toast.error(error?.message || "Could not load sample data"); }
     finally { setManualBusy(false); }
   }
@@ -300,7 +302,7 @@ export function LiveVisionSyncPage() {
       <div className="mt-3 rounded-lg border bg-muted/20 p-3 text-xs text-muted-foreground"><b>Control equation:</b> Expected visible rows = all extracted observations. Review rows still count as observations but prevent closure. Missing observations are silent drops. Recommended checkpoints: 10:30 AM · 1 PM · 5 PM · 8 PM, always preserving the last 3 days of evidence.</div>
     </Card>
 
-    <Tabs defaultValue="analyze" className="space-y-4">
+    <Tabs value={tab} onValueChange={setTab} className="space-y-4">
       <TabsList className="h-auto flex-wrap"><TabsTrigger value="analyze">Analyze screenshots</TabsTrigger><TabsTrigger value="review">Review {observations.filter((o) => o.reconciliation_state === "needs_review").length ? `(${observations.filter((o) => o.reconciliation_state === "needs_review").length})` : ""}</TabsTrigger><TabsTrigger value="leakage">Revenue leakage</TabsTrigger><TabsTrigger value="truth">3-day truth</TabsTrigger><TabsTrigger value="rules">Colour rules</TabsTrigger></TabsList>
 
       <TabsContent value="analyze" className="space-y-4">
