@@ -16,6 +16,7 @@ import {
 } from "./engine";
 import { useMyMoves } from "./store";
 import { ActionDialog } from "./ActionDialog";
+import { StepLadder, TOTAL_STEPS, stepNumber } from "./StepLadder";
 
 const money = (n?: number) => (n ? `₹${n.toLocaleString("en-IN")}` : "—");
 const when = (iso?: string) => (iso ? new Date(iso).toLocaleString("en-IN", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "—");
@@ -53,7 +54,9 @@ export function LeadWorkspace({ lead }: { lead: Lead }) {
           <div>
             <div className="flex items-center gap-2">
               <h2 className="text-lg font-semibold">{lead.name}</h2>
-              <Badge variant="outline">{lead.stage.replace(/_/g, " ")}</Badge>
+              <Badge variant="outline">
+                {stepNumber(lead.stage) > 0 ? `STEP ${stepNumber(lead.stage)}/${TOTAL_STEPS} · ` : ""}{lead.stage.replace(/_/g, " ")}
+              </Badge>
               {lead.labels.timing && <Badge>{lead.labels.timing.replace(/_/g, " ")}</Badge>}
               {lead.labels.likelihood && <Badge variant="secondary">{lead.labels.likelihood.replace(/_/g, " ")}</Badge>}
             </div>
@@ -75,7 +78,9 @@ export function LeadWorkspace({ lead }: { lead: Lead }) {
 
       {/* what must happen now */}
       <Card className="border-primary/40 p-4">
-        <p className="text-xs uppercase tracking-wide text-muted-foreground">What must happen now</p>
+        <p className="text-xs uppercase tracking-wide text-muted-foreground">
+          Step {stepNumber(lead.stage) > 0 ? `${stepNumber(lead.stage)} of ${TOTAL_STEPS}` : "off ladder"} — what must happen now
+        </p>
         <h3 className="mt-1 text-base font-semibold">{cfg.headline(lead)}</h3>
         {cfg.sub && <p className="text-sm text-muted-foreground">{cfg.sub(lead)}</p>}
         <div className="mt-3 flex flex-wrap gap-2">{cfg.primary.map((id) => btn(id))}</div>
@@ -108,7 +113,9 @@ export function LeadWorkspace({ lead }: { lead: Lead }) {
       )}
 
       <Tabs defaultValue="requirement">
+      <Tabs defaultValue="journey">
         <TabsList className="flex-wrap">
+          <TabsTrigger value="journey">Journey steps</TabsTrigger>
           <TabsTrigger value="requirement">Requirement</TabsTrigger>
           <TabsTrigger value="properties">Properties</TabsTrigger>
           <TabsTrigger value="tour">Tour</TabsTrigger>
@@ -118,7 +125,12 @@ export function LeadWorkspace({ lead }: { lead: Lead }) {
           <TabsTrigger value="history">History</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="requirement" className="space-y-3">
+        <TabsContent value="journey">
+          <Card className="p-4">
+            <StepLadder lead={lead} />
+          </Card>
+        </TabsContent>
+
           <Card className="p-4">
             <div className="mb-2 flex items-center justify-between text-sm">
               <span className="font-medium">Requirement completeness</span>
