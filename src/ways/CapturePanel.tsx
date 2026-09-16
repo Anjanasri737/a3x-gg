@@ -78,7 +78,7 @@ export function CapturePanel({ lead, step, compact }: { lead: Lead; step: StepVi
         <p className="text-xs text-muted-foreground">
           {missing.length > 0
             ? `Record what is missing so this step can close: ${step.checklist.filter((c) => !c.done).map((c) => c.label).join(", ")}.`
-            : "Nothing is missing on the form — so record the outcome, who owns it and when the next move is due."}
+            : "Record the outcome of this step: who owns it, what happens next and by when."}
         </p>
       </div>
 

@@ -56,7 +56,7 @@ export function Way2Ledger({ lead }: { lead: Lead }) {
                   <div>
                     <p className="mb-1 text-xs uppercase tracking-wide text-muted-foreground">Already recorded</p>
                     {s.proof.length === 0 ? (
-                      <p className="text-sm text-muted-foreground">Nothing recorded yet — capture it below.</p>
+                      <p className="text-sm text-muted-foreground">Capture the first record for this step below.</p>
                     ) : (
                       <ul className="space-y-1 text-sm text-muted-foreground">
                         {s.proof.map((p, i) => (
