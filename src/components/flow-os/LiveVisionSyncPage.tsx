@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { LeadSignalCard } from "./LeadSignalCard";
 import { RevenueLeakagePanel } from "./RevenueLeakagePanel";
 import { UnifiedCustomerWorkspace } from "./UnifiedCustomerWorkspace";
+import { WhatsAppInbox } from "./WhatsAppInbox";
 import { prepareScreenshot } from "@/lib/vision/image";
 import {
   analyzeScreenshot,
