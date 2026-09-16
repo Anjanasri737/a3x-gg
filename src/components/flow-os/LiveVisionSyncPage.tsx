@@ -259,14 +259,14 @@ export function LiveVisionSyncPage() {
   }
 
   async function loadSampleData() {
-    const rows = parseManualRows(SAMPLE_ROWS.join("\n"));
     setManualRows(SAMPLE_ROWS.join("\n"));
-    setExpectedRows(String(rows.length));
+    setExpectedRows(String(SAMPLE_ROWS.length));
     setManualBusy(true);
     try {
-      const result = await ingestManualBatch({ whatsappAccount: account || "Gharpayy WhatsApp", screenshotNames: ["sample-inbox.png"], visibleRowsExpected: rows.length, rows });
-      toast.success(`Sample inbox loaded · ${result.counts.resolved + result.counts.review + result.counts.nonCustomer}/${result.counts.visibleRows} rows`);
+      const result = await loadVisionSampleData();
       await refreshTruth();
+      setTab("truth");
+      toast.success(result.created ? `Sample inbox loaded · ${result.rows} chats` : `Sample inbox already loaded · ${result.rows} chats`);
     } catch (error: any) { toast.error(error?.message || "Could not load sample data"); }
     finally { setManualBusy(false); }
   }
