@@ -100,6 +100,7 @@ export function AllMovesBoard({ leads, me, onOpen, selectedId }: {
                 </p>
               )}
             </Card>
+            </div>
           );
         })}
         {rows.length === 0 && <p className="p-4 text-sm text-muted-foreground">Nothing matches this filter.</p>}
