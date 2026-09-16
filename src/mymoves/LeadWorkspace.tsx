@@ -112,7 +112,6 @@ export function LeadWorkspace({ lead }: { lead: Lead }) {
         </Card>
       )}
 
-      <Tabs defaultValue="requirement">
       <Tabs defaultValue="journey">
         <TabsList className="flex-wrap">
           <TabsTrigger value="journey">Journey steps</TabsTrigger>
