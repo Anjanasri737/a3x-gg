@@ -346,9 +346,14 @@ export function LiveVisionSyncPage() {
 
       <TabsContent value="leakage"><RevenueLeakagePanel onOpenLead={openLead} /></TabsContent>
       <TabsContent value="truth" className="space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-2"><div><h2 className="font-semibold">WhatsApp view</h2><p className="text-xs text-muted-foreground">Exactly as the inbox looks — name, number, last message, time, labels and unread counts. Tap a chat to open the customer.</p></div><Button variant={waView ? "default" : "outline"} size="sm" onClick={() => setWaView((v) => !v)}>{waView ? "Switch to CRM cards" : "Switch to WhatsApp view"}</Button></div>
+        <div className="flex flex-wrap items-center justify-between gap-2"><div><h2 className="font-semibold">WhatsApp view</h2><p className="text-xs text-muted-foreground">An exact mirror of the inbox — name, number, last message, time, labels and unread counts. Tap a chat to open the customer.</p></div><Button variant="outline" size="sm" onClick={() => setTab("crm")}>Open CRM preview →</Button></div>
+        <WhatsAppInbox rows={truth} onOpen={(row) => void openLead(row.lead_id)} />
+        {!truth.length && <Card className="p-8 text-center text-sm text-muted-foreground">No chats synced yet.</Card>}
+      </TabsContent>
+      <TabsContent value="crm" className="space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2"><div><h2 className="font-semibold">CRM preview</h2><p className="text-xs text-muted-foreground">The same chats as a working table — log activity, set the next step and deadline, use a chat as a draft, or open the full customer.</p></div><div className="flex gap-2"><Button variant={waView ? "outline" : "default"} size="sm" onClick={() => setWaView((v) => !v)}>{waView ? "Show signal cards" : "Show table"}</Button><Button variant="outline" size="sm" onClick={() => setTab("truth")}>← WhatsApp view</Button></div></div>
         {waView
-          ? <WhatsAppInbox rows={truth} onOpen={(row) => void openLead(row.lead_id)} />
+          ? <CrmPreviewTable rows={truth} onOpen={(row) => void openLead(row.lead_id)} onDraft={(row) => { setManualRows(`${row.wa_name ?? ""} | ${row.phone} | ${row.last_message_preview ?? ""} | ${row.seen_state ?? "unknown"} | ${row.color_hint ?? ""} | ${row.handler_hint ?? ""}`); setTab("analyze"); toast.success("Chat copied into the draft rows"); }} onChanged={refreshTruth} />
           : <div className="space-y-2">{truth.map((row) => <LeadSignalCard key={row.lead_id} lead={row} onPrimary={() => void openLead(row.lead_id)} primaryLabel="Open customer" />)}</div>}
         {!truth.length && <Card className="p-8 text-center text-sm text-muted-foreground">No CRM truth rows yet.</Card>}
       </TabsContent>
