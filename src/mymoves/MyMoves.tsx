@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useMyMoves, type Role } from "./store";
@@ -9,6 +9,19 @@ export function MyMoves() {
   const { leads, me, setMe, reset } = useMyMoves();
   const [selected, setSelected] = useState<string | undefined>(leads[0]?.id);
   const lead = leads.find((l) => l.id === selected);
+  // Deadlines are relative to "now", so the server HTML can never match the
+  // browser. Render the board only after mount to keep the page interactive.
+  const [ready, setReady] = useState(false);
+  useEffect(() => setReady(true), []);
+  const workspaceRef = useRef<HTMLDivElement>(null);
+
+  const open = (id: string) => {
+    setSelected(id);
+    if (window.matchMedia("(max-width: 1023px)").matches) {
+      workspaceRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
+
 
   return (
     <div className="mx-auto max-w-7xl space-y-4 p-4">
