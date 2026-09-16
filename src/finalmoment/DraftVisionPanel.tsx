@@ -229,12 +229,16 @@ export function DraftVisionPanel({ onAdd, inDraft, remaining }: Props) {
           {shots.map((s, i) => (
             <div key={i} className="relative">
               <img src={s} alt={`WhatsApp screenshot ${i + 1}`} className="h-20 w-32 rounded border object-cover" />
-              <button
-                className="absolute right-1 top-1 rounded bg-background/90 px-1 text-[10px]"
+              <Button
+                type="button"
+                variant="secondary"
+                size="icon"
+                aria-label={`Remove WhatsApp screenshot ${i + 1}`}
+                className="absolute right-1 top-1 h-6 w-6"
                 onClick={() => setShots((x) => x.filter((_, j) => j !== i))}
               >
                 ✕
-              </button>
+              </Button>
             </div>
           ))}
         </div>

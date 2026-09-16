@@ -5,7 +5,7 @@
 import { createServerFn } from "@tanstack/react-start";
 
 export interface VisionRawRow {
-  screenshotIndex: number | null;
+  screenshotIndex?: number | null;
   position: number;
   displayName: string | null;
   phoneVisible: string | null;
@@ -21,9 +21,9 @@ export interface VisionRawRow {
   muted: boolean | null;
   chatType: "individual" | "group" | "unknown" | null;
   mention: boolean | null;
-  visibleLabels: Array<{ text: string; colour: string | null }>;
-  avatarPresent: boolean | null;
-  avatarCrop: {
+  visibleLabels?: Array<{ text: string; colour: string | null }>;
+  avatarPresent?: boolean | null;
+  avatarCrop?: {
     leftPct: number;
     topPct: number;
     rightPct: number;
