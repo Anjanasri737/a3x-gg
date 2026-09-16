@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import type { Lead } from "./types";
-import { WORKFLOW } from "./workflow";
+import { STAGE_ORDER, WORKFLOW } from "./workflow";
 import { batchComplete, controlTowerExceptions, redSignals, sla, universalGaps } from "./engine";
+import { GROUPS, TOTAL_STEPS, stepNumber, stepRange } from "./StepLadder";
 
 type Filter = "ALL" | "MINE" | "UNOWNED" | "OVERDUE" | "EXCEPTIONS" | "TOURS" | "BOOKINGS" | "CLOSED";
 
@@ -30,7 +31,8 @@ export function AllMovesBoard({ leads, me, onOpen, selectedId }: {
     if (!ok) return false;
     const t = q.trim().toLowerCase();
     return !t || `${l.name} ${l.phone} ${l.stage} ${l.useCase}`.toLowerCase().includes(t);
-  }), [leads, filter, q, me]);
+  }).sort((a, b) => (STAGE_ORDER.indexOf(a.stage) - STAGE_ORDER.indexOf(b.stage)) || a.name.localeCompare(b.name)),
+  [leads, filter, q, me]);
 
   const counts = {
     all: leads.length,
