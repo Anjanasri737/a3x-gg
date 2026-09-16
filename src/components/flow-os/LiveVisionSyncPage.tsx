@@ -52,6 +52,22 @@ type BatchSummary = {
 
 const CHECKPOINTS = ["10:30 AM", "1:00 PM", "5:00 PM", "8:00 PM", "Other"];
 
+/** Demo inbox so the page can be reviewed without uploading real screenshots. */
+const SAMPLE_ROWS = [
+  "Rahul Sharma | 9876543210 | Can I visit today at 6? | unseen | green | Aditi",
+  "Sneha Iyer | 9845012345 | Sharing my budget, 12k max | unseen | green | Aditi",
+  "Karan Mehta | 9900112233 | Is the Koramangala room still free? | unseen | orange | Vikram",
+  "Priya Nair | 9812345678 | Sent the deposit screenshot | seen | blue | Neha",
+  "Aman Gupta | 9701234567 | Moving next month, will confirm | seen | grey | Neha",
+  "Divya Rao | 9663012345 | Please share photos again | unseen | green | Vikram",
+  "Nikhil Verma | 9008078901 | Tour done, liked HSR one | seen | blue | Aditi",
+  "Meera Joshi | 9880123456 | Parents want to see the place | unseen | orange | Neha",
+  "Sahil Khan | 9739012345 | Rent kitna hai bhai | unseen | green | Vikram",
+  "Tanvi Shetty | 9611234567 | Can we do 11k? | unseen | red | Aditi",
+  "Arjun Reddy | 9502345678 | Booked, sending token now | seen | blue | Neha",
+  "Pooja Das | 9845567890 | No reply since last week | seen | grey | Vikram",
+];
+
 function parseManualRows(raw: string): ManualObservationInput[] {
   return raw.split(/\n+/).map((line) => line.trim()).filter(Boolean).map((line) => {
     const [contactName = "", phone = "", lastMessage = "", seenRaw = "unknown", colorHint = "", handlerHint = ""] = line.split("|").map((x) => x.trim());
