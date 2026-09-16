@@ -15,6 +15,17 @@ interface State {
   setMe: (name: string, role: Role) => void;
   emit: (leadId: string, actionId: string, answers: Record<string, string>, override?: string) => void;
   captureRequirement: (leadId: string, field: string, value: string) => void;
+  updateLeadDetails: (leadId: string, values: {
+    owner?: string;
+    nextAction?: string;
+    nextActionAt?: string;
+    blocker?: string;
+    area?: string;
+    moveIn?: string;
+    roomType?: string;
+    budget?: string;
+    intent?: string;
+  }) => void;
   reset: () => void;
 }
 
@@ -58,6 +69,31 @@ export const useMyMoves = create<State>()(
               ...l, requirement,
               labels: { ...l.labels, timing: field === "moveIn" ? timingFromMoveIn(value) : l.labels.timing },
               events: [...l.events, stamp(s.me.name, "QUALIFICATION", `${field} captured — ${value}`)],
+            };
+          }),
+        })),
+
+      updateLeadDetails: (leadId, values) =>
+        set((s) => ({
+          leads: s.leads.map((l) => {
+            if (l.id !== leadId) return l;
+            const requirement = {
+              ...l.requirement,
+              ...(values.area !== undefined ? { area: values.area } : {}),
+              ...(values.moveIn !== undefined ? { moveIn: values.moveIn } : {}),
+              ...(values.roomType !== undefined ? { roomType: values.roomType } : {}),
+              ...(values.budget !== undefined ? { budget: Number(values.budget.replace(/[^\d]/g, "")) || undefined } : {}),
+              ...(values.intent !== undefined ? { intent: values.intent as Lead["requirement"]["intent"] } : {}),
+            };
+            return {
+              ...l,
+              owner: values.owner?.trim() || undefined,
+              nextAction: values.nextAction?.trim() || undefined,
+              nextActionAt: values.nextActionAt || undefined,
+              blocker: values.blocker?.trim() || undefined,
+              requirement,
+              labels: { ...l.labels, timing: timingFromMoveIn(requirement.moveIn) },
+              events: [...l.events, stamp(s.me.name, "EDIT_DETAILS", "Lead details edited", `Owner, next action, deadline, blocker or requirement updated`) ],
             };
           }),
         })),
