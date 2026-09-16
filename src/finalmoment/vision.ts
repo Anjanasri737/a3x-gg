@@ -31,6 +31,7 @@ export interface VisionRow {
   unread: number;
   pinned: boolean;
   isGroup: boolean;
+  avatarDataUrl: string | null;
 
   identity: IdentityLevel;
   identityConfidence: number;
@@ -217,6 +218,7 @@ export function buildVisionRows(
       unread: r.unreadCount ?? (r.unread ? 1 : 0),
       pinned: !!r.pinned,
       isGroup: r.chatType === "group",
+      avatarDataUrl: null,
       identity: id.level,
       identityConfidence: id.confidence,
       ulid: id.ulid,
