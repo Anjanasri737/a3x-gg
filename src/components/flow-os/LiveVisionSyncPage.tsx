@@ -52,6 +52,22 @@ type BatchSummary = {
 
 const CHECKPOINTS = ["10:30 AM", "1:00 PM", "5:00 PM", "8:00 PM", "Other"];
 
+/** Demo inbox so the page can be reviewed without uploading real screenshots. */
+const SAMPLE_ROWS = [
+  "Rahul Sharma | 9876543210 | Can I visit today at 6? | unseen | green | Aditi",
+  "Sneha Iyer | 9845012345 | Sharing my budget, 12k max | unseen | green | Aditi",
+  "Karan Mehta | 9900112233 | Is the Koramangala room still free? | unseen | orange | Vikram",
+  "Priya Nair | 9812345678 | Sent the deposit screenshot | seen | blue | Neha",
+  "Aman Gupta | 9701234567 | Moving next month, will confirm | seen | grey | Neha",
+  "Divya Rao | 9663012345 | Please share photos again | unseen | green | Vikram",
+  "Nikhil Verma | 9008078901 | Tour done, liked HSR one | seen | blue | Aditi",
+  "Meera Joshi | 9880123456 | Parents want to see the place | unseen | orange | Neha",
+  "Sahil Khan | 9739012345 | Rent kitna hai bhai | unseen | green | Vikram",
+  "Tanvi Shetty | 9611234567 | Can we do 11k? | unseen | red | Aditi",
+  "Arjun Reddy | 9502345678 | Booked, sending token now | seen | blue | Neha",
+  "Pooja Das | 9845567890 | No reply since last week | seen | grey | Vikram",
+];
+
 function parseManualRows(raw: string): ManualObservationInput[] {
   return raw.split(/\n+/).map((line) => line.trim()).filter(Boolean).map((line) => {
     const [contactName = "", phone = "", lastMessage = "", seenRaw = "unknown", colorHint = "", handlerHint = ""] = line.split("|").map((x) => x.trim());
@@ -242,6 +258,19 @@ export function LiveVisionSyncPage() {
     finally { setManualBusy(false); }
   }
 
+  async function loadSampleData() {
+    const rows = parseManualRows(SAMPLE_ROWS.join("\n"));
+    setManualRows(SAMPLE_ROWS.join("\n"));
+    setExpectedRows(String(rows.length));
+    setManualBusy(true);
+    try {
+      const result = await ingestManualBatch({ whatsappAccount: account || "Gharpayy WhatsApp", screenshotNames: ["sample-inbox.png"], visibleRowsExpected: rows.length, rows });
+      toast.success(`Sample inbox loaded · ${result.counts.resolved + result.counts.review + result.counts.nonCustomer}/${result.counts.visibleRows} rows`);
+      await refreshTruth();
+    } catch (error: any) { toast.error(error?.message || "Could not load sample data"); }
+    finally { setManualBusy(false); }
+  }
+
   async function saveRule() {
     try {
       await createLabelRule({ whatsappAccount: account, colorHint: ruleColor || null, seenState: ruleSeen, textPattern: rulePattern || null, inferredLabel: ruleLabel, inferredPriority: ruleSeen === "unseen" ? "hot" : "active", inferredBucket: /visit|tour/i.test(rulePattern) ? "TOUR_READY" : "TODAY", rank: 10, isEnabled: true });
@@ -280,6 +309,8 @@ export function LiveVisionSyncPage() {
           <label className="rounded-xl border-2 border-dashed p-8 text-center block cursor-pointer hover:bg-muted/30 transition-colors"><Upload className="h-7 w-7 mx-auto mb-2 text-muted-foreground" /><div className="font-semibold">Select WhatsApp screenshots</div><div className="text-xs text-muted-foreground mt-1">20–30+ at once · JPEG/PNG/WebP · resized + SHA-256 dedupe · max 3 AI analyses concurrently</div><input type="file" accept="image/*" multiple className="hidden" onChange={(e) => setFiles(Array.from(e.target.files ?? []).map((file) => ({ file, status: "queued" })))} /></label>
           {files.length > 0 && <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-72 overflow-auto">{files.map((entry, index) => <div key={`${entry.file.name}-${index}`} className="rounded-lg border p-2 flex gap-2 items-start"><FileImage className="h-4 w-4 mt-0.5 text-muted-foreground" /><div className="min-w-0 flex-1"><div className="text-xs font-medium truncate">{entry.file.name}</div><div className="text-[10px] text-muted-foreground truncate">{entry.message || `${(entry.file.size / 1024).toFixed(0)} KB`}</div>{entry.rowCount !== undefined && <div className="text-[10px] mt-1">{entry.rowCount} rows · {entry.confidence ?? 0}% confidence</div>}</div>{["preparing","uploading","analyzing"].includes(entry.status) ? <Loader2 className="h-4 w-4 animate-spin" /> : statusBadge(entry.status)}</div>)}</div>}
           <Button size="lg" className="w-full gap-2" disabled={busy || !files.length || expected <= 0} onClick={() => void analyzeSelected()}>{busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}{busy ? "Analyzing WhatsApp universe…" : `Analyze ${files.length || 0} screenshots against ${expected || "?"} expected rows`}</Button>
+          <Button variant="outline" className="w-full gap-2" disabled={manualBusy || busy} onClick={() => void loadSampleData()}>{manualBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}{manualBusy ? "Loading sample inbox…" : `Load ${SAMPLE_ROWS.length} sample chats (no upload needed)`}</Button>
+
 
           {summary && <div className="space-y-2"><div className={`rounded-lg border p-3 text-sm flex flex-wrap items-center gap-2 ${summary.complete ? "border-emerald-500/40 bg-emerald-500/5" : "border-red-500/40 bg-red-500/5"}`}>{summary.complete ? <CheckCircle2 className="h-4 w-4 text-emerald-600" /> : <AlertTriangle className="h-4 w-4 text-red-600" />}<b>{summary.complete ? "ZERO-MISS COMPLETE" : "DO NOT CLOSE — REVENUE LEAKAGE / REVIEW"}</b><span className="text-muted-foreground">Expected {summary.expected} = observations {summary.inserted}; unresolved {summary.unresolved}; AI errors {summary.errors}; silent drops {summary.silentDrops}</span></div><div className="grid grid-cols-2 md:grid-cols-6 gap-2"><Stat label="AI detected" value={summary.detected} /><Stat label="Independent expected" value={summary.expected} /><Stat label="Observations" value={summary.inserted} /><Stat label="Needs review" value={summary.unresolved} danger={summary.unresolved > 0} /><Stat label="AI errors" value={summary.errors} danger={summary.errors > 0} /><Stat label="Silent drops" value={summary.silentDrops} danger={summary.silentDrops > 0} good={summary.silentDrops === 0} /></div></div>}
 
