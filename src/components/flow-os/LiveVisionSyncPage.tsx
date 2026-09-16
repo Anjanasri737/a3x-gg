@@ -134,6 +134,7 @@ export function LiveVisionSyncPage() {
   const [rulePattern, setRulePattern] = useState("visit|coming|tour");
   const [ruleLabel, setRuleLabel] = useState("Tour-ready");
   const [selectedLead, setSelectedLead] = useState<TruthRow | null>(null);
+  const [waView, setWaView] = useState(true);
 
   const expected = Number.parseInt(expectedRows || "0", 10) || 0;
   const refreshTruth = async () => setTruth(await listTruthRows());
