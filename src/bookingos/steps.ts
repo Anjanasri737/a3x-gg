@@ -119,7 +119,7 @@ export function buildSteps(lead: Lead): StepView[] {
       n: i + 1,
       group: cfg.group,
       status,
-      headline: cfg.headline(lead),
+      headline: cfg.headline(lead).replace(/undefined/g, "—"),
       sub: cfg.sub?.(lead),
       checklist,
       proof,
