@@ -49,6 +49,7 @@ import { Route as CompanionRouteImport } from './routes/companion'
 import { Route as CoachRouteImport } from './routes/coach'
 import { Route as ClosingRouteImport } from './routes/closing'
 import { Route as CalendarRouteImport } from './routes/calendar'
+import { Route as BookingOsRouteImport } from './routes/booking-os'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as ActivityRouteImport } from './routes/activity'
 import { Route as AcademyRouteImport } from './routes/academy'
@@ -337,6 +338,11 @@ const ClosingRoute = ClosingRouteImport.update({
 const CalendarRoute = CalendarRouteImport.update({
   id: '/calendar',
   path: '/calendar',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BookingOsRoute = BookingOsRouteImport.update({
+  id: '/booking-os',
+  path: '/booking-os',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRoute = AdminRouteImport.update({
@@ -790,6 +796,7 @@ export interface FileRoutesByFullPath {
   '/academy': typeof AcademyRoute
   '/activity': typeof ActivityRoute
   '/admin': typeof AdminRouteWithChildren
+  '/booking-os': typeof BookingOsRoute
   '/calendar': typeof CalendarRoute
   '/closing': typeof ClosingRoute
   '/coach': typeof CoachRoute
@@ -920,6 +927,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/academy': typeof AcademyRoute
   '/activity': typeof ActivityRoute
+  '/booking-os': typeof BookingOsRoute
   '/calendar': typeof CalendarRoute
   '/closing': typeof ClosingRoute
   '/coach': typeof CoachRoute
@@ -1051,6 +1059,7 @@ export interface FileRoutesById {
   '/academy': typeof AcademyRoute
   '/activity': typeof ActivityRoute
   '/admin': typeof AdminRouteWithChildren
+  '/booking-os': typeof BookingOsRoute
   '/calendar': typeof CalendarRoute
   '/closing': typeof ClosingRoute
   '/coach': typeof CoachRoute
@@ -1184,6 +1193,7 @@ export interface FileRouteTypes {
     | '/academy'
     | '/activity'
     | '/admin'
+    | '/booking-os'
     | '/calendar'
     | '/closing'
     | '/coach'
@@ -1314,6 +1324,7 @@ export interface FileRouteTypes {
     | '/'
     | '/academy'
     | '/activity'
+    | '/booking-os'
     | '/calendar'
     | '/closing'
     | '/coach'
@@ -1444,6 +1455,7 @@ export interface FileRouteTypes {
     | '/academy'
     | '/activity'
     | '/admin'
+    | '/booking-os'
     | '/calendar'
     | '/closing'
     | '/coach'
@@ -1576,6 +1588,7 @@ export interface RootRouteChildren {
   AcademyRoute: typeof AcademyRoute
   ActivityRoute: typeof ActivityRoute
   AdminRoute: typeof AdminRouteWithChildren
+  BookingOsRoute: typeof BookingOsRoute
   CalendarRoute: typeof CalendarRoute
   ClosingRoute: typeof ClosingRoute
   CoachRoute: typeof CoachRoute
@@ -1942,6 +1955,13 @@ declare module '@tanstack/react-router' {
       path: '/calendar'
       fullPath: '/calendar'
       preLoaderRoute: typeof CalendarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/booking-os': {
+      id: '/booking-os'
+      path: '/booking-os'
+      fullPath: '/booking-os'
+      preLoaderRoute: typeof BookingOsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin': {
@@ -2709,6 +2729,7 @@ const rootRouteChildren: RootRouteChildren = {
   AcademyRoute: AcademyRoute,
   ActivityRoute: ActivityRoute,
   AdminRoute: AdminRouteWithChildren,
+  BookingOsRoute: BookingOsRoute,
   CalendarRoute: CalendarRoute,
   ClosingRoute: ClosingRoute,
   CoachRoute: CoachRoute,
