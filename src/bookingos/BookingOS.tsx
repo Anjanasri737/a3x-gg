@@ -65,10 +65,12 @@ export function BookingOS() {
               <>
                 <LeadHeader leadId={lead.id} />
                 <div className="grid gap-4 xl:grid-cols-[minmax(0,280px)_minmax(0,1fr)]">
-                  <Card className="p-3 xl:max-h-[70vh] xl:overflow-y-auto">
-                    <StepRail steps={steps} selected={selected.stage} onSelect={setOpenStage} />
+                  <Card className="max-h-[50vh] overflow-y-auto p-3 xl:max-h-[70vh]">
+                    <StepRail steps={steps} selected={selected.stage} onSelect={selectStep} />
                   </Card>
-                  <StepDetail lead={lead} step={selected} now={now} />
+                  <div ref={detailRef} className="scroll-mt-4">
+                    <StepDetail lead={lead} step={selected} now={now} />
+                  </div>
                 </div>
               </>
             )}
