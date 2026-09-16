@@ -305,7 +305,7 @@ export function LiveVisionSyncPage() {
     </Card>
 
     <Tabs value={tab} onValueChange={setTab} className="space-y-4">
-      <TabsList className="h-auto flex-wrap"><TabsTrigger value="analyze">Analyze screenshots</TabsTrigger><TabsTrigger value="review">Review {observations.filter((o) => o.reconciliation_state === "needs_review").length ? `(${observations.filter((o) => o.reconciliation_state === "needs_review").length})` : ""}</TabsTrigger><TabsTrigger value="leakage">Revenue leakage</TabsTrigger><TabsTrigger value="truth">3-day truth</TabsTrigger><TabsTrigger value="rules">Colour rules</TabsTrigger></TabsList>
+      <TabsList className="h-auto flex-wrap"><TabsTrigger value="analyze">Analyze screenshots</TabsTrigger><TabsTrigger value="review">Review {observations.filter((o) => o.reconciliation_state === "needs_review").length ? `(${observations.filter((o) => o.reconciliation_state === "needs_review").length})` : ""}</TabsTrigger><TabsTrigger value="leakage">Revenue leakage</TabsTrigger><TabsTrigger value="truth">WhatsApp view</TabsTrigger><TabsTrigger value="crm">CRM preview</TabsTrigger><TabsTrigger value="rules">Colour rules</TabsTrigger></TabsList>
 
       <TabsContent value="analyze" className="space-y-4">
         <Card className="p-4 space-y-4">
