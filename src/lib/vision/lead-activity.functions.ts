@@ -27,8 +27,7 @@ export const logLeadActivity = createServerFn({ method: "POST" })
     const { error: timelineError } = await db.from("lead_timeline").insert({
       lead_id: data.leadId,
       activity: data.activity.trim().slice(0, 200),
-      detail: data.detail?.trim() ? data.detail.trim().slice(0, 2000) : null,
-      actor,
+      detail: [data.detail?.trim() || null, `Logged by ${actor}`].filter(Boolean).join(" · ").slice(0, 2000),
       at: new Date().toISOString(),
     });
     if (timelineError) throw new Error(timelineError.message);
