@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import type { Lead } from "./types";
-import { WORKFLOW } from "./workflow";
+import { STAGE_ORDER, WORKFLOW } from "./workflow";
 import { batchComplete, controlTowerExceptions, redSignals, sla, universalGaps } from "./engine";
+import { GROUPS, TOTAL_STEPS, stepNumber, stepRange } from "./StepLadder";
 
 type Filter = "ALL" | "MINE" | "UNOWNED" | "OVERDUE" | "EXCEPTIONS" | "TOURS" | "BOOKINGS" | "CLOSED";
 
@@ -30,7 +31,8 @@ export function AllMovesBoard({ leads, me, onOpen, selectedId }: {
     if (!ok) return false;
     const t = q.trim().toLowerCase();
     return !t || `${l.name} ${l.phone} ${l.stage} ${l.useCase}`.toLowerCase().includes(t);
-  }), [leads, filter, q, me]);
+  }).sort((a, b) => (STAGE_ORDER.indexOf(a.stage) - STAGE_ORDER.indexOf(b.stage)) || a.name.localeCompare(b.name)),
+  [leads, filter, q, me]);
 
   const counts = {
     all: leads.length,
@@ -58,16 +60,29 @@ export function AllMovesBoard({ leads, me, onOpen, selectedId }: {
       </div>
 
       <div className="space-y-2">
-        {rows.map((l) => {
+        {rows.map((l, i) => {
           const t = sla(l);
           const ex = controlTowerExceptions(l);
           const sig = redSignals(l);
           const gaps = universalGaps(l);
+          const group = WORKFLOW[l.stage].group;
+          const newGroup = i === 0 || WORKFLOW[rows[i - 1]!.stage].group !== group;
+          const groupLabel = GROUPS.find((g) => g.group === group)?.label ?? group;
+          const n = stepNumber(l.stage);
           return (
-            <Card key={l.id} onClick={() => onOpen(l.id)}
+            <div key={l.id} className="space-y-2">
+            {newGroup && (
+              <p className="pt-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Step {stepRange(group)} · {groupLabel}
+              </p>
+            )}
+            <Card onClick={() => onOpen(l.id)}
               className={`cursor-pointer p-3 transition hover:bg-muted/50 ${l.id === selectedId ? "border-primary" : ""} ${t.overdue ? "border-destructive/50" : ""}`}>
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <div className="flex flex-wrap items-center gap-2">
+                  <span className="w-10 shrink-0 text-xs tabular-nums text-muted-foreground">
+                    {n > 0 ? `${n}/${TOTAL_STEPS}` : "exit"}
+                  </span>
                   <span className="font-medium">{l.name}</span>
                   <Badge variant="outline">{l.stage.replace(/_/g, " ")}</Badge>
                   {l.labels.timing && <Badge variant="secondary">{l.labels.timing.replace(/_/g, " ")}</Badge>}
@@ -85,6 +100,7 @@ export function AllMovesBoard({ leads, me, onOpen, selectedId }: {
                 </p>
               )}
             </Card>
+            </div>
           );
         })}
         {rows.length === 0 && <p className="p-4 text-sm text-muted-foreground">Nothing matches this filter.</p>}
