@@ -61,7 +61,7 @@ export function StepDetail({ lead, step, now }: { lead: Lead; step: StepView; no
         <div>
           <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">What this step needs</p>
           {step.checklist.length === 0 ? (
-            <p className="text-sm text-muted-foreground">Nothing to capture here.</p>
+            <p className="text-sm text-muted-foreground">This step still needs an outcome recorded — use the buttons below or Edit details, so the customer never sits without a record.</p>
           ) : (
             <ul className="space-y-1 text-sm">
               {step.checklist.map((c) => (
@@ -81,7 +81,7 @@ export function StepDetail({ lead, step, now }: { lead: Lead; step: StepView; no
           <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">What already happened</p>
           {step.proof.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              {step.status === "DONE" || step.status === "SKIPPED" ? "No action was recorded on this step." : "Nothing yet."}
+              {step.status === "DONE" || step.status === "SKIPPED" ? "No action was recorded on this step — record it now so the history is complete." : "Record the first outcome for this step."}
             </p>
           ) : (
             <ul className="space-y-1 text-sm">
