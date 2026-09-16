@@ -18,6 +18,14 @@ export function BookingOS() {
   const [ready, setReady] = useState(false);
   useEffect(() => setReady(true), []);
   const paneRef = useRef<HTMLDivElement>(null);
+  const detailRef = useRef<HTMLDivElement>(null);
+
+  const selectStep = (stage: Stage) => {
+    setOpenStage(stage);
+    if (window.matchMedia("(max-width: 1279px)").matches) {
+      requestAnimationFrame(() => detailRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }));
+    }
+  };
 
   const steps = useMemo(() => (lead ? buildSteps(lead) : []), [lead]);
   const now = steps.find((s) => s.status === "NOW");
