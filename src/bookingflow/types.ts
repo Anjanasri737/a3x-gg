@@ -25,6 +25,10 @@ export interface FlowEvent {
   actor: string;
   label: string;
   detail?: string;
+  /** which journey step this touched — used to show per-question history */
+  stepKey?: string;
+  /** exactly what changed, so an edit can always be traced */
+  changes?: { field: string; from: string; to: string }[];
 }
 
 export type Ack = "CAN_CLOSE" | "NEED_HELP" | "NOT_REAL";

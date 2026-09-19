@@ -51,6 +51,7 @@ import { Route as CoachRouteImport } from './routes/coach'
 import { Route as ClosingRouteImport } from './routes/closing'
 import { Route as CalendarRouteImport } from './routes/calendar'
 import { Route as BookingOsRouteImport } from './routes/booking-os'
+import { Route as BookingFlowSplitRouteImport } from './routes/booking-flow-split'
 import { Route as BookingFlow100xRouteImport } from './routes/booking-flow-100x'
 import { Route as BookingFlowRouteImport } from './routes/booking-flow'
 import { Route as AdminRouteImport } from './routes/admin'
@@ -351,6 +352,11 @@ const CalendarRoute = CalendarRouteImport.update({
 const BookingOsRoute = BookingOsRouteImport.update({
   id: '/booking-os',
   path: '/booking-os',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BookingFlowSplitRoute = BookingFlowSplitRouteImport.update({
+  id: '/booking-flow-split',
+  path: '/booking-flow-split',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BookingFlow100xRoute = BookingFlow100xRouteImport.update({
@@ -816,6 +822,7 @@ export interface FileRoutesByFullPath {
   '/admin': typeof AdminRouteWithChildren
   '/booking-flow': typeof BookingFlowRoute
   '/booking-flow-100x': typeof BookingFlow100xRoute
+  '/booking-flow-split': typeof BookingFlowSplitRoute
   '/booking-os': typeof BookingOsRoute
   '/calendar': typeof CalendarRoute
   '/closing': typeof ClosingRoute
@@ -950,6 +957,7 @@ export interface FileRoutesByTo {
   '/activity': typeof ActivityRoute
   '/booking-flow': typeof BookingFlowRoute
   '/booking-flow-100x': typeof BookingFlow100xRoute
+  '/booking-flow-split': typeof BookingFlowSplitRoute
   '/booking-os': typeof BookingOsRoute
   '/calendar': typeof CalendarRoute
   '/closing': typeof ClosingRoute
@@ -1085,6 +1093,7 @@ export interface FileRoutesById {
   '/admin': typeof AdminRouteWithChildren
   '/booking-flow': typeof BookingFlowRoute
   '/booking-flow-100x': typeof BookingFlow100xRoute
+  '/booking-flow-split': typeof BookingFlowSplitRoute
   '/booking-os': typeof BookingOsRoute
   '/calendar': typeof CalendarRoute
   '/closing': typeof ClosingRoute
@@ -1222,6 +1231,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/booking-flow'
     | '/booking-flow-100x'
+    | '/booking-flow-split'
     | '/booking-os'
     | '/calendar'
     | '/closing'
@@ -1356,6 +1366,7 @@ export interface FileRouteTypes {
     | '/activity'
     | '/booking-flow'
     | '/booking-flow-100x'
+    | '/booking-flow-split'
     | '/booking-os'
     | '/calendar'
     | '/closing'
@@ -1490,6 +1501,7 @@ export interface FileRouteTypes {
     | '/admin'
     | '/booking-flow'
     | '/booking-flow-100x'
+    | '/booking-flow-split'
     | '/booking-os'
     | '/calendar'
     | '/closing'
@@ -1626,6 +1638,7 @@ export interface RootRouteChildren {
   AdminRoute: typeof AdminRouteWithChildren
   BookingFlowRoute: typeof BookingFlowRoute
   BookingFlow100xRoute: typeof BookingFlow100xRoute
+  BookingFlowSplitRoute: typeof BookingFlowSplitRoute
   BookingOsRoute: typeof BookingOsRoute
   CalendarRoute: typeof CalendarRoute
   ClosingRoute: typeof ClosingRoute
@@ -2008,6 +2021,13 @@ declare module '@tanstack/react-router' {
       path: '/booking-os'
       fullPath: '/booking-os'
       preLoaderRoute: typeof BookingOsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/booking-flow-split': {
+      id: '/booking-flow-split'
+      path: '/booking-flow-split'
+      fullPath: '/booking-flow-split'
+      preLoaderRoute: typeof BookingFlowSplitRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/booking-flow-100x': {
@@ -2791,6 +2811,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRoute: AdminRouteWithChildren,
   BookingFlowRoute: BookingFlowRoute,
   BookingFlow100xRoute: BookingFlow100xRoute,
+  BookingFlowSplitRoute: BookingFlowSplitRoute,
   BookingOsRoute: BookingOsRoute,
   CalendarRoute: CalendarRoute,
   ClosingRoute: ClosingRoute,
