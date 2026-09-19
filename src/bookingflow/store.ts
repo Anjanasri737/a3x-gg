@@ -43,6 +43,8 @@ interface State {
   // batches
   buildBatch: (handler: string, round: number) => Batch | undefined;
   buildAllRounds: () => number;
+  closeBatch: (batchId: string, note: string) => void;
+  reopenBatch: (batchId: string) => void;
   stuckCount: () => number;
 
   // qualification (legacy short flow, kept for compatibility)
