@@ -101,17 +101,17 @@ export function MovementCare() {
     setRole(nextRole);
     const first = CARE_PLAYBOOKS[nextRole].stages[0];
     setGoal(first.goal);
-    setTarget(first.defaultTarget);
+    setCommitCount(first.dayCount);
   };
 
   const chooseGoal = (nextGoal: CareGoal) => {
     setGoal(nextGoal);
     const nextStage = CARE_PLAYBOOKS[role].stages.find((item) => item.goal === nextGoal);
-    if (nextStage) setTarget(nextStage.defaultTarget);
+    if (nextStage) setCommitCount(nextStage.dayCount);
   };
 
   const startDay = () => {
-    commit({ role, goal, target: Math.max(1, target), supportNeeded: support.trim(), targetPropertyIds: aimProperties });
+    commit({ role, goal, commitCount: Math.max(1, commitCount), supportNeeded: support.trim(), closingPropertyIds: aimProperties });
     toast.success(`${goal} result committed for today`);
   };
 
