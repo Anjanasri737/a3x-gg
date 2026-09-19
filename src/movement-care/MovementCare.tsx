@@ -312,6 +312,9 @@ export function MovementCare() {
               </Button>
             ))}
           </div>
+          <Button size="sm" variant={manualMode ? "default" : "outline"} className="h-7 text-[10px]" onClick={() => setShowManual(true)}>
+            <Hand className="h-3 w-3" /> Draft by hand{manualMode ? ` · ${manualList.length}/${manualSize}` : ""}
+          </Button>
           <Button size="sm" variant="outline" className="h-7 text-[10px]" onClick={() => setShowPlaybook((value) => !value)}>
             <ShieldCheck className="h-3 w-3" /> Playbook
           </Button>
