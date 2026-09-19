@@ -139,9 +139,11 @@ export interface CallCapture {
   promises: string[];
   mediaCount?: number;
   note?: string;
+  /** CRM values the operator re-verified on this call */
+  verified?: string[];
 }
 
-export const emptyCapture = (): CallCapture => ({ activities: [], promises: [], matters: [] });
+export const emptyCapture = (): CallCapture => ({ activities: [], promises: [], matters: [], verified: [] });
 
 /** Movement is the real score — not call count. */
 export type MovementClass = "none" | "data" | "property" | "commercial" | "tour" | "booking";
