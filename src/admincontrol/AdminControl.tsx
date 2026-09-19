@@ -682,3 +682,65 @@ function Heat({ weekdays }: { weekdays: Array<{ day: string; counts: number[]; t
     </div>
   );
 }
+
+const QUICK: Array<[string, number]> = [
+  ["Call now", 30],
+  ["WhatsApp follow-up", 120],
+  ["Share options", 240],
+  ["Fix tour date", 1440],
+];
+
+function FixNow({ row, onAssign, onNext, onEscalate }: {
+  row: CustomerRow;
+  onAssign: (handler: string) => void;
+  onNext: (kind: string, dueInMinutes: number) => void;
+  onEscalate: () => void;
+}) {
+  const [who, setWho] = useState("");
+  const [what, setWhat] = useState("");
+  return (
+    <div className="space-y-2 rounded-md border bg-muted/30 p-2">
+      <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Fix it from here</div>
+      <div className="flex flex-wrap items-center gap-1.5">
+        <Input value={who} onChange={(e) => setWho(e.target.value)} placeholder={row.owned ? `Move from ${row.handler}` : "Who takes this?"}
+          className="h-7 w-40 text-xs" />
+        <Button size="sm" className="h-7 px-2 text-[11px]" disabled={!who.trim()} onClick={() => { onAssign(who.trim()); setWho(""); }}>
+          Give owner
+        </Button>
+        <Button size="sm" variant="outline" className="h-7 px-2 text-[11px]" onClick={onEscalate}>Send to Control Tower</Button>
+      </div>
+      <div className="flex flex-wrap items-center gap-1.5">
+        <Input value={what} onChange={(e) => setWhat(e.target.value)} placeholder="What must happen next?" className="h-7 w-48 text-xs" />
+        {QUICK.map(([label, mins2]) => (
+          <Button key={label} size="sm" variant="outline" className="h-7 px-2 text-[11px]"
+            onClick={() => { onNext(what.trim() || label, mins2); setWhat(""); }}>
+            {label} · {mins2 < 60 ? `${mins2}m` : `${Math.round(mins2 / 60)}h`}
+          </Button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ResolveRows({ rows, onDecide }: {
+  rows: Array<{ id: string; name: string; phone: string; preview: string; reason: string }>;
+  onDecide: (id: string, decision: "reconciled" | "non_customer") => void;
+}) {
+  if (rows.length === 0) return <p className="text-xs text-muted-foreground">Nothing waiting for a decision.</p>;
+  return (
+    <ul className="space-y-1.5">
+      {rows.map((r) => (
+        <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-2 text-xs">
+          <div className="min-w-0">
+            <div className="font-medium">{r.name} · {r.phone || "no number"}</div>
+            <div className="truncate text-muted-foreground">{r.preview || "no message read"} — {r.reason}</div>
+          </div>
+          <div className="flex gap-1.5">
+            <Button size="sm" className="h-7 px-2 text-[11px]" onClick={() => onDecide(r.id, "reconciled")}>It is a customer</Button>
+            <Button size="sm" variant="outline" className="h-7 px-2 text-[11px]" onClick={() => onDecide(r.id, "non_customer")}>Not a customer</Button>
+          </div>
+        </li>
+      ))}
+    </ul>
+  );
+}
