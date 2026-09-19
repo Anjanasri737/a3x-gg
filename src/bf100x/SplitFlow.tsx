@@ -120,7 +120,6 @@ export function SplitFlow() {
                 <>
                   <button type="button" aria-label="Close menu" className="fixed inset-0 z-40 cursor-default" onClick={() => setMenuOpen(false)} />
                   <div className="absolute right-0 z-50 mt-1 max-h-[70vh] w-56 overflow-y-auto rounded-md border bg-popover p-1 shadow-md">
-                    {MENU.filter((m, i) => i === 0 || m.group !== MENU[i - 1]!.group).map((m) => null)}
                     {(() => {
                       let lastGroup = "";
                       return MENU.map((m) => (
