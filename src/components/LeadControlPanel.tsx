@@ -127,6 +127,28 @@ export function LeadControlPanel() {
   }, [mvStates, lead]);
   const actionEngineRef = useRef<HTMLDivElement>(null);
 
+  // Log call never blocks: if the customer isn't in Movement yet, link them on the spot.
+  const openCallEngine = () => {
+    if (!lead) return;
+    const cid = canonicalCustomerId({ phone: lead.phone, name: lead.name });
+    const mv = useMovement.getState();
+    const existing = Object.values(mv.states).find((s) => s.canonicalId === cid || s.canonicalId === lead.id);
+    if (!existing) {
+      mv.ensureShadow({
+        ulid: lead.id,
+        name: lead.name,
+        phone: lead.phone,
+        zone: lead.preferredArea,
+        ownerName: tcm?.name,
+        budget: lead.budget,
+        location: lead.preferredArea,
+        checkInDate: lead.moveInDate,
+      });
+      toast.success("Linked to Movement", { description: `${lead.name} is now tracked in Movement OS.` });
+    }
+    setCallEngineOpen(true);
+  };
+
   const pendingPostTour = leadTours.find(
     (t) => t.status === "completed" && !t.postTour.filledAt,
   );
