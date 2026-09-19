@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle, CheckCircle2, ClipboardCopy, Clock3, Flag, Goal,
-  Building2, Hand, MessageCircle, Phone, PhoneCall, PhoneOff, ShieldCheck,
+  Building2, Hand, MessageCircle, Phone, PhoneCall, PhoneOff, PlayCircle, PlusCircle, ShieldCheck, Timer,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -82,7 +82,27 @@ export function MovementCare() {
   const removeFromManual = useMovementCare((state) => state.removeFromManual);
   const replaceInManual = useMovementCare((state) => state.replaceInManual);
   const clearManual = useMovementCare((state) => state.clearManual);
+  const draftStartedAt = useMovementCare((state) => state.draftStartedAt);
+  const startRollingDraft = useMovementCare((state) => state.startRollingDraft);
+  const stopDraftClock = useMovementCare((state) => state.stopDraftClock);
+  const [showFormat, setShowFormat] = useState(false);
+  const [clockTick, setClockTick] = useState(0);
   const createLead = useIdentityStore((state) => state.createLead);
+
+  useEffect(() => {
+    if (!draftStartedAt) return;
+    const timer = window.setInterval(() => setClockTick((value) => value + 1), 1000);
+    return () => window.clearInterval(timer);
+  }, [draftStartedAt]);
+
+  const elapsed = useMemo(() => {
+    if (!draftStartedAt) return null;
+    void clockTick;
+    const seconds = Math.max(0, Math.floor((Date.now() - new Date(draftStartedAt).getTime()) / 1000));
+    const mm = String(Math.floor(seconds / 60)).padStart(2, "0");
+    const ss = String(seconds % 60).padStart(2, "0");
+    return `${mm}:${ss}`;
+  }, [draftStartedAt, clockTick]);
 
   const activeRole = commitment?.role ?? role;
   const activeGoal = commitment?.goal ?? goal;
@@ -195,12 +215,20 @@ export function MovementCare() {
     toast.success(`${code} done — write the wrap-up and send it on WhatsApp`);
   };
 
-  const finishDebrief = (input: { done: string; wentWell: string; wentBadly: string; problems: string }) => {
-    if (!commitment || !selectedState || !debriefFor) return;
-    const message = debriefMessage({
+  const startEmptyDraft = () => {
+    startRollingDraft(manualSize);
+    setSelected(null);
+    setShowManual(true);
+    toast.success(`Draft clock started — ${manualSize} empty rows, fill them one by one while you work`);
+  };
+
+  /** The exact WhatsApp message, built live as the person types — nothing is saved. */
+  const previewMessage = (input: { done: string; wentWell: string; wentBadly: string; problems: string }) => {
+    if (!commitment || !selectedState) return "";
+    return debriefMessage({
       ...input,
       customerName: nameOf.get(selectedState.ulid)?.name ?? selectedState.ulid,
-      draftCode: debriefFor.code,
+      draftCode: debriefFor?.code ?? selectedState.crmDraft ?? "D1",
       goal: activeGoal,
       operatorName: mv.actor.name,
       resultNow: actual,
@@ -209,6 +237,11 @@ export function MovementCare() {
       nextStep: selectedState.nextAction ? NEXT_ACTION_LABEL[selectedState.nextAction.kind] : undefined,
       dueAt: selectedState.nextAction?.dueAt,
     });
+  };
+
+  const finishDebrief = (input: { done: string; wentWell: string; wentBadly: string; problems: string }) => {
+    if (!commitment || !selectedState || !debriefFor) return;
+    const message = previewMessage(input);
     const saved = saveDebrief({
       ulid: selectedState.ulid,
       customerName: nameOf.get(selectedState.ulid)?.name ?? selectedState.ulid,
@@ -312,8 +345,21 @@ export function MovementCare() {
               </Button>
             ))}
           </div>
+          {elapsed ? (
+            <Badge variant="outline" className="h-7 gap-1 border-primary/50 px-2 text-[10px] font-semibold text-primary">
+              <Timer className="h-3 w-3" /> Draft running {elapsed} · {manualList.length}/{manualSize} filled
+              <button type="button" className="ml-1 underline" onClick={stopDraftClock}>stop</button>
+            </Badge>
+          ) : (
+            <Button size="sm" variant="outline" className="h-7 text-[10px]" onClick={startEmptyDraft}>
+              <PlayCircle className="h-3 w-3" /> Start draft · {manualSize} empty rows
+            </Button>
+          )}
           <Button size="sm" variant={manualMode ? "default" : "outline"} className="h-7 text-[10px]" onClick={() => setShowManual(true)}>
             <Hand className="h-3 w-3" /> Draft by hand{manualMode ? ` · ${manualList.length}/${manualSize}` : ""}
+          </Button>
+          <Button size="sm" variant="outline" className="h-7 text-[10px]" onClick={() => setShowFormat((value) => !value)}>
+            <MessageCircle className="h-3 w-3" /> WhatsApp update format
           </Button>
           <Button size="sm" variant="outline" className="h-7 text-[10px]" onClick={() => setShowPlaybook((value) => !value)}>
             <ShieldCheck className="h-3 w-3" /> Playbook
@@ -332,7 +378,7 @@ export function MovementCare() {
             <Stat label="Connected" value={calls.connected} />
             <Stat label="Connect %" value={calls.rate} />
             <Stat label="Drafted" value={total.drafted} />
-            <Stat label="Good leads" value={total.goodLeads} />
+            <Stat label="Definitely close" value={total.goodLeads} />
             <Stat label="Tours set" value={total.toursScheduled} />
             <Stat label="Tours done" value={total.toursDone} />
             <Stat label="Bookings" value={total.booked} />
@@ -357,7 +403,9 @@ export function MovementCare() {
                     {manualMode ? "My hand-picked draft" : "Result queue"}
                   </p>
                   <p className="text-xs font-medium">
-                    {manualMode ? `${queue.length} of ${manualSize} picked` : `${stage.meaning} · ${queue.length} open`}
+                    {manualMode
+                      ? `${queue.length} filled · ${Math.max(0, manualSize - queue.length)} empty rows left`
+                      : `${stage.meaning} · ${queue.length} open`}
                   </p>
                 </div>
                 <Badge className={cn("border text-[9px]", GOAL_TONE[activeGoal])}>{activeGoal}</Badge>
@@ -397,6 +445,17 @@ export function MovementCare() {
                   </Button>
                 );
               })}
+              {manualMode && Array.from({ length: Math.max(0, manualSize - queue.length) }).map((_, index) => (
+                <Button key={`slot-${index}`} variant="ghost" onClick={() => setShowManual(true)}
+                  className="h-auto w-full justify-start rounded-none border-dashed px-3 py-2 text-left text-muted-foreground">
+                  <span className="w-5 shrink-0 font-mono text-[10px]">{queue.length + index + 1}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-xs font-medium">Empty row — add a lead</span>
+                    <span className="block text-[10px] font-normal">Fill it whenever you are ready. Work does not wait.</span>
+                  </span>
+                  <PlusCircle className="h-3.5 w-3.5" />
+                </Button>
+              ))}
             </div>
           </section>
 
@@ -481,7 +540,7 @@ export function MovementCare() {
 
                 {debriefFor?.ulid === selectedState.ulid && (
                   <DebriefCard code={debriefFor.code} customer={nameOf.get(selectedState.ulid)?.name ?? selectedState.ulid}
-                    onSave={finishDebrief} onCopy={copyMessage} onClose={() => setDebriefFor(null)} />
+                    onSave={finishDebrief} onCopy={copyMessage} onPreview={previewMessage} onClose={() => setDebriefFor(null)} />
                 )}
 
                 <WorkPanel ulid={selected} meta={nameOf} />
@@ -559,7 +618,17 @@ export function MovementCare() {
         manualList={manualList} manualMode={manualMode} manualSize={manualSize}
         onManualMode={setManualMode} onManualSize={setManualSize} onAdd={addToManual}
         onRemove={removeFromManual} onReplace={replaceInManual} onClear={clearManual}
-        onCreateLead={createManualLead} onFillDemo={fillManualDemo} />
+        onCreateLead={createManualLead} onFillDemo={fillManualDemo} onStartEmpty={startEmptyDraft} runningFor={elapsed} />
+
+      {showFormat && (
+        <FormatDrawer onClose={() => setShowFormat(false)}
+          sample={previewMessage({
+            done: "Called, qualified, shared 2 properties",
+            wentWell: "Customer picked Saturday 11 AM",
+            wentBadly: "Budget ₹1,000 below our price",
+            problems: "Need inventory truth for Sobha Dream Acres",
+          }) || sampleMessage()} />
+      )}
 
       {showPlaybook && <PlaybookDrawer playbook={playbook} onClose={() => setShowPlaybook(false)} />}
     </div>
@@ -724,8 +793,9 @@ function PlaybookDrawer({ playbook, onClose }: { playbook: (typeof CARE_PLAYBOOK
   );
 }
 
-function DebriefCard({ code, customer, onSave, onCopy, onClose }: {
+function DebriefCard({ code, customer, onSave, onCopy, onPreview, onClose }: {
   code: string; customer: string;
+  onPreview: (input: { done: string; wentWell: string; wentBadly: string; problems: string }) => string;
   onSave: (input: { done: string; wentWell: string; wentBadly: string; problems: string }) => { id: string; message: string } | undefined;
   onCopy: (id: string, message: string) => void;
   onClose: () => void;
@@ -762,6 +832,10 @@ function DebriefCard({ code, customer, onSave, onCopy, onClose }: {
           <Textarea value={problems} onChange={(event) => setProblems(event.target.value)} placeholder="Need inventory truth for Salarpuria, need pricing approval…" className="mt-1 min-h-14 text-xs" />
         </label>
       </div>
+      <div className="mt-2 border bg-muted/30 p-2">
+        <p className="text-[10px] font-semibold uppercase text-muted-foreground">WhatsApp message being written — live</p>
+        <pre className="mt-1 whitespace-pre-wrap break-words text-[11px] leading-snug">{onPreview({ done, wentWell, wentBadly, problems })}</pre>
+      </div>
       <Button size="sm" className="mt-2" onClick={build}><CheckCircle2 className="h-3.5 w-3.5" /> Make the WhatsApp update</Button>
       {saved && (
         <div className="mt-2 border bg-muted/30 p-2">
@@ -772,6 +846,72 @@ function DebriefCard({ code, customer, onSave, onCopy, onClose }: {
           </Button>
         </div>
       )}
+    </div>
+  );
+}
+
+const SAMPLE_INPUT = {
+  done: "Called, qualified, shared 2 properties",
+  wentWell: "Customer picked Saturday 11 AM",
+  wentBadly: "Budget ₹1,000 below our price",
+  problems: "Need inventory truth for Sobha Dream Acres",
+};
+
+/** Used only when no customer is open, so the format is always visible. */
+function sampleMessage() {
+  return debriefMessage({
+    ...SAMPLE_INPUT,
+    customerName: "Kavya Reddy",
+    draftCode: "D1",
+    goal: "FIND",
+    operatorName: "You",
+    resultNow: 12,
+    commitCount: 40,
+    property: "Embassy Springs",
+    nextStep: "Call back",
+    dueAt: new Date(Date.now() + 3 * 3600_000).toISOString(),
+  });
+}
+
+function FormatDrawer({ sample, onClose }: { sample: string; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex justify-end bg-background/70 backdrop-blur-sm">
+      <div className="flex h-full w-full max-w-lg flex-col border-l bg-card shadow-xl">
+        <header className="flex shrink-0 items-center gap-2 border-b px-3 py-2">
+          <MessageCircle className="h-4 w-4 text-primary" />
+          <div>
+            <p className="text-sm font-semibold">WhatsApp update — how it is written</p>
+            <p className="text-[10px] text-muted-foreground">This exact message is built after every draft is done.</p>
+          </div>
+          <Button size="sm" variant="ghost" className="ml-auto h-7 px-2 text-[10px]" onClick={onClose}>Close</Button>
+        </header>
+        <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
+          <div className="border bg-muted/30 p-2">
+            <p className="text-[10px] font-semibold uppercase text-muted-foreground">The shape of every message</p>
+            <pre className="mt-1 whitespace-pre-wrap break-words text-[11px] leading-snug">{`*<draft code> update · <customer name>*
+<your name> · <time> · <result you chose>
+
+✅ Done: <what you did>
+👍 Went well: <what worked>
+👎 Went badly: <what did not work>
+⚠️ Problem / help needed: <what you need>
+🏠 Property in play: <property, if locked>
+➡️ Next step: <next action> by <time>
+
+📊 My day so far: <done>/<promised> results`}</pre>
+          </div>
+          <div className="border p-2">
+            <p className="text-[10px] font-semibold uppercase text-muted-foreground">Live example with your numbers</p>
+            <pre className="mt-1 whitespace-pre-wrap break-words text-[11px] leading-snug">{sample}</pre>
+            <Button size="sm" className="mt-2 h-7 text-[10px]" onClick={() => navigator.clipboard?.writeText(sample)}>
+              <ClipboardCopy className="h-3 w-3" /> Copy this example
+            </Button>
+          </div>
+          <p className="text-[10px] text-muted-foreground">
+            Property and next step appear only when they exist on the customer. Nothing else is added automatically.
+          </p>
+        </div>
+      </div>
     </div>
   );
 }

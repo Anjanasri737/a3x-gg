@@ -5,7 +5,7 @@ export interface CareStage {
   goal: CareGoal;
   /** Plain words for the result itself. */
   meaning: string;
-  /** What the operator writes on the board: "40 good leads". */
+  /** What the operator writes on the board: "40 definitely close". */
   unit: string;
   /** Suggested day number for this role and result. */
   dayCount: number;
@@ -32,7 +32,7 @@ export interface CarePlaybook {
 export const CARE_GOALS: CareGoal[] = ["FIND", "SCHEDULE", "COMPLETE", "CLOSE"];
 
 export const GOAL_TITLE: Record<CareGoal, string> = {
-  FIND: "FIND — create good leads",
+  FIND: "FIND — create definitely-close leads",
   SCHEDULE: "SCHEDULE — lock qualified tours",
   COMPLETE: "COMPLETE — finish the customer path",
   CLOSE: "CLOSE — get the paid booking",
@@ -47,19 +47,19 @@ export const CARE_PLAYBOOKS: Record<CareRole, CarePlaybook> = {
     stages: [
       {
         goal: "FIND",
-        meaning: "Create good leads",
-        unit: "good leads",
+        meaning: "Create definitely-close leads",
+        unit: "definitely close",
         dayCount: 40,
-        outcome: "A real customer is qualified and moved forward, not merely contacted.",
+        outcome: "A real customer is qualified, feasible and you would bet on closing them — not merely contacted.",
         steps: [
           "Open the WhatsApp chat and read the last customer message in full.",
           "Call the customer and get a connected conversation — a sent message is not a lead.",
           "Capture move-in date, area, budget and how many people.",
-          "Check feasibility against live inventory before calling it good.",
+          "Check feasibility against live inventory — mark it only if you would bet on closing it.",
           "Write the next step, the owner and the due time on the lead.",
         ],
         proof: "Move-in, location, budget, response and feasibility are captured.",
-        doesNotCount: "Message sent, call not connected, or half-filled qualification.",
+        doesNotCount: "Message sent, call not connected, half-filled qualification, or a lead you would not bet on closing.",
         receiver: "Flow Ops queue",
         recommendWhen: "Usable pipeline is below what the day or week needs.",
         requireWhen: "Untouched P0/P1 or qualification backlog crosses the safe floor.",
@@ -124,7 +124,7 @@ export const CARE_PLAYBOOKS: Record<CareRole, CarePlaybook> = {
     safeguards: [
       "No hot customer is dropped because a different result was chosen for the day.",
       "A tour counts only with feasibility, exact property, commitment, inventory truth and accepted handoff.",
-      "Never create fake good leads, tours or future dates to make the number look better.",
+      "Never create fake definitely-close leads, tours or future dates to make the number look better.",
     ],
   },
   tcm: {
