@@ -14,7 +14,22 @@ import { useBookingFlow } from "@/bookingflow/store";
 import { SCREENS, currentScreen, screenIndex, screenProgress } from "./screens";
 import { ScreenPanel } from "./ScreenPanel";
 import { CapturedPanel } from "./CapturedPanel";
+import { LabelConsole } from "./LabelConsole";
+import { PropertyMatch } from "./PropertyMatch";
+import { ClosingDesk } from "./ClosingDesk";
+import { ContactActions } from "@/components/common/ContactActions";
 import { CloseCommitButton } from "@/components/commitments/CloseCommitButton";
+
+type Pane = "WORK" | "CAPTURED" | "MATCH" | "LABELS" | "CLOSING" | "QUEUE";
+
+const PANES: { id: Pane; label: string }[] = [
+  { id: "WORK", label: "Questions" },
+  { id: "CAPTURED", label: "Captured" },
+  { id: "MATCH", label: "Property match" },
+  { id: "LABELS", label: "Labels" },
+  { id: "CLOSING", label: "Closing" },
+  { id: "QUEUE", label: "All customers" },
+];
 
 const startOfDay = () => new Date(new Date().toDateString()).getTime();
 
@@ -44,7 +59,7 @@ export function SplitFlow() {
   const { leads, me, mode, setMode, claim, setNext, escalate } = useBookingFlow();
   const [leadId, setLeadId] = useState<string>("");
   const [screenId, setScreenId] = useState<string>("");
-  const [pane, setPane] = useState<"WORK" | "CAPTURED">("WORK");
+  const [pane, setPane] = useState<Pane>("WORK");
   const [nextAction, setNextAction] = useState(NEXT_ACTIONS[0]!);
   const [due, setDue] = useState(() => new Date(Date.now() + 2 * 3_600_000).toISOString().slice(0, 16));
   const [mounted, setMounted] = useState(false);
@@ -157,8 +172,9 @@ export function SplitFlow() {
               <p className="truncate text-sm font-semibold">{lead.name} <span className="text-[11px] font-normal text-muted-foreground">{lead.phone}</span></p>
               <p className="truncate text-[10px] text-muted-foreground">“{lead.lastMessage}”</p>
             </div>
-            <div className="flex shrink-0 gap-1">
-              <Button size="sm" variant="ghost" className="h-6 px-2 text-[10px]" onClick={nextCustomer}>Next customer<ArrowRight className="ml-1 h-3 w-3" /></Button>
+            <div className="flex shrink-0 items-center gap-1">
+              <ContactActions phone={lead.phone} name={lead.name} compact />
+              <Button size="sm" variant="ghost" className="h-6 px-2 text-[10px]" onClick={nextCustomer}>Next<ArrowRight className="ml-1 h-3 w-3" /></Button>
             </div>
           </div>
           {mounted && h && (
@@ -175,8 +191,21 @@ export function SplitFlow() {
         </div>
       )}
 
+      {/* Pane tabs — every tool of the funnel, inside the split panel */}
+      <div className="shrink-0 overflow-x-auto border-b px-3 py-1.5">
+        <div className="flex gap-1">
+          {PANES.map((p) => (
+            <button key={p.id} type="button" onClick={() => setPane(p.id)}
+              className={cn("shrink-0 rounded-md border px-2 py-0.5 text-[10px]",
+                p.id === pane ? "border-primary bg-primary/10 text-primary" : "text-muted-foreground")}>
+              {p.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Screen rail — one row, horizontally scrollable, never wraps the layout */}
-      {lead && (
+      {lead && pane === "WORK" && (
         <div className="shrink-0 overflow-x-auto border-b px-3 py-1.5">
           <div className="flex gap-1">
             {SCREENS.map((s, i) => {
@@ -195,7 +224,30 @@ export function SplitFlow() {
 
       {/* The only scrolling area */}
       <main className="min-h-0 flex-1 overflow-y-auto px-3 py-2">
-        {!lead ? (
+        {pane === "CLOSING" ? (
+          <ClosingDesk onOpenLead={(id) => { setLeadId(id); setPane("WORK"); }} />
+        ) : pane === "QUEUE" ? (
+          <div className="space-y-1.5">
+            <p className="text-[10px] text-muted-foreground">{queue.length} customers still need a decision — worst first.</p>
+            {queue.slice(0, 60).map((l) => {
+              const lh = health(l);
+              return (
+                <div key={l.id} className={cn("rounded-md border p-2", l.id === lead?.id && "border-primary bg-primary/5")}>
+                  <div className="flex items-start justify-between gap-2">
+                    <button type="button" className="min-w-0 flex-1 text-left" onClick={() => { setLeadId(l.id); setPane("WORK"); }}>
+                      <p className="truncate text-xs font-medium">{l.name} <span className="font-normal text-muted-foreground">{l.phone}</span></p>
+                      <p className="truncate text-[10px] text-muted-foreground">{lh.stepNo}. {lh.step?.title ?? "Checked in"} · {l.owner ?? "no owner"} · {l.nextAction ?? "no next step"}</p>
+                    </button>
+                    <div className="flex shrink-0 items-center gap-1">
+                      {lh.sla === "LATE" && <Badge variant="destructive" className="text-[10px]">late</Badge>}
+                      <ContactActions phone={l.phone} name={l.name} compact />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : !lead ? (
           <p className="pt-10 text-center text-sm text-muted-foreground">Nothing left in the queue — every customer is closed or checked in.</p>
         ) : pane === "WORK" ? (
           <ScreenPanel
@@ -207,6 +259,10 @@ export function SplitFlow() {
             onPrev={() => step(-1)}
             onNext={() => step(1)}
           />
+        ) : pane === "MATCH" ? (
+          <PropertyMatch lead={lead} />
+        ) : pane === "LABELS" ? (
+          <LabelConsole lead={lead} />
         ) : (
           <CapturedPanel lead={lead} />
         )}
@@ -225,9 +281,7 @@ export function SplitFlow() {
             )}
             <CloseCommitButton leadId={lead.id} leadName={lead.name} leadPhone={lead.phone} actorName={me} size="xs" />
             <Button size="sm" variant="outline" className="h-7 px-2 text-[10px]" onClick={() => { escalate(lead.id, "Operator asked for help"); toast.success("Control Tower notified"); }}>Tower</Button>
-            <Button size="sm" variant={pane === "CAPTURED" ? "default" : "ghost"} className="ml-auto h-7 px-2 text-[10px]" onClick={() => setPane(pane === "WORK" ? "CAPTURED" : "WORK")}>
-              {pane === "WORK" ? "Everything captured" : "Back to questions"}
-            </Button>
+            <span className="ml-auto"><ContactActions phone={lead.phone} name={lead.name} compact /></span>
           </div>
           <div className="flex items-center gap-1">
             <select className="h-7 min-w-0 flex-1 rounded-md border bg-background px-1 text-[10px]" value={nextAction} onChange={(e) => setNextAction(e.target.value)}>
