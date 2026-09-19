@@ -23,6 +23,7 @@ import { actualForGoal, callStats, queueForGoal, resultStatus } from "./results"
 import { optionById, propertyOptions, propertyProgress, rankedForCustomer } from "./properties";
 import { todaysCommitment, useMovementCare } from "./store";
 import { debriefMessage } from "./debrief";
+import { CheckpointPanel } from "./CheckpointPanel";
 
 const GOAL_TONE: Record<CareGoal, string> = {
   FIND: "border-info/40 bg-info/10 text-info",
@@ -551,8 +552,12 @@ export function MovementCare() {
           </main>
 
           <aside className="min-h-0 overflow-y-auto border-l bg-card p-2">
-            <ProgressReporter round={round} onRound={setRound} actual={actual} committed={commitment.commitCount}
+            <CheckpointPanel role={activeRole} operatorId={mv.actor.id} operatorName={mv.actor.name}
+              states={list} events={events} onOpenCustomer={setSelected} />
+
+            <div className="mt-2"><ProgressReporter round={round} onRound={setRound} actual={actual} committed={commitment.commitCount}
               moved={moved} stuck={stuck} need={need} onMoved={setMoved} onStuck={setStuck} onNeed={setNeed} onSave={saveReport} />
+            </div>
 
             {weakRounds >= 2 && (
               <div className="mt-2 border border-destructive/40 bg-destructive/10 p-2 text-xs">

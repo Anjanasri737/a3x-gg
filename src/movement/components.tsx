@@ -347,7 +347,7 @@ export function WorkPanel({ ulid, meta }: { ulid: string | null; meta: Meta }) {
       <div className="space-y-2">
         <div className="text-[11px] uppercase tracking-wider text-muted-foreground font-semibold">Movement</div>
         <div className="flex flex-wrap gap-1.5">
-          <Button size="sm" variant="outline" className="h-7 text-[11px]" onClick={() => mv.qualify(ulid, true, st.checkInDate)}>Good lead</Button>
+          <Button size="sm" variant="outline" className="h-7 text-[11px]" onClick={() => mv.qualify(ulid, true, st.checkInDate)}>Definitely close</Button>
           <Button size="sm" variant="outline" className="h-7 text-[11px]" onClick={() => mv.setStage(ulid, "matched", "Properties shared")}>Shared options</Button>
           <Button size="sm" variant="outline" className="h-7 text-[11px]"
             onClick={() => mv.scheduleTour(ulid, new Date(Date.now() + 86400000).toISOString())}>Schedule tour</Button>

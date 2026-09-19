@@ -22,6 +22,7 @@ import { deepen, money } from "./deep";
 import { canonicalCustomerId } from "@/lib/canonical/customer-id";
 import { ViewerBar } from "./ViewerBar";
 import { powersOf, scopeControlData, scopeOptions, useViewer } from "./viewer";
+import { CheckpointControl } from "./CheckpointControl";
 
 /** Rows whose stage, journey step or conversation type mentions this phase. */
 const phase = (rows: CustomerRow[], re: RegExp) =>
@@ -156,6 +157,7 @@ export function AdminControl() {
             <TabsTrigger value="ownership">Ownership</TabsTrigger>
             <TabsTrigger value="risk">Risk &amp; leakage</TabsTrigger>
             <TabsTrigger value="movement">Movement</TabsTrigger>
+            <TabsTrigger value="checkpoints">Checkpoints</TabsTrigger>
             <TabsTrigger value="flow">Booking Flow</TabsTrigger>
             <TabsTrigger value="tours">Tours</TabsTrigger>
             <TabsTrigger value="closing">Closing</TabsTrigger>
@@ -368,6 +370,10 @@ export function AdminControl() {
             <Card title="Worst first — exactly what the operator sees in Movement OS">
               <CustomerTable rows={d.rows.filter((r) => r.health !== "GREY").slice(0, 60)} onOpen={openCustomer} />
             </Card>
+          </TabsContent>
+
+          <TabsContent value="checkpoints" className="pt-3">
+            <CheckpointControl managerName={viewer.name || "Manager"} />
           </TabsContent>
 
           {/* BOOKING FLOW — where customers sit in the journey -------------- */}
