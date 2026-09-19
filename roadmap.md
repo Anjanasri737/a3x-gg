@@ -10,6 +10,7 @@
 - [ ] Add and run compiler fixtures and integration tests
 - [ ] Verify Flow OS, Vision, work queue, and Control Tower in the browser
 - [ ] Confirm all content routes include required social metadata
+- [ ] Configure and link Divyanshu's GitHub API connection to this remixed project
 - [x] Build Admin Draft Control room over Vision, Movement OS and Booking Flow Split (Command, Vision, Reconciliation, Batches G1-G4, Claims, Risk & Leakage)
 - [x] Shared admin command bar with day / person / zone / WhatsApp / priority / health filters that persist across tabs
 - [x] Admin split drill-down: customer story beside the live Booking Flow panel
