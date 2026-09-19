@@ -331,6 +331,12 @@ function Row({ c, now }: { c: CloseCommitment; now: number }) {
             {c.status === "kept" && <Badge className="bg-emerald-500/15 text-[10px] text-emerald-600">closed</Badge>}
           </div>
           <p className="mt-0.5 text-[11px] text-muted-foreground">due {fmt(c.dueAt)} · {c.promisedBy}</p>
+          {c.leadPhone && (
+            <div className="mt-1 flex items-center gap-1.5">
+              <span className="text-[11px] tabular-nums text-muted-foreground">{c.leadPhone}</span>
+              <ContactActions compact phone={c.leadPhone} name={c.leadName} />
+            </div>
+          )}
 
           {c.steps?.length > 0 && (
             <ul className="mt-1 flex flex-wrap gap-1">
