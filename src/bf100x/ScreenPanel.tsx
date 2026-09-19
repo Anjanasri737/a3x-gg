@@ -40,6 +40,7 @@ export function ScreenPanel({
   const { answerStep, editFields } = useBookingFlow();
   const f = lead.f ?? {};
   const [draft, setDraft] = useState<Record<string, string>>({});
+  const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => setDraft({}), [screen.id, lead.id]);
 
@@ -127,9 +128,10 @@ export function ScreenPanel({
 
   /** Enter moves to the next box, and from the last box to the next screen. */
   function focusNextField(from: HTMLElement) {
-    const boxes = Array.from(rootRef.current?.querySelectorAll<HTMLInputElement>("input:not([disabled])") ?? []);
+    const list = rootRef.current?.querySelectorAll("input:not([disabled])");
+    const boxes: HTMLInputElement[] = list ? (Array.from(list) as HTMLInputElement[]) : [];
     const i = boxes.indexOf(from as HTMLInputElement);
-    const next = i >= 0 ? boxes[i + 1] : undefined;
+    const next: HTMLInputElement | undefined = i >= 0 ? boxes[i + 1] : undefined;
     if (next) {
       next.focus();
       next.select?.();
