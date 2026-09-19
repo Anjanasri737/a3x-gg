@@ -1,0 +1,20 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1789811222716,
+      "tag": "0000_seed_admin_draft_control_demo_v5",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1789811284029,
+      "tag": "0001_public_read_draft_batches_audit",
+      "breakpoints": true
+    }
+  ]
+}
