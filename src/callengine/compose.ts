@@ -192,11 +192,18 @@ function connectedMessage(lead: MovementState, agenda: AgendaKey, c: CallCapture
   }
 }
 
-function followUpFor(lead: MovementState, agenda: AgendaKey, c: CallCapture, outcome: OutcomeKind): FollowUpPlan {
+function followUpFor(
+  lead: MovementState,
+  agenda: AgendaKey,
+  c: CallCapture,
+  outcome: OutcomeKind,
+  noAnswerNext?: string,
+): FollowUpPlan {
   const f = facts(lead, c);
+  // Unanswered calls only ever use the approved message list — never a composed line.
   if (outcome !== "connected")
     return {
-      text: `Hi ${f.name}, are you looking for something different or more affordable? We have multiple options around ${f.area}, so I can change the recommendation based on what you need.`,
+      text: noAnswerNext ?? "",
       dueAt: inHours(3),
       trigger: "Only if the customer has not replied",
     };
