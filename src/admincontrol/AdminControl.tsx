@@ -158,6 +158,29 @@ export function AdminControl() {
               <Kpi icon={Clock} label="Overdue next actions" value={d.kpi.overdue} hint={`${d.kpi.red} red customers`} tone="red" onClick={() => { f.set({ leak: "overdue_action" }); setTab("risk"); }} />
             </div>
 
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+              <Kpi icon={IndianRupee} label="Money at risk" value={money(deep.value.atRisk)} tone="red" onClick={() => setTab("value")} />
+              <Kpi icon={Clock} label="Due in 2 hours" value={deep.forecast.next2h} onClick={() => setTab("sla")} />
+              <Kpi icon={Clock} label="No deadline" value={deep.forecast.missing} tone="amber" onClick={() => setTab("sla")} />
+              <Kpi icon={AlertTriangle} label="Slowest stage" value={deep.bottlenecks[0]?.stage ?? "—"} hint={`${deep.bottlenecks[0]?.avgIdleH ?? 0}h average idle`} onClick={() => setTab("bottlenecks")} />
+              <Kpi icon={Users} label="Numbers saved twice" value={deep.duplicatesCount} tone="amber" onClick={() => setTab("accuracy")} />
+              <Kpi icon={ShieldAlert} label="Alerts to decide" value={deep.anomalies.length} tone="red" onClick={() => setTab("anomalies")} />
+            </div>
+
+            {deep.anomalies.length > 0 && (
+              <Card title="Top alerts right now">
+                <ul className="space-y-1.5">
+                  {deep.anomalies.slice(0, 5).map((a, i) => (
+                    <li key={i} className={cn("rounded-md border p-2 text-xs",
+                      a.severity === "high" ? "border-destructive/40 bg-destructive/5" : "border-amber-500/40 bg-amber-500/5")}>
+                      <div className="font-semibold">{a.what}</div>
+                      <div className="text-muted-foreground">{a.detail}</div>
+                    </li>
+                  ))}
+                </ul>
+              </Card>
+            )}
+
             <div className="grid gap-3 lg:grid-cols-3">
               <Card title="Execution health">
                 <Bars rows={[
