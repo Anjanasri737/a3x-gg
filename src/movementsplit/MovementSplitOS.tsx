@@ -54,7 +54,7 @@ export function MovementSplitOS() {
 
         <TabsContent value="split" className="mt-3">
           <div className="overflow-hidden rounded-lg border">
-            <SplitFlow embedded />
+            <SplitFlow embedded focus={focus} />
           </div>
         </TabsContent>
 
