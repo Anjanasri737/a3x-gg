@@ -59,7 +59,7 @@ export function SplitFlow() {
   const { leads, me, mode, setMode, claim, setNext, escalate } = useBookingFlow();
   const [leadId, setLeadId] = useState<string>("");
   const [screenId, setScreenId] = useState<string>("");
-  const [pane, setPane] = useState<"WORK" | "CAPTURED">("WORK");
+  const [pane, setPane] = useState<Pane>("WORK");
   const [nextAction, setNextAction] = useState(NEXT_ACTIONS[0]!);
   const [due, setDue] = useState(() => new Date(Date.now() + 2 * 3_600_000).toISOString().slice(0, 16));
   const [mounted, setMounted] = useState(false);
