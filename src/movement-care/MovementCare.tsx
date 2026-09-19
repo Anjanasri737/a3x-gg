@@ -1,0 +1,407 @@
+import { useEffect, useMemo, useState } from "react";
+import {
+  AlertTriangle, ArrowRight, CheckCircle2, Clock3, Flag, Goal,
+  Handshake, History, Phone, ShieldCheck, Target, Trophy, Users,
+} from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Progress } from "@/components/ui/progress";
+import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
+import { useMovementSync } from "@/movement/bridge";
+import { seedMovement } from "@/movement/seed";
+import { useMovement } from "@/movement/store";
+import { DraftChip, JourneyTimeline, WorkPanel } from "@/movement/components";
+import { totals } from "@/movement/metrics";
+import { NEXT_ACTION_LABEL, OPERATORS, type NextActionKind } from "@/movement/types";
+import { toast } from "sonner";
+import { CARE_GOALS, CARE_PLAYBOOKS, ROUND_COPY, type CareGoal, type CareRole, type CareRound } from "./playbooks";
+import { actualForGoal, queueForGoal, resultStatus } from "./results";
+import { todaysCommitment, useMovementCare } from "./store";
+
+const GOAL_TONE: Record<CareGoal, string> = {
+  FIND: "border-info/40 bg-info/10 text-info",
+  SCHEDULE: "border-warning/40 bg-warning/10 text-warning",
+  COMPLETE: "border-success/40 bg-success/10 text-success",
+  CLOSE: "border-primary/40 bg-primary/10 text-primary",
+};
+
+const GOAL_NEXT: Record<CareGoal, NextActionKind> = {
+  FIND: "call",
+  SCHEDULE: "confirm-tour",
+  COMPLETE: "post-tour-call",
+  CLOSE: "collect-payment",
+};
+
+function dueForGoal(goal: CareGoal) {
+  const minutes = goal === "CLOSE" ? 60 : goal === "COMPLETE" ? 90 : goal === "SCHEDULE" ? 120 : 180;
+  return new Date(Date.now() + minutes * 60_000).toISOString();
+}
+
+export function MovementCare() {
+  useEffect(() => { seedMovement(); }, []);
+  const { list, nameOf, me } = useMovementSync();
+  const events = useMovement((state) => state.events);
+  const setActor = useMovement((state) => state.setActor);
+  const mv = useMovement();
+  const storedCommitment = useMovementCare((state) => state.commitment);
+  const commitment = todaysCommitment(storedCommitment);
+  const reports = useMovementCare((state) => state.reports);
+  const commit = useMovementCare((state) => state.commit);
+  const report = useMovementCare((state) => state.report);
+  const clearCommitment = useMovementCare((state) => state.clearCommitment);
+  const [role, setRole] = useState<CareRole>(commitment?.role ?? "flow-ops");
+  const [goal, setGoal] = useState<CareGoal>(commitment?.goal ?? "FIND");
+  const [target, setTarget] = useState(commitment?.target ?? CARE_PLAYBOOKS[role].stages[0].defaultTarget);
+  const [support, setSupport] = useState(commitment?.supportNeeded ?? "");
+  const [selected, setSelected] = useState<string | null>(null);
+  const [round, setRound] = useState<CareRound>("BUILD");
+  const [moved, setMoved] = useState("");
+  const [stuck, setStuck] = useState("");
+  const [need, setNeed] = useState("");
+  const [showPlaybook, setShowPlaybook] = useState(false);
+
+  const activeRole = commitment?.role ?? role;
+  const activeGoal = commitment?.goal ?? goal;
+  const playbook = CARE_PLAYBOOKS[activeRole];
+  const stage = playbook.stages.find((item) => item.goal === activeGoal) ?? playbook.stages[0];
+  const queue = useMemo(() => queueForGoal(activeGoal, list), [activeGoal, list]);
+  const actual = useMemo(() => actualForGoal(activeGoal, list, events), [activeGoal, list, events]);
+  const total = useMemo(() => totals(list, events), [list, events]);
+  const progress = commitment ? Math.min(100, Math.round((actual / Math.max(commitment.target, 1)) * 100)) : 0;
+  const selectedState = selected ? list.find((item) => item.ulid === selected) : undefined;
+  const selectedResult = selectedState ? resultStatus(selectedState) : null;
+  const todaysReports = reports.filter((item) => item.date === new Date().toISOString().slice(0, 10));
+  const weakRounds = todaysReports.filter((item) => item.actual < item.target * 0.65).length;
+
+  useEffect(() => {
+    const roleOperator = activeRole === "tcm" ? OPERATORS.find((operator) => operator.role === "tcm") : undefined;
+    setActor(roleOperator ?? { id: me.id, name: me.name, role: "flow-ops", zone: "KORA CORE" });
+  }, [activeRole, me.id, me.name, setActor]);
+
+  useEffect(() => {
+    if (!selected && queue.length) setSelected(queue[0].ulid);
+  }, [queue, selected]);
+
+  const chooseRole = (nextRole: CareRole) => {
+    setRole(nextRole);
+    const first = CARE_PLAYBOOKS[nextRole].stages[0];
+    setGoal(first.goal);
+    setTarget(first.defaultTarget);
+  };
+
+  const chooseGoal = (nextGoal: CareGoal) => {
+    setGoal(nextGoal);
+    const nextStage = CARE_PLAYBOOKS[role].stages.find((item) => item.goal === nextGoal);
+    if (nextStage) setTarget(nextStage.defaultTarget);
+  };
+
+  const startDay = () => {
+    commit({ role, goal, target: Math.max(1, target), supportNeeded: support.trim() });
+    toast.success(`${goal} result committed for today`);
+  };
+
+  const acceptDraft = () => {
+    if (!commitment || !selectedState) return;
+    const code = selectedState.waDraft ?? (activeGoal === "CLOSE" ? "D1" : activeGoal === "SCHEDULE" ? "D2" : "D3");
+    mv.draft(selectedState.ulid, code);
+    mv.attemptClaim(selectedState.ulid, activeGoal === "SCHEDULE" || activeGoal === "COMPLETE" ? "tour" : activeGoal === "CLOSE" ? "closing" : "work", stage.outcome);
+    mv.setNextAction(selectedState.ulid, {
+      kind: GOAL_NEXT[activeGoal],
+      dueAt: dueForGoal(activeGoal),
+      ownerId: selectedState.primaryOwnerId || mv.actor.id,
+      ownerName: selectedState.primaryOwnerId ? selectedState.primaryOwnerName : mv.actor.name,
+      note: `${activeGoal}: ${stage.outcome}`,
+    });
+    toast.success(`Draft tied to ${activeGoal} result, owner and deadline`);
+  };
+
+  const saveReport = () => {
+    if (!commitment) return;
+    report({
+      round,
+      role: commitment.role,
+      goal: commitment.goal,
+      actual,
+      target: commitment.target,
+      moved: moved.trim(),
+      stuck: stuck.trim(),
+      need: need.trim(),
+    });
+    mv.snapshot({
+      label: round === "BUILD" ? "1PM" : round === "MOVE" ? "5PM" : "EOD",
+      operatorId: mv.actor.id,
+      totals: total as unknown as Record<string, number>,
+      required: { [commitment.goal.toLowerCase()]: commitment.target },
+      status: actual >= commitment.target ? "ON TRACK" : "BEHIND",
+      mainLeak: stuck.trim() || "No blocker reported",
+      inference: `${commitment.goal} ${actual}/${commitment.target} · ${moved.trim() || "movement pending"}`,
+    });
+    setMoved("");
+    setStuck("");
+    setNeed("");
+    toast.success(`${ROUND_COPY[round].label} progress reported`);
+  };
+
+  return (
+    <div className="flex h-[calc(100vh-4rem)] min-h-[560px] flex-col overflow-hidden bg-background">
+      <header className="shrink-0 border-b bg-card px-3 py-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary/15 text-primary"><Goal className="h-4 w-4" /></div>
+          <div className="min-w-0">
+            <h1 className="text-sm font-semibold">Movement CARE</h1>
+            <p className="text-[10px] text-muted-foreground">Draft Vision signal → accountable movement → accepted result</p>
+          </div>
+          <div className="ml-auto flex items-center gap-1 rounded-md border p-0.5">
+            {(["flow-ops", "tcm"] as CareRole[]).map((item) => (
+              <Button key={item} size="sm" variant={activeRole === item ? "default" : "ghost"} className="h-7 px-2 text-[10px]"
+                disabled={Boolean(commitment)} onClick={() => chooseRole(item)}>
+                {CARE_PLAYBOOKS[item].label}
+              </Button>
+            ))}
+          </div>
+          <Button size="sm" variant="outline" className="h-7 text-[10px]" onClick={() => setShowPlaybook((value) => !value)}>
+            <ShieldCheck className="h-3 w-3" /> Playbook
+          </Button>
+        </div>
+
+        {commitment && (
+          <div className="mt-2 grid grid-cols-[minmax(180px,1fr)_repeat(6,minmax(70px,auto))] gap-1.5 overflow-x-auto">
+            <div className="min-w-[180px] rounded-md border bg-background px-2 py-1.5">
+              <div className="flex items-center justify-between gap-2 text-[10px] font-semibold">
+                <span>MY RESULT · {activeGoal}</span><span>{actual}/{commitment.target}</span>
+              </div>
+              <Progress value={progress} className="mt-1 h-1.5" />
+            </div>
+            <Stat label="Drafted" value={total.drafted} />
+            <Stat label="Good leads" value={total.goodLeads} />
+            <Stat label="Tours set" value={total.toursScheduled} />
+            <Stat label="Tours done" value={total.toursDone} />
+            <Stat label="Bookings" value={total.booked} />
+            <Stat label="At risk" value={total.breached + total.p0} danger={total.breached + total.p0 > 0} />
+          </div>
+        )}
+      </header>
+
+      {!commitment ? (
+        <CommitmentGate role={role} goal={goal} target={target} support={support}
+          onRole={chooseRole} onGoal={chooseGoal} onTarget={setTarget} onSupport={setSupport} onStart={startDay} />
+      ) : (
+        <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[320px_minmax(420px,1fr)_330px]">
+          <section className="min-h-0 overflow-hidden border-r bg-card">
+            <div className="border-b px-3 py-2">
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <p className="text-[10px] font-semibold uppercase text-muted-foreground">Result queue</p>
+                  <p className="text-xs font-medium">{stage.meaning} · {queue.length} open</p>
+                </div>
+                <Badge className={cn("border text-[9px]", GOAL_TONE[activeGoal])}>{activeGoal}</Badge>
+              </div>
+            </div>
+            <div className="h-[calc(100%-53px)] divide-y overflow-y-auto">
+              {queue.map((item, index) => {
+                const info = nameOf.get(item.ulid);
+                const status = resultStatus(item.state);
+                return (
+                  <Button key={item.ulid} variant="ghost" onClick={() => setSelected(item.ulid)}
+                    className={cn("h-auto w-full justify-start rounded-none px-3 py-2 text-left", selected === item.ulid && "bg-primary/10")}>
+                    <span className="w-5 shrink-0 font-mono text-[10px] text-muted-foreground">{index + 1}</span>
+                    <span className="min-w-0 flex-1">
+                      <span className="flex items-center gap-1.5">
+                        <span className="truncate text-xs font-semibold">{info?.name ?? item.ulid}</span>
+                        <DraftChip code={item.state.crmDraft} />
+                      </span>
+                      <span className="block truncate text-[10px] font-normal text-muted-foreground">
+                        {item.state.waAccount} · {item.reason}
+                      </span>
+                      <span className={cn("block truncate text-[10px] font-medium", status.accountable ? "text-success" : "text-destructive")}>
+                        {status.result}{status.missing.length ? ` · missing ${status.missing.join(", ")}` : " · accountable"}
+                      </span>
+                    </span>
+                    <Badge variant={item.bucket === "P0" ? "destructive" : "outline"} className="text-[9px]">{item.bucket}</Badge>
+                  </Button>
+                );
+              })}
+            </div>
+          </section>
+
+          <main className="min-h-0 overflow-y-auto p-2">
+            {selectedState && selectedResult ? (
+              <div className="space-y-2">
+                <div className="border bg-card p-3">
+                  <div className="flex flex-wrap items-start gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[10px] font-semibold uppercase text-muted-foreground">Result contract</p>
+                      <h2 className="truncate text-base font-semibold">{nameOf.get(selectedState.ulid)?.name ?? selectedState.ulid}</h2>
+                      <p className="text-xs text-muted-foreground">{selectedState.lastCustomerMsg ?? "Latest WhatsApp message is waiting to be captured."}</p>
+                    </div>
+                    <Button size="sm" onClick={acceptDraft}><Target className="h-3.5 w-3.5" /> Accept draft + result</Button>
+                  </div>
+                  <div className="mt-3 grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+                    <ContractCell label="Expected result" value={stage.outcome} />
+                    <ContractCell label="Accountable owner" value={selectedState.primaryOwnerName || mv.actor.name} good={Boolean(selectedState.primaryOwnerId)} />
+                    <ContractCell label="Deadline" value={selectedState.nextAction ? new Date(selectedState.nextAction.dueAt).toLocaleString() : "Set when draft is accepted"} good={Boolean(selectedState.nextAction)} />
+                    <ContractCell label="Proof required" value={stage.proof} />
+                    <ContractCell label="Receiver" value={stage.receiver} />
+                    <ContractCell label="Acceptance" value={selectedResult.accepted ? "Accepted" : "Not accepted yet"} good={selectedResult.accepted} />
+                  </div>
+                  {selectedResult.missing.length > 0 && (
+                    <div className="mt-2 flex items-center gap-1.5 border-l-2 border-destructive bg-destructive/10 px-2 py-1.5 text-[11px] text-destructive">
+                      <AlertTriangle className="h-3.5 w-3.5" /> Not under control: add {selectedResult.missing.join(", ")}.
+                    </div>
+                  )}
+                </div>
+                <WorkPanel ulid={selected} meta={nameOf} />
+              </div>
+            ) : (
+              <div className="flex h-full items-center justify-center text-sm text-muted-foreground">Choose a customer to own a result.</div>
+            )}
+          </main>
+
+          <aside className="min-h-0 overflow-y-auto border-l bg-card p-2">
+            <ProgressReporter round={round} onRound={setRound} actual={actual} target={commitment.target}
+              moved={moved} stuck={stuck} need={need} onMoved={setMoved} onStuck={setStuck} onNeed={setNeed} onSave={saveReport} />
+
+            {weakRounds >= 2 && (
+              <div className="mt-2 border border-destructive/40 bg-destructive/10 p-2 text-xs">
+                <p className="font-semibold text-destructive">Manager support required now</p>
+                <p className="mt-0.5 text-muted-foreground">Two rounds are weak. Remove or re-route one blocker before continuing.</p>
+              </div>
+            )}
+
+            <div className="mt-2 border p-2">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-[10px] font-semibold uppercase text-muted-foreground">Today’s promise</p>
+                <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[9px]" onClick={clearCommitment}>Reset</Button>
+              </div>
+              <p className="mt-1 text-xs font-semibold">I will achieve {commitment.target} {activeGoal.toLowerCase()} results today.</p>
+              <p className="mt-1 text-[10px] text-muted-foreground">{stage.outcome}</p>
+              {commitment.supportNeeded && <p className="mt-1 text-[10px]"><strong>Support:</strong> {commitment.supportNeeded}</p>}
+            </div>
+
+            <div className="mt-2"><JourneyTimeline ulid={selected} /></div>
+          </aside>
+        </div>
+      )}
+
+      {showPlaybook && <PlaybookDrawer playbook={playbook} onClose={() => setShowPlaybook(false)} />}
+    </div>
+  );
+}
+
+function CommitmentGate({ role, goal, target, support, onRole, onGoal, onTarget, onSupport, onStart }: {
+  role: CareRole; goal: CareGoal; target: number; support: string;
+  onRole: (role: CareRole) => void; onGoal: (goal: CareGoal) => void;
+  onTarget: (target: number) => void; onSupport: (support: string) => void; onStart: () => void;
+}) {
+  const playbook = CARE_PLAYBOOKS[role];
+  const active = playbook.stages.find((item) => item.goal === goal) ?? playbook.stages[0];
+  return (
+    <div className="min-h-0 flex-1 overflow-y-auto p-3">
+      <div className="mx-auto max-w-5xl border bg-card">
+        <div className="border-b px-4 py-3">
+          <div className="flex items-center gap-2"><Flag className="h-4 w-4 text-primary" /><h2 className="text-base font-semibold">Set today’s expected result before drafting</h2></div>
+          <p className="mt-1 text-xs text-muted-foreground">“This is my expectation from today. This is what I will achieve.” Calls and messages are work; the selected result is the commitment.</p>
+        </div>
+        <div className="grid gap-4 p-4 lg:grid-cols-[1fr_280px]">
+          <div className="space-y-4">
+            <div>
+              <p className="mb-2 text-[10px] font-semibold uppercase text-muted-foreground">I am working today as</p>
+              <div className="flex gap-2">
+                {(["flow-ops", "tcm"] as CareRole[]).map((item) => (
+                  <Button key={item} variant={role === item ? "default" : "outline"} onClick={() => onRole(item)}>{CARE_PLAYBOOKS[item].label}</Button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <p className="mb-2 text-[10px] font-semibold uppercase text-muted-foreground">The result I will aim for</p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {playbook.stages.map((item) => (
+                  <Button key={item.goal} variant="outline" onClick={() => onGoal(item.goal)}
+                    className={cn("h-auto min-h-20 justify-start whitespace-normal p-3 text-left", goal === item.goal && GOAL_TONE[item.goal])}>
+                    <span><span className="block text-xs font-bold">{item.goal} · {item.meaning}</span><span className="mt-1 block text-[10px] font-normal">{item.outcome}</span></span>
+                  </Button>
+                ))}
+              </div>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-[160px_1fr]">
+              <label className="text-xs font-medium">Target result count<Input type="number" min={1} value={target} onChange={(event) => onTarget(Number(event.target.value) || 1)} className="mt-1" /></label>
+              <label className="text-xs font-medium">Support needed today<Input value={support} onChange={(event) => onSupport(event.target.value)} placeholder="Inventory check, manager help, pricing approval…" className="mt-1" /></label>
+            </div>
+            <Button onClick={onStart} className="w-full sm:w-auto"><Target className="h-4 w-4" /> Commit result and open drafts</Button>
+          </div>
+          <div className="border bg-muted/30 p-3">
+            <p className="text-[10px] font-semibold uppercase text-muted-foreground">Your contract</p>
+            <p className="mt-2 text-sm font-semibold">I will deliver {target} accepted {goal.toLowerCase()} results today.</p>
+            <p className="mt-2 text-xs text-muted-foreground">{active.outcome}</p>
+            <dl className="mt-3 space-y-2 text-xs">
+              <div><dt className="text-muted-foreground">Proof</dt><dd>{active.proof}</dd></div>
+              <div><dt className="text-muted-foreground">Accepted by</dt><dd>{active.receiver}</dd></div>
+              <div><dt className="text-muted-foreground">Required when</dt><dd>{active.requireWhen}</dd></div>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ProgressReporter({ round, onRound, actual, target, moved, stuck, need, onMoved, onStuck, onNeed, onSave }: {
+  round: CareRound; onRound: (round: CareRound) => void; actual: number; target: number;
+  moved: string; stuck: string; need: string; onMoved: (value: string) => void;
+  onStuck: (value: string) => void; onNeed: (value: string) => void; onSave: () => void;
+}) {
+  return (
+    <div className="border p-2">
+      <div className="flex items-center gap-1.5"><Clock3 className="h-3.5 w-3.5 text-primary" /><p className="text-[10px] font-semibold uppercase text-muted-foreground">Periodic progress</p></div>
+      <div className="mt-2 grid grid-cols-3 gap-1">
+        {(Object.keys(ROUND_COPY) as CareRound[]).map((item) => (
+          <Button key={item} size="sm" variant={round === item ? "default" : "outline"} className="h-7 px-1 text-[9px]" onClick={() => onRound(item)}>{ROUND_COPY[item].label}</Button>
+        ))}
+      </div>
+      <p className="mt-2 text-xs font-semibold">{ROUND_COPY[round].question}</p>
+      <div className="mt-2 flex items-center justify-between text-[10px]"><span>System actual</span><strong>{actual}/{target}</strong></div>
+      <Progress value={Math.min(100, Math.round((actual / Math.max(target, 1)) * 100))} className="mt-1" />
+      <div className="mt-2 space-y-1.5">
+        <Textarea value={moved} onChange={(event) => onMoved(event.target.value)} placeholder="Moved — what result changed?" className="min-h-14 text-xs" />
+        <Textarea value={stuck} onChange={(event) => onStuck(event.target.value)} placeholder="Stuck — what is blocking the result?" className="min-h-14 text-xs" />
+        <Input value={need} onChange={(event) => onNeed(event.target.value)} placeholder="Need — who should help with what?" className="h-8 text-xs" />
+      </div>
+      <Button size="sm" className="mt-2 w-full" onClick={onSave}>Report progress</Button>
+      <p className="mt-1 text-[9px] text-muted-foreground">{ROUND_COPY[round].accepted}</p>
+    </div>
+  );
+}
+
+function PlaybookDrawer({ playbook, onClose }: { playbook: (typeof CARE_PLAYBOOKS)[CareRole]; onClose: () => void }) {
+  return (
+    <div className="absolute inset-y-0 right-0 z-40 w-full max-w-md overflow-y-auto border-l bg-card shadow-xl">
+      <div className="sticky top-0 flex items-center justify-between border-b bg-card px-4 py-3">
+        <div><p className="text-[10px] uppercase text-muted-foreground">CARE V5 playbook</p><h2 className="font-semibold">{playbook.label}</h2></div>
+        <Button size="sm" variant="outline" onClick={onClose}>Close</Button>
+      </div>
+      <div className="space-y-3 p-4">
+        <div className="border p-3"><p className="text-[10px] font-semibold uppercase text-muted-foreground">Role promise</p><p className="mt-1 text-sm">{playbook.promise}</p></div>
+        {playbook.stages.map((item) => (
+          <div key={item.goal} className="border p-3">
+            <div className="flex items-center justify-between"><Badge className={cn("border", GOAL_TONE[item.goal])}>{item.goal}</Badge><span className="text-xs font-semibold">Guide {item.defaultTarget}</span></div>
+            <p className="mt-2 text-sm font-semibold">{item.meaning}</p>
+            <p className="mt-1 text-xs text-muted-foreground">{item.outcome}</p>
+            <div className="mt-2 grid gap-2 text-xs"><p><strong>Proof:</strong> {item.proof}</p><p><strong>Recommend:</strong> {item.recommendWhen}</p><p><strong>Require:</strong> {item.requireWhen}</p><p><strong>Receiver:</strong> {item.receiver}</p></div>
+          </div>
+        ))}
+        <div className="border p-3"><p className="text-[10px] font-semibold uppercase text-muted-foreground">Acceptance gate</p><p className="mt-1 text-xs">{playbook.acceptanceGate}</p></div>
+        <div className="border p-3"><p className="text-[10px] font-semibold uppercase text-muted-foreground">Non-negotiable safeguards</p>{playbook.safeguards.map((item) => <p key={item} className="mt-2 flex gap-2 text-xs"><ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-success" />{item}</p>)}</div>
+      </div>
+    </div>
+  );
+}
+
+function Stat({ label, value, danger }: { label: string; value: number; danger?: boolean }) {
+  return <div className="min-w-[70px] rounded-md border bg-background px-2 py-1"><p className="text-[9px] text-muted-foreground">{label}</p><p className={cn("text-sm font-semibold", danger && "text-destructive")}>{value}</p></div>;
+}
+
+function ContractCell({ label, value, good }: { label: string; value: string; good?: boolean }) {
+  return <div className="min-h-14 border px-2 py-1.5"><p className="text-[9px] font-semibold uppercase text-muted-foreground">{label}</p><p className={cn("mt-0.5 text-[11px] leading-snug", good === true && "text-success", good === false && "text-destructive")}>{value}</p></div>;
+}
