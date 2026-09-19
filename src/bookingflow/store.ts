@@ -52,6 +52,7 @@ interface State {
   // the journey
   answerStep: (leadId: string, stepKey: string, values: Record<string, string>) => void;
   setNext: (leadId: string, nextAction: string, nextActionAt: string) => void;
+  logActivity: (leadId: string, activity: string, note?: string) => void;
   editFields: (leadId: string, values: Record<string, string>, reason: string, stepKey?: string) => void;
   claim: (leadId: string) => void;
   toggleLabel: (leadId: string, label: string) => void;
@@ -263,6 +264,19 @@ export const useBookingFlow = create<State>()(
                   nextActionAt,
                   lastActionAt: now(),
                   events: [...l.events, ev(s.me, "Next step locked", `${nextAction} by ${new Date(nextActionAt).toLocaleString()}`)],
+                }
+              : l,
+          ),
+        })),
+
+      logActivity: (leadId, activity, note) =>
+        set((s) => ({
+          leads: s.leads.map((l) =>
+            l.id === leadId
+              ? {
+                  ...l,
+                  lastActionAt: now(),
+                  events: [...l.events, ev(s.me, activity, note?.trim() || undefined)],
                 }
               : l,
           ),
