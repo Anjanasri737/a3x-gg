@@ -1,20 +1,20 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { AppShell } from "@/components/AppShell";
-import { VisionHub } from "@/vision2/VisionHub";
+import { AdminControl } from "@/admincontrol/AdminControl";
 
 export const Route = createFileRoute("/admin/vision")({
   head: () => ({
     meta: [
-      { title: "Admin Draft Vision — screenshot to booking funnel | Gharpayy" },
+      { title: "Admin Draft Control — screenshot to booking | Gharpayy" },
       {
         name: "description",
         content:
-          "Trace every customer from the first screenshot to the booking: chat rows detected, unique leads, claims, accuracy and daily lead inflow.",
+          "Govern the whole chain: screenshot checkpoints, chat rows read, customers matched, who owns each one, work batches of 30, overdue actions and revenue leakage.",
       },
-      { property: "og:title", content: "Admin Draft Vision" },
+      { property: "og:title", content: "Admin Draft Control" },
       {
         property: "og:description",
-        content: "Screenshot to lead to claim to outcome, with accuracy and inflow reporting.",
+        content: "One admin room over Draft Vision, Movement OS and the Booking Flow.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },
@@ -22,7 +22,7 @@ export const Route = createFileRoute("/admin/vision")({
   }),
   component: () => (
     <AppShell>
-      <VisionHub scope="admin" />
+      <AdminControl />
     </AppShell>
   ),
 });

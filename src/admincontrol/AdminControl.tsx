@@ -1,0 +1,482 @@
+// Admin Draft Control room — one place that governs the whole chain:
+// WhatsApp screenshot -> row -> customer -> owner -> work batch -> next action -> booking.
+// Filters at the top apply to every tab and are remembered between visits.
+import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
+import { AlertTriangle, Camera, Clock, Layers, RefreshCw, ShieldAlert, Users } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ContactActions } from "@/components/common/ContactActions";
+import { SplitFlow } from "@/bf100x/SplitFlow";
+import { Ingest } from "@/vision2/Ingest";
+import { cn } from "@/lib/utils";
+import { getAdminControlData } from "@/lib/admin-control/data.functions";
+import { useControlFilters, type DayWindow, type HealthFilter } from "./filters";
+import { derive, LEAKS, type CustomerRow } from "./derive";
+
+const DAYS: Array<[DayWindow, string]> = [
+  ["today", "Today"],
+  ["1", "24 hours"],
+  ["3", "3 days"],
+  ["7", "7 days"],
+  ["all", "All"],
+];
+
+const HEALTHS: Array<[HealthFilter, string]> = [
+  ["all", "All"],
+  ["RED", "Red"],
+  ["AMBER", "Amber"],
+  ["GREEN", "Green"],
+  ["GREY", "Parked"],
+];
+
+const healthTone: Record<string, string> = {
+  RED: "bg-destructive/15 text-destructive border-destructive/30",
+  AMBER: "bg-amber-500/15 text-amber-600 border-amber-500/30",
+  GREEN: "bg-emerald-500/15 text-emerald-600 border-emerald-500/30",
+  GREY: "bg-muted text-muted-foreground border-border",
+};
+
+const ago = (t: number) => {
+  if (!t) return "never";
+  const m = Math.round((Date.now() - t) / 60000);
+  if (m < 60) return `${m}m ago`;
+  if (m < 60 * 24) return `${Math.round(m / 60)}h ago`;
+  return `${Math.round(m / 1440)}d ago`;
+};
+
+export function AdminControl() {
+  const f = useControlFilters();
+  const [tab, setTab] = useState("command");
+  const [openRow, setOpenRow] = useState<CustomerRow | null>(null);
+
+  const { data, isLoading, refetch, isFetching } = useQuery({
+    queryKey: ["admin-control-data"],
+    queryFn: () => getAdminControlData(),
+    staleTime: 60_000,
+  });
+
+  const d = useMemo(() => (data ? derive(data, f) : null), [data, f]);
+
+  const openCustomer = (row: CustomerRow) => {
+    setOpenRow(row);
+    setTab("customer");
+  };
+
+  return (
+    <div className="mx-auto w-full max-w-[1500px] space-y-3 p-3 sm:p-4">
+      <header className="rounded-xl border bg-card p-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div>
+            <h1 className="text-lg font-bold tracking-tight">Admin · Draft Control</h1>
+            <p className="text-xs text-muted-foreground">
+              Screenshot → row → customer → owner → work batch → next action → booking. Everything below reads the same
+              company record as Draft Vision, Movement OS and the Booking Flow.
+            </p>
+          </div>
+          <Button size="sm" variant="outline" onClick={() => refetch()} disabled={isFetching}>
+            <RefreshCw className={cn("mr-1 h-3.5 w-3.5", isFetching && "animate-spin")} /> Refresh
+          </Button>
+        </div>
+
+        <div className="mt-3 flex flex-wrap items-center gap-1.5 text-xs">
+          {DAYS.map(([v, label]) => (
+            <Button key={v} size="sm" variant={f.day === v ? "default" : "outline"} className="h-7 px-2"
+              onClick={() => f.set({ day: v })}>{label}</Button>
+          ))}
+          <span className="mx-1 h-5 w-px bg-border" />
+          {HEALTHS.map(([v, label]) => (
+            <Button key={v} size="sm" variant={f.health === v ? "default" : "outline"} className="h-7 px-2"
+              onClick={() => f.set({ health: v })}>{label}</Button>
+          ))}
+          <span className="mx-1 h-5 w-px bg-border" />
+          <Select label="WhatsApp" value={f.wa} onChange={(v) => f.set({ wa: v })} options={d?.options.accounts ?? []} />
+          <Select label="Person" value={f.operator} onChange={(v) => f.set({ operator: v })} options={d?.options.operators ?? []} />
+          <Select label="Zone" value={f.zone} onChange={(v) => f.set({ zone: v })} options={d?.options.zones ?? []} />
+          <Select label="Stage" value={f.stage} onChange={(v) => f.set({ stage: v })} options={d?.options.stages ?? []} />
+          <Select label="Problem" value={f.leak} onChange={(v) => f.set({ leak: v })} options={LEAKS.map(([k]) => k)} />
+          <Input value={f.search} onChange={(e) => f.set({ search: e.target.value })} placeholder="Name or number"
+            className="h-7 w-40 text-xs" />
+          <Button size="sm" variant="ghost" className="h-7 px-2" onClick={() => f.reset()}>Clear</Button>
+        </div>
+      </header>
+
+      {isLoading || !d ? (
+        <div className="rounded-xl border bg-card p-8 text-center text-sm text-muted-foreground">
+          Loading the company record…
+        </div>
+      ) : (
+        <Tabs value={tab} onValueChange={setTab}>
+          <TabsList className="flex flex-wrap">
+            <TabsTrigger value="command">Command</TabsTrigger>
+            <TabsTrigger value="vision">Screenshots</TabsTrigger>
+            <TabsTrigger value="reconcile">Zero miss</TabsTrigger>
+            <TabsTrigger value="batches">Work batches</TabsTrigger>
+            <TabsTrigger value="ownership">Ownership</TabsTrigger>
+            <TabsTrigger value="risk">Risk &amp; leakage</TabsTrigger>
+            <TabsTrigger value="people">People</TabsTrigger>
+            <TabsTrigger value="history">History</TabsTrigger>
+            <TabsTrigger value="upload">Add screenshots</TabsTrigger>
+            <TabsTrigger value="customer">Customer</TabsTrigger>
+          </TabsList>
+
+          {/* COMMAND ------------------------------------------------------ */}
+          <TabsContent value="command" className="space-y-3 pt-3">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+              <Kpi icon={Camera} label="Screenshots read" value={d.kpi.screenshots} hint={`${d.kpi.accounts} WhatsApp accounts`} onClick={() => setTab("vision")} />
+              <Kpi icon={Layers} label="Chat rows detected" value={d.kpi.detected} hint={`${d.kpi.expected} expected`} onClick={() => setTab("reconcile")} />
+              <Kpi icon={AlertTriangle} label="Rows unaccounted" value={d.kpi.silentDrops + d.kpi.review} hint={`${d.kpi.review} need review`} tone="amber" onClick={() => setTab("reconcile")} />
+              <Kpi icon={Users} label="Customers on WhatsApp" value={d.kpi.customersSeen} hint={`${d.kpi.newCustomers} first-time rows`} onClick={() => setTab("ownership")} />
+              <Kpi icon={ShieldAlert} label="Nobody owns" value={d.kpi.unownedActive} hint="active customers with no handler" tone="red" onClick={() => { f.set({ leak: "no_owner" }); setTab("risk"); }} />
+              <Kpi icon={Clock} label="Overdue next actions" value={d.kpi.overdue} hint={`${d.kpi.red} red customers`} tone="red" onClick={() => { f.set({ leak: "overdue_action" }); setTab("risk"); }} />
+            </div>
+
+            <div className="grid gap-3 lg:grid-cols-3">
+              <Card title="Execution health">
+                <Bars rows={[
+                  ["Red — broken now", d.kpi.red, "bg-destructive"],
+                  ["Amber — slipping", d.kpi.amber, "bg-amber-500"],
+                  ["Green — on track", d.kpi.green, "bg-emerald-500"],
+                  ["Parked / closed", d.kpi.grey, "bg-muted-foreground"],
+                ]} onPick={(i) => f.set({ health: (["RED", "AMBER", "GREEN", "GREY"][i] as HealthFilter) })} />
+              </Card>
+              <Card title="Where the customers are">
+                <Bars rows={d.funnel.slice(0, 8).map((s) => [s.stage, s.count, "bg-primary"])} onPick={(i) => f.set({ stage: d.funnel[i]?.stage ?? "all" })} />
+              </Card>
+              <Card title="Journey step">
+                <Bars rows={d.journey.slice(0, 8).map((s) => [s.step, s.count, "bg-sky-500"])} />
+              </Card>
+            </div>
+
+            <Card title={`Worst first — ${d.rows.length} customers match these filters`}>
+              <CustomerTable rows={d.rows.slice(0, 40)} onOpen={openCustomer} />
+            </Card>
+          </TabsContent>
+
+          {/* SCREENSHOTS -------------------------------------------------- */}
+          <TabsContent value="vision" className="space-y-3 pt-3">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <Kpi icon={Camera} label="Batches" value={d.batches.length} hint="checkpoint uploads" />
+              <Kpi icon={Layers} label="Rows read" value={d.kpi.detected} hint={`avg confidence ${d.kpi.avgConfidence}%`} />
+              <Kpi icon={AlertTriangle} label="Low confidence rows" value={d.kpi.lowConfidence} hint="below 70%" tone="amber" />
+              <Kpi icon={ShieldAlert} label="Not a customer" value={d.kpi.nonCustomer} hint="groups, vendors, noise" />
+            </div>
+            <Card title="WhatsApp account health">
+              <Table head={["WhatsApp", "Batches", "Rows read", "Missed rows", "To review", "Last upload"]}
+                rows={d.accounts.map((a) => [a.wa, a.batches, a.detected, a.drops, a.review, ago(a.lastAt)])}
+                onPick={(i) => f.set({ wa: d.accounts[i]?.wa ?? "all" })} />
+            </Card>
+            <Card title="Every checkpoint upload">
+              <Table head={["Uploaded", "WhatsApp", "Checkpoint", "By", "Shots", "Expected", "Read", "Review", "Status"]}
+                rows={d.batches.slice(0, 60).map((b) => [
+                  ago(b.uploadedAt ? Date.parse(b.uploadedAt) : 0), b.whatsappAccount ?? "—", b.checkpoint ?? "—",
+                  b.uploadedBy ?? "—", b.screenshotCount ?? 0, b.expected ?? 0, b.detected ?? 0, b.unresolved ?? 0,
+                  b.status ?? "—",
+                ])} />
+            </Card>
+          </TabsContent>
+
+          {/* ZERO MISS ---------------------------------------------------- */}
+          <TabsContent value="reconcile" className="space-y-3 pt-3">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <Kpi icon={Layers} label="Rows expected" value={d.kpi.expected} />
+              <Kpi icon={Layers} label="Rows accounted" value={d.kpi.detected} />
+              <Kpi icon={AlertTriangle} label="Silently dropped" value={d.kpi.silentDrops} tone="red" />
+              <Kpi icon={ShieldAlert} label="Waiting for a decision" value={d.kpi.review} tone="amber" />
+            </div>
+            <Card title="Why rows are stuck">
+              <Table head={["Reason", "Rows"]} rows={d.reviewReasons.map(([r, c]) => [r, c])} />
+            </Card>
+            <Card title="Review queue — decide each row">
+              <Table
+                head={["Customer", "Number", "WhatsApp", "Last message", "Confidence", "Reason", "Seen"]}
+                rows={d.observations.filter((o) => o.state === "needs_review").slice(0, 60).map((o) => [
+                  o.contactName ?? "—", o.phone ?? "—", o.whatsappAccount ?? "—",
+                  (o.preview ?? "").slice(0, 46), `${o.ocrConfidence ?? 0}%`, o.reason ?? "—",
+                  ago(o.capturedAt ? Date.parse(o.capturedAt) : 0),
+                ])}
+                onPick={(i) => {
+                  const obs = d.observations.filter((o) => o.state === "needs_review")[i];
+                  const row = d.rows.find((r) => r.id === obs?.leadId);
+                  if (row) openCustomer(row);
+                }} />
+            </Card>
+            <Card title="Daily inflow">
+              <Table head={["Day", "Rows read", "Customers", "To review"]}
+                rows={d.dayTrend.map((t) => [t.day, t.detected, t.customers, t.review])} />
+            </Card>
+          </TabsContent>
+
+          {/* WORK BATCHES ------------------------------------------------- */}
+          <TabsContent value="batches" className="space-y-3 pt-3">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <Kpi icon={Layers} label="Batches open" value={d.kpi.openBatches} />
+              <Kpi icon={Layers} label="Batches finished" value={d.kpi.closedBatches} />
+              <Kpi icon={Users} label="Customers assigned" value={d.kpi.assigned} />
+              <Kpi icon={Clock} label="Completed" value={`${d.kpi.completionPct}%`} hint={`${d.kpi.completed} of ${d.kpi.assigned}`} />
+            </div>
+            <Card title="Batch G1–G4 per person, 30 customers each">
+              <Table head={["Person", "Batches", "Assigned", "Done", "Done %", "In hand", "Red leads"]}
+                rows={d.operators.map((o) => [o.operator, o.batches, o.assigned, o.done, `${o.donePct}%`, o.active, o.red])}
+                onPick={(i) => f.set({ operator: d.operators[i]?.operator ?? "all" })} />
+            </Card>
+            <Card title="Highest scoring customers in today's batches">
+              <CustomerTable rows={[...d.rows].sort((a, b) => b.score - a.score).slice(0, 30)} onOpen={openCustomer} />
+            </Card>
+          </TabsContent>
+
+          {/* OWNERSHIP ---------------------------------------------------- */}
+          <TabsContent value="ownership" className="space-y-3 pt-3">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <Kpi icon={Users} label="People holding customers" value={d.kpi.handlers} />
+              <Kpi icon={ShieldAlert} label="No owner" value={d.kpi.unownedActive} tone="red" onClick={() => f.set({ leak: "no_owner" })} />
+              <Kpi icon={Clock} label="No next action" value={d.leakCounts.find((l) => l.key === "no_next_action")?.count ?? 0} tone="amber" onClick={() => f.set({ leak: "no_next_action" })} />
+              <Kpi icon={AlertTriangle} label="WhatsApp ahead of CRM" value={d.leakCounts.find((l) => l.key === "stale_evidence")?.count ?? 0} tone="amber" onClick={() => f.set({ leak: "stale_evidence" })} />
+            </div>
+            <Card title="Who holds what right now">
+              <CustomerTable rows={d.rows.slice(0, 60)} onOpen={openCustomer} />
+            </Card>
+          </TabsContent>
+
+          {/* RISK --------------------------------------------------------- */}
+          <TabsContent value="risk" className="space-y-3 pt-3">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
+              {d.leakCounts.map((l) => (
+                <button key={l.key} onClick={() => f.set({ leak: l.key })}
+                  className={cn("rounded-lg border p-2 text-left transition hover:border-primary",
+                    f.leak === l.key && "border-primary bg-primary/5")}>
+                  <div className="text-lg font-bold">{l.count}</div>
+                  <div className="text-[11px] leading-tight text-muted-foreground">{l.label}</div>
+                </button>
+              ))}
+            </div>
+            <Card title="Escalate to Control Tower — red first">
+              <CustomerTable rows={d.rows.filter((r) => r.health === "RED" || r.overdueMins > 0).slice(0, 60)} onOpen={openCustomer} />
+            </Card>
+          </TabsContent>
+
+          {/* PEOPLE ------------------------------------------------------- */}
+          <TabsContent value="people" className="space-y-3 pt-3">
+            <Card title="Quality per person">
+              <Table head={["Person", "Batches", "Assigned", "Done %", "In hand", "Red leads", "Top outcomes"]}
+                rows={d.operators.map((o) => [
+                  o.operator, o.batches, o.assigned, `${o.donePct}%`, o.active, o.red,
+                  o.dispositions.map(([k, v]) => `${k} ${v}`).join(", ") || "—",
+                ])}
+                onPick={(i) => f.set({ operator: d.operators[i]?.operator ?? "all" })} />
+            </Card>
+          </TabsContent>
+
+          {/* HISTORY ------------------------------------------------------ */}
+          <TabsContent value="history" className="pt-3">
+            <Card title="Nothing is deleted — every change is kept">
+              <Table head={["When", "What happened", "By", "Why"]}
+                rows={(data?.audit ?? []).slice(0, 80).map((a) => [
+                  ago(a.at ? Date.parse(a.at) : 0), a.action ?? "—", a.by ?? "—", a.reason ?? "—",
+                ])} />
+            </Card>
+          </TabsContent>
+
+          {/* UPLOAD ------------------------------------------------------- */}
+          <TabsContent value="upload" className="pt-3">
+            <Ingest scope="admin" />
+          </TabsContent>
+
+          {/* CUSTOMER ----------------------------------------------------- */}
+          <TabsContent value="customer" className="pt-3">
+            {!openRow ? (
+              <Card title="Pick a customer">
+                <CustomerTable rows={d.rows.slice(0, 40)} onOpen={openCustomer} />
+              </Card>
+            ) : (
+              <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
+                <div className="space-y-3">
+                  <Card title={`${openRow.name} · ${openRow.stage}`}>
+                    <div className="space-y-2 text-xs">
+                      <ContactActions phone={openRow.phone} name={openRow.name} />
+                      <Row k="Health" v={<Badge variant="outline" className={healthTone[openRow.health]}>{openRow.health}</Badge>} />
+                      <Row k="Who owns it" v={openRow.handler} />
+                      <Row k="Journey step" v={`${openRow.journeyStep} (${openRow.journeyIndex})`} />
+                      <Row k="Conversation type" v={openRow.bucket} />
+                      <Row k="Next action" v={openRow.nextActionKind ? `${openRow.nextActionKind} · ${openRow.overdueMins > 0 ? `overdue ${openRow.overdueMins}m` : "due later"}` : "missing"} />
+                      <Row k="Last WhatsApp" v={ago(openRow.lastObsAt)} />
+                      <Row k="Last CRM action" v={ago(openRow.lastActionAt)} />
+                      <Row k="Screenshot rows" v={`${openRow.obsCount} (${openRow.reviewRows} unresolved)`} />
+                      <Row k="Last message" v={openRow.preview || "—"} />
+                      {openRow.reasons.length > 0 && (
+                        <div className="rounded-md border border-destructive/30 bg-destructive/5 p-2">
+                          <div className="font-semibold text-destructive">Why this is flagged</div>
+                          <ul className="mt-1 list-disc pl-4 text-muted-foreground">
+                            {openRow.reasons.map((r) => <li key={r}>{r}</li>)}
+                          </ul>
+                        </div>
+                      )}
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        <Button asChild size="sm" variant="outline">
+                          <Link to="/tower/leads/$id" params={{ id: openRow.id }}>Full story</Link>
+                        </Button>
+                        <Button asChild size="sm" variant="outline"><Link to="/movement-split">Movement OS</Link></Button>
+                        <Button size="sm" variant="ghost" onClick={() => setOpenRow(null)}>Pick another</Button>
+                      </div>
+                    </div>
+                  </Card>
+                  <Card title="Evidence from WhatsApp">
+                    <Table head={["Seen", "WhatsApp", "Message", "Label", "Confidence", "Decision"]}
+                      rows={d.observations.filter((o) => o.leadId === openRow.id).slice(0, 25).map((o) => [
+                        ago(o.capturedAt ? Date.parse(o.capturedAt) : 0), o.whatsappAccount ?? "—",
+                        (o.preview ?? "").slice(0, 40), o.label ?? "—", `${o.ocrConfidence ?? 0}%`, o.state ?? "—",
+                      ])} />
+                  </Card>
+                </div>
+                <div className="h-[70vh] overflow-hidden rounded-xl border bg-card">
+                  <SplitFlow panelOnly focus={{ name: openRow.name, phone: openRow.phone, key: openRow.id }} />
+                </div>
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
+      )}
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------------- pieces */
+
+function Select({ label, value, onChange, options }: { label: string; value: string; onChange: (v: string) => void; options: string[] }) {
+  return (
+    <label className="flex items-center gap-1 rounded-md border px-1.5 py-0.5">
+      <span className="text-[10px] uppercase text-muted-foreground">{label}</span>
+      <select value={value} onChange={(e) => onChange(e.target.value)} className="bg-transparent text-xs outline-none">
+        <option value="all">All</option>
+        {options.map((o) => <option key={o} value={o}>{o}</option>)}
+      </select>
+    </label>
+  );
+}
+
+function Kpi({ icon: Icon, label, value, hint, tone, onClick }: {
+  icon: typeof Camera; label: string; value: number | string; hint?: string;
+  tone?: "red" | "amber"; onClick?: () => void;
+}) {
+  return (
+    <button onClick={onClick} disabled={!onClick}
+      className={cn("rounded-xl border bg-card p-3 text-left transition", onClick && "hover:border-primary",
+        tone === "red" && "border-destructive/40", tone === "amber" && "border-amber-500/40")}>
+      <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-wide text-muted-foreground">
+        <Icon className="h-3.5 w-3.5" /> {label}
+      </div>
+      <div className={cn("mt-1 text-2xl font-bold", tone === "red" && "text-destructive", tone === "amber" && "text-amber-600")}>{value}</div>
+      {hint && <div className="text-[11px] text-muted-foreground">{hint}</div>}
+    </button>
+  );
+}
+
+function Card({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="rounded-xl border bg-card">
+      <h2 className="border-b px-3 py-2 text-sm font-semibold">{title}</h2>
+      <div className="p-3">{children}</div>
+    </section>
+  );
+}
+
+function Row({ k, v }: { k: string; v: React.ReactNode }) {
+  return (
+    <div className="flex items-start justify-between gap-2 border-b py-1 last:border-0">
+      <span className="text-muted-foreground">{k}</span>
+      <span className="text-right font-medium">{v}</span>
+    </div>
+  );
+}
+
+function Bars({ rows, onPick }: { rows: Array<[string, number, string]>; onPick?: (i: number) => void }) {
+  const max = Math.max(1, ...rows.map((r) => r[1]));
+  return (
+    <div className="space-y-1.5">
+      {rows.map(([label, value, tone], i) => (
+        <button key={label} onClick={() => onPick?.(i)} disabled={!onPick} className="w-full text-left">
+          <div className="flex items-center justify-between text-xs">
+            <span className="truncate">{label}</span>
+            <span className="font-semibold">{value}</span>
+          </div>
+          <div className="mt-0.5 h-1.5 w-full rounded-full bg-muted">
+            <div className={cn("h-1.5 rounded-full", tone)} style={{ width: `${(value / max) * 100}%` }} />
+          </div>
+        </button>
+      ))}
+      {rows.length === 0 && <p className="text-xs text-muted-foreground">Nothing in this window yet.</p>}
+    </div>
+  );
+}
+
+function Table({ head, rows, onPick }: { head: string[]; rows: Array<Array<string | number>>; onPick?: (i: number) => void }) {
+  if (rows.length === 0) return <p className="text-xs text-muted-foreground">Nothing here for these filters.</p>;
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-xs">
+        <thead>
+          <tr className="border-b text-left text-[11px] uppercase tracking-wide text-muted-foreground">
+            {head.map((h) => <th key={h} className="whitespace-nowrap px-2 py-1.5">{h}</th>)}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r, i) => (
+            <tr key={i} onClick={() => onPick?.(i)}
+              className={cn("border-b last:border-0", onPick && "cursor-pointer hover:bg-muted/50")}>
+              {r.map((c, j) => <td key={j} className="whitespace-nowrap px-2 py-1.5">{c}</td>)}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function CustomerTable({ rows, onOpen }: { rows: CustomerRow[]; onOpen: (r: CustomerRow) => void }) {
+  if (rows.length === 0) return <p className="text-xs text-muted-foreground">No customer matches these filters.</p>;
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-xs">
+        <thead>
+          <tr className="border-b text-left text-[11px] uppercase tracking-wide text-muted-foreground">
+            {["Customer", "Contact", "Health", "Owner", "Stage", "Step", "Next action", "Last WhatsApp", "Rows", ""].map((h) => (
+              <th key={h} className="whitespace-nowrap px-2 py-1.5">{h}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((r) => (
+            <tr key={r.id} className="border-b last:border-0 hover:bg-muted/50">
+              <td className="px-2 py-1.5">
+                <button className="font-medium underline-offset-2 hover:underline" onClick={() => onOpen(r)}>{r.name}</button>
+                <div className="text-[11px] text-muted-foreground">{r.phone}</div>
+              </td>
+              <td className="px-2 py-1.5"><ContactActions phone={r.phone} name={r.name} compact /></td>
+              <td className="px-2 py-1.5">
+                <Badge variant="outline" className={healthTone[r.health]}>{r.health}</Badge>
+              </td>
+              <td className="px-2 py-1.5">{r.handler}</td>
+              <td className="whitespace-nowrap px-2 py-1.5">{r.stage}</td>
+              <td className="whitespace-nowrap px-2 py-1.5">{r.journeyStep}</td>
+              <td className="px-2 py-1.5">
+                {r.nextActionKind ? (
+                  <span className={cn(r.overdueMins > 0 && "font-semibold text-destructive")}>
+                    {r.nextActionKind}{r.overdueMins > 0 ? ` · overdue ${r.overdueMins}m` : ""}
+                  </span>
+                ) : <span className="text-destructive">missing</span>}
+              </td>
+              <td className="whitespace-nowrap px-2 py-1.5">{ago(r.lastObsAt)}</td>
+              <td className="px-2 py-1.5">{r.obsCount}</td>
+              <td className="px-2 py-1.5">
+                <Button size="sm" variant="outline" className="h-6 px-2 text-[11px]" onClick={() => onOpen(r)}>Open</Button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
