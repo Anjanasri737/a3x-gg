@@ -11,6 +11,13 @@ export interface KnownFact {
   known: boolean;
 }
 
+const prettyDate = (iso?: string | null) => {
+  if (!iso) return null;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return String(iso);
+  return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+};
+
 /** Everything the CRM already knows — the operator must never ask these again. */
 export function knownFacts(lead: MovementState): KnownFact[] {
   const q = lead.q ?? {};
@@ -21,7 +28,7 @@ export function knownFacts(lead: MovementState): KnownFact[] {
   });
   return [
     fact("Name", lead.name),
-    fact("Move-in", q.moveInDate ?? lead.checkInDate),
+    fact("Move-in", prettyDate(q.moveInDate ?? lead.checkInDate)),
     fact("Area", q.location),
     fact("Office / College", q.officeOrCollege),
     fact("Budget", q.budget ? `₹${Number(q.budget).toLocaleString("en-IN")}` : null),
