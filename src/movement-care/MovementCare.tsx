@@ -71,6 +71,18 @@ export function MovementCare() {
   const [aimProperties, setAimProperties] = useState<string[]>([]);
   const [propertyQuery, setPropertyQuery] = useState("");
   const [debriefFor, setDebriefFor] = useState<{ ulid: string; code: string } | null>(null);
+  const [showManual, setShowManual] = useState(false);
+  const manualMode = useMovementCare((state) => state.manualMode);
+  const manualSize = useMovementCare((state) => state.manualSize);
+  const manualList = useMovementCare((state) => state.manualList);
+  const setManualMode = useMovementCare((state) => state.setManualMode);
+  const setManualSize = useMovementCare((state) => state.setManualSize);
+  const setManualList = useMovementCare((state) => state.setManualList);
+  const addToManual = useMovementCare((state) => state.addToManual);
+  const removeFromManual = useMovementCare((state) => state.removeFromManual);
+  const replaceInManual = useMovementCare((state) => state.replaceInManual);
+  const clearManual = useMovementCare((state) => state.clearManual);
+  const createLead = useIdentityStore((state) => state.createLead);
 
   const activeRole = commitment?.role ?? role;
   const activeGoal = commitment?.goal ?? goal;
