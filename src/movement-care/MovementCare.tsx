@@ -540,7 +540,7 @@ export function MovementCare() {
 
                 {debriefFor?.ulid === selectedState.ulid && (
                   <DebriefCard code={debriefFor.code} customer={nameOf.get(selectedState.ulid)?.name ?? selectedState.ulid}
-                    onSave={finishDebrief} onCopy={copyMessage} onClose={() => setDebriefFor(null)} />
+                    onSave={finishDebrief} onCopy={copyMessage} onPreview={previewMessage} onClose={() => setDebriefFor(null)} />
                 )}
 
                 <WorkPanel ulid={selected} meta={nameOf} />
