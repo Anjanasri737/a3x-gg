@@ -87,6 +87,33 @@ export const useBookingFlow = create<State>()(
       setMe: (me) => set({ me }),
       setRound: (round) => set({ round }),
 
+      ensureLead: ({ name, phone, lastMessage, source }) => {
+        const digits = (p: string) => p.replace(/\D/g, "").slice(-10);
+        const s = get();
+        const d = digits(phone || "");
+        const found =
+          (d ? s.leads.find((l) => digits(l.phone) === d) : undefined) ??
+          s.leads.find((l) => l.name.toLowerCase() === name.toLowerCase());
+        if (found) return found.id;
+        const lead: FlowLead = {
+          id: `bf-link-${d || name.toLowerCase().replace(/\s+/g, "-")}`,
+          name: name || phone,
+          phone,
+          waAccount: "Gharpayy Sales 01",
+          lastMessage: lastMessage || "Opened from " + (source || "another view"),
+          lastActivityAt: now(),
+          unread: 0,
+          labels: [],
+          stage: "WHERE",
+          q: {},
+          f: {},
+          lastEvidenceAt: now(),
+          events: [ev("System", `Opened in Booking Flow from ${source || "another view"}`)],
+        };
+        set({ leads: [lead, ...s.leads] });
+        return lead.id;
+      },
+
       addRow: (rowId) =>
         set((s) => {
           const row = s.rows.find((r) => r.id === rowId);
