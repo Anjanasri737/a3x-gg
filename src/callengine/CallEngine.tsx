@@ -128,7 +128,7 @@ export function CallEngine({ lead, onLogged }: Props) {
     });
     mv.log(lead.ulid, "note", `${def.label} · ${MOVEMENT_LABEL[outputs.movement]}${cap.note ? ` — ${cap.note}` : ""}`);
 
-    engine.save({
+    const record = {
       id: `call-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       ts: new Date().toISOString(),
       ulid: lead.ulid,
