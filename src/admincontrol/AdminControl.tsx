@@ -143,6 +143,12 @@ export function AdminControl() {
             <TabsTrigger value="batches">Work batches</TabsTrigger>
             <TabsTrigger value="ownership">Ownership</TabsTrigger>
             <TabsTrigger value="risk">Risk &amp; leakage</TabsTrigger>
+            <TabsTrigger value="movement">Movement</TabsTrigger>
+            <TabsTrigger value="flow">Booking Flow</TabsTrigger>
+            <TabsTrigger value="tours">Tours</TabsTrigger>
+            <TabsTrigger value="closing">Closing</TabsTrigger>
+            <TabsTrigger value="booking">Booking</TabsTrigger>
+            <TabsTrigger value="checkin">Check-in</TabsTrigger>
             <TabsTrigger value="sla">SLA clock</TabsTrigger>
             <TabsTrigger value="aging">Aging</TabsTrigger>
             <TabsTrigger value="bottlenecks">Bottlenecks</TabsTrigger>
@@ -330,6 +336,73 @@ export function AdminControl() {
               <CustomerTable rows={d.rows.filter((r) => r.health === "RED" || r.overdueMins > 0).slice(0, 60)} onOpen={openCustomer} />
             </Card>
           </TabsContent>
+
+          {/* MOVEMENT — what every operator is holding right now ------------ */}
+          <TabsContent value="movement" className="space-y-3 pt-3">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+              <Kpi icon={Users} label="Customers in movement" value={d.rows.filter((r) => r.health !== "GREY").length} />
+              <Kpi icon={ShieldAlert} label="Unread waiting" value={d.rows.filter((r) => r.unread > 0).length} tone="red" />
+              <Kpi icon={Clock} label="Overdue now" value={d.kpi.overdue} tone="red" />
+              <Kpi icon={Layers} label="Being worked" value={d.rows.filter((r) => r.workState === "active").length} />
+              <Kpi icon={Users} label="People on the floor" value={d.kpi.handlers} />
+            </div>
+            <Card title="Each person's tray — open the customer to see their Booking Flow Split">
+              <Table head={["Person", "Batches", "Assigned", "In hand", "Done %", "Red"]}
+                rows={d.operators.map((o) => [o.operator, o.batches, o.assigned, o.active, `${o.donePct}%`, o.red])}
+                onPick={(i) => f.set({ operator: d.operators[i]?.operator ?? "all" })} />
+            </Card>
+            <Card title="Worst first — exactly what the operator sees in Movement OS">
+              <CustomerTable rows={d.rows.filter((r) => r.health !== "GREY").slice(0, 60)} onOpen={openCustomer} />
+            </Card>
+          </TabsContent>
+
+          {/* BOOKING FLOW — where customers sit in the journey -------------- */}
+          <TabsContent value="flow" className="space-y-3 pt-3">
+            <Card title="Customers per journey step">
+              <Table head={["Journey step", "Customers", "Overdue", "No owner"]}
+                rows={d.journey.map((j) => {
+                  const g = d.rows.filter((r) => r.journeyStep === j.step);
+                  return [j.step, j.count, g.filter((r) => r.overdueMins > 0).length, g.filter((r) => !r.owned).length];
+                })} />
+            </Card>
+            <Card title="Customers per stage">
+              <Table head={["Stage", "Customers"]} rows={d.funnel.map((s) => [s.stage, s.count])}
+                onPick={(i) => f.set({ stage: d.funnel[i]?.stage ?? "all" })} />
+            </Card>
+            <Card title="Open any customer in the same Booking Flow Split the operator uses">
+              <CustomerTable rows={d.rows.slice(0, 60)} onOpen={openCustomer} />
+            </Card>
+          </TabsContent>
+
+          {/* TOURS / CLOSING / BOOKING / CHECK-IN --------------------------- */}
+          {([
+            ["tours", "Tours", PHASES.tours],
+            ["closing", "Closing", PHASES.closing],
+            ["booking", "Booking", PHASES.booking],
+            ["checkin", "Check-in", PHASES.checkin],
+          ] as const).map(([value, label, re]) => {
+            const rows = phase(d.rows, re);
+            return (
+              <TabsContent key={value} value={value} className="space-y-3 pt-3">
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                  <Kpi icon={Users} label={`${label} customers`} value={rows.length} />
+                  <Kpi icon={Clock} label="Overdue" value={rows.filter((r) => r.overdueMins > 0).length} tone="red" />
+                  <Kpi icon={ShieldAlert} label="Nobody owns" value={rows.filter((r) => !r.owned).length} tone="red" />
+                  <Kpi icon={AlertTriangle} label="Red" value={rows.filter((r) => r.health === "RED").length} tone="red" />
+                </div>
+                <Card title={`${label} — grouped by where they stand`}>
+                  <Table head={["Step", "Customers", "Overdue"]}
+                    rows={[...new Set(rows.map((r) => r.journeyStep))].map((step) => {
+                      const g = rows.filter((r) => r.journeyStep === step);
+                      return [step, g.length, g.filter((r) => r.overdueMins > 0).length];
+                    })} />
+                </Card>
+                <Card title={`${label} — every customer, worst first`}>
+                  <CustomerTable rows={rows.slice(0, 60)} onOpen={openCustomer} />
+                </Card>
+              </TabsContent>
+            );
+          })}
 
           {/* SLA CLOCK ---------------------------------------------------- */}
           <TabsContent value="sla" className="space-y-3 pt-3">
