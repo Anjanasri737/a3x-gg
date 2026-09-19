@@ -63,10 +63,21 @@ export function AdminControl() {
   });
 
   const d = useMemo(() => (data ? derive(data, f) : null), [data, f]);
+  const deep = useMemo(() => (data && d ? deepen(data, d) : null), [data, d]);
 
   const openCustomer = (row: CustomerRow) => {
     setOpenRow(row);
     setTab("customer");
+  };
+
+  const run = async (label: string, fn: () => Promise<unknown>) => {
+    try {
+      await fn();
+      toast.success(label);
+      await refetch();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not save that");
+    }
   };
 
   return (
