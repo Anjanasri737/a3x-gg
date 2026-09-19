@@ -192,7 +192,7 @@ export function deepen(data: ControlData, d: Derived): Deep {
 
   /* Stage bottlenecks ----------------------------------------------- */
   const stageMap = new Map<string, CustomerRow[]>();
-  rows.forEach((r) => stageMap.set(r.stage, [...(stageMap.get(r.stage) ?? []), r]));
+  rows.filter((r) => r.stage !== "BOOKED" && r.health !== "GREY").forEach((r) => stageMap.set(r.stage, [...(stageMap.get(r.stage) ?? []), r]));
   const bottlenecks = [...stageMap.entries()]
     .map(([stage, rs]) => {
       const idle = rs.map((r) => hrs(t - Math.max(r.lastActionAt, r.lastObsAt))).filter((n) => Number.isFinite(n) && n > 0);
