@@ -1,6 +1,7 @@
-// Full CRM activity logger for Final Moment: pick the category, the outcome, add a note,
-// choose the next step — one click writes the state change, the event and the next action.
+// Full CRM activity logger for Final Moment: the call conversation engine first
+// (agenda → guided capture → auto WhatsApp + follow-up + next step), quick log second.
 import { useMemo, useState } from "react";
+import { CallEngine } from "@/callengine/CallEngine";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -24,6 +25,7 @@ export function LogActivity({ lead, onLogged }: Props) {
   const [pick, setPick] = useState<FMActivity | null>(null);
   const [note, setNote] = useState("");
   const [stepKey, setStepKey] = useState<string | null>(null);
+  const [mode, setMode] = useState<"engine" | "quick">("engine");
 
   const category = useMemo(() => FM_CATEGORIES.find((c) => c.key === cat)!, [cat]);
   const steps = pick?.nextSteps ?? [];
@@ -68,12 +70,35 @@ export function LogActivity({ lead, onLogged }: Props) {
     onLogged?.();
   }
 
+  const modeSwitch = (
+    <div className="flex gap-1">
+      <button
+        onClick={() => setMode("engine")}
+        className={cn("rounded-full border px-2.5 py-1 text-[10px]", mode === "engine" ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground")}
+      >
+        Call engine
+      </button>
+      <button
+        onClick={() => setMode("quick")}
+        className={cn("rounded-full border px-2.5 py-1 text-[10px]", mode === "quick" ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground")}
+      >
+        Quick log
+      </button>
+    </div>
+  );
+
+  if (mode === "engine")
+    return (
+      <div className="space-y-2">
+        <div className="flex justify-end">{modeSwitch}</div>
+        <CallEngine lead={lead} onLogged={onLogged} />
+      </div>
+    );
+
   return (
     <div className="space-y-3 rounded-lg border p-3">
       <div className="flex items-center justify-between gap-2">
-        <div className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-          Log activity — every CRM action
-        </div>
+        {modeSwitch}
         {lead.nextAction && (
           <Badge variant="outline" className="text-[10px]">
             next: {NEXT_ACTION_LABEL[lead.nextAction.kind]} ·{" "}

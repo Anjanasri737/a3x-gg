@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CallIntelligence } from "./CallIntelligence";
 import { ContactActions } from "@/components/common/ContactActions";
 import { SplitFlow } from "@/bf100x/SplitFlow";
 import { Ingest } from "@/vision2/Ingest";
@@ -158,6 +159,7 @@ export function AdminControl() {
             <TabsTrigger value="risk">Risk &amp; leakage</TabsTrigger>
             <TabsTrigger value="movement">Movement</TabsTrigger>
             <TabsTrigger value="checkpoints">Checkpoints</TabsTrigger>
+            <TabsTrigger value="calls">Calls</TabsTrigger>
             <TabsTrigger value="flow">Booking Flow</TabsTrigger>
             <TabsTrigger value="tours">Tours</TabsTrigger>
             <TabsTrigger value="closing">Closing</TabsTrigger>
@@ -378,6 +380,10 @@ export function AdminControl() {
               if (row) openCustomer(row);
               else toast.error("This affected customer is not inside the current admin scope.");
             }} />
+          </TabsContent>
+
+          <TabsContent value="calls" className="pt-3">
+            <CallIntelligence />
           </TabsContent>
 
           {/* BOOKING FLOW — where customers sit in the journey -------------- */}
