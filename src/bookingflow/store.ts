@@ -52,7 +52,7 @@ interface State {
   // the journey
   answerStep: (leadId: string, stepKey: string, values: Record<string, string>) => void;
   setNext: (leadId: string, nextAction: string, nextActionAt: string) => void;
-  editFields: (leadId: string, values: Record<string, string>, reason: string) => void;
+  editFields: (leadId: string, values: Record<string, string>, reason: string, stepKey?: string) => void;
   claim: (leadId: string) => void;
   toggleLabel: (leadId: string, label: string) => void;
 
@@ -240,7 +240,11 @@ export const useBookingFlow = create<State>()(
                 temp: l.tempReason ? l.temp : autoTemp({ ...l, f }),
                 events: [
                   ...l.events,
-                  ev(s.me, step.title, opt ? opt.label : Object.values(values).filter(Boolean).join(" · ")),
+                  {
+                    ...ev(s.me, step.title, opt ? opt.label : Object.values(values).filter(Boolean).join(" · ")),
+                    stepKey,
+                    changes: Object.entries(values).map(([field, to]) => ({ field, from: l.f?.[field] ?? "", to })),
+                  },
                   ...(escalate ? [ev(s.me, "Sent to Control Tower", values["ownershipNote"] || opt?.label)] : []),
                   ...(close ? [ev(s.me, "Journey closed", opt?.label)] : []),
                 ],
@@ -264,21 +268,25 @@ export const useBookingFlow = create<State>()(
           ),
         })),
 
-      editFields: (leadId, values, reason) =>
+      editFields: (leadId, values, reason, stepKey) =>
         set((s) => ({
-          leads: s.leads.map((l) =>
-            l.id === leadId
-              ? {
-                  ...l,
-                  f: { ...l.f, ...values },
-                  lastActionAt: now(),
-                  events: [
-                    ...l.events,
-                    ev(s.me, "Details edited", `${Object.entries(values).map(([k, v]) => `${k}: ${v}`).join(" · ")}${reason ? ` — ${reason}` : ""}`),
-                  ],
-                }
-              : l,
-          ),
+          leads: s.leads.map((l) => {
+            if (l.id !== leadId) return l;
+            const changes = Object.entries(values).map(([field, to]) => ({ field, from: l.f?.[field] ?? "", to }));
+            return {
+              ...l,
+              f: { ...l.f, ...values },
+              lastActionAt: now(),
+              events: [
+                ...l.events,
+                {
+                  ...ev(s.me, "Answer edited", `${changes.map((c) => `${c.field}: ${c.from || "empty"} → ${c.to}`).join(" · ")}${reason ? ` — ${reason}` : ""}`),
+                  stepKey,
+                  changes,
+                },
+              ],
+            };
+          }),
         })),
 
       claim: (leadId) =>
