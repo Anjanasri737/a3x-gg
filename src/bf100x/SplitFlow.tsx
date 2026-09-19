@@ -475,7 +475,7 @@ export function SplitFlow({ embedded = false, focus, panelOnly = false }: { embe
 
 
       {/* Drag this edge to set the panel width, exactly like a sheet column */}
-      {widthPct < 100 && (
+      {!panelOnly && widthPct < 100 && (
         <>
           <div
             role="separator"
