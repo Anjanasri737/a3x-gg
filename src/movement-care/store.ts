@@ -8,6 +8,7 @@ export interface DailyCommitment {
   goal: CareGoal;
   target: number;
   supportNeeded: string;
+  targetPropertyIds: string[];
   committedAt: string;
 }
 
@@ -29,6 +30,7 @@ interface MovementCareStore {
   commitment: DailyCommitment | null;
   reports: RoundReport[];
   commit: (input: Omit<DailyCommitment, "date" | "committedAt">) => DailyCommitment;
+  setTargetProperties: (ids: string[]) => void;
   report: (input: Omit<RoundReport, "id" | "date" | "reportedAt">) => RoundReport;
   clearCommitment: () => void;
 }
@@ -59,9 +61,11 @@ export const useMovementCare = create<MovementCareStore>()(
         set((state) => ({ reports: [report, ...state.reports].slice(0, 90) }));
         return report;
       },
+      setTargetProperties: (ids) =>
+        set((state) => ({ commitment: state.commitment ? { ...state.commitment, targetPropertyIds: ids } : null })),
       clearCommitment: () => set({ commitment: null }),
     }),
-    { name: "gharpayy.movement-care.v1" },
+    { name: "gharpayy.movement-care.v2" },
   ),
 );
 

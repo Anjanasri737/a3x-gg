@@ -48,7 +48,7 @@ export function propertyProgress(ids: string[], states: MovementState[]): Proper
 
 /** Best-fit ordering for one customer: aimed properties first, then area / budget fit. */
 export function rankedForCustomer(state: MovementState | undefined, aimed: string[]): PropertyOption[] {
-  const area = (state?.q?.preferredArea ?? state?.q?.officeOrCollege ?? "").toString().toLowerCase();
+  const area = (state?.q?.currentLocation ?? state?.q?.officeOrCollege ?? "").toString().toLowerCase();
   const budget = Number(state?.q?.budget ?? 0);
   return [...propertyOptions].sort((a, b) => score(b) - score(a));
 
