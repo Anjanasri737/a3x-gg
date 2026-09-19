@@ -240,9 +240,7 @@ export function SplitFlow() {
             )}
             <CloseCommitButton leadId={lead.id} leadName={lead.name} leadPhone={lead.phone} actorName={me} size="xs" />
             <Button size="sm" variant="outline" className="h-7 px-2 text-[10px]" onClick={() => { escalate(lead.id, "Operator asked for help"); toast.success("Control Tower notified"); }}>Tower</Button>
-            <Button size="sm" variant={pane === "CAPTURED" ? "default" : "ghost"} className="ml-auto h-7 px-2 text-[10px]" onClick={() => setPane(pane === "WORK" ? "CAPTURED" : "WORK")}>
-              {pane === "WORK" ? "Everything captured" : "Back to questions"}
-            </Button>
+            <span className="ml-auto"><ContactActions phone={lead.phone} name={lead.name} compact /></span>
           </div>
           <div className="flex items-center gap-1">
             <select className="h-7 min-w-0 flex-1 rounded-md border bg-background px-1 text-[10px]" value={nextAction} onChange={(e) => setNextAction(e.target.value)}>
