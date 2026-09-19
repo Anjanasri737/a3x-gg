@@ -215,12 +215,20 @@ export function MovementCare() {
     toast.success(`${code} done — write the wrap-up and send it on WhatsApp`);
   };
 
-  const finishDebrief = (input: { done: string; wentWell: string; wentBadly: string; problems: string }) => {
-    if (!commitment || !selectedState || !debriefFor) return;
-    const message = debriefMessage({
+  const startEmptyDraft = () => {
+    startRollingDraft(manualSize);
+    setSelected(null);
+    setShowManual(true);
+    toast.success(`Draft clock started — ${manualSize} empty rows, fill them one by one while you work`);
+  };
+
+  /** The exact WhatsApp message, built live as the person types — nothing is saved. */
+  const previewMessage = (input: { done: string; wentWell: string; wentBadly: string; problems: string }) => {
+    if (!commitment || !selectedState) return "";
+    return debriefMessage({
       ...input,
       customerName: nameOf.get(selectedState.ulid)?.name ?? selectedState.ulid,
-      draftCode: debriefFor.code,
+      draftCode: debriefFor?.code ?? selectedState.crmDraft ?? "D1",
       goal: activeGoal,
       operatorName: mv.actor.name,
       resultNow: actual,
@@ -229,6 +237,11 @@ export function MovementCare() {
       nextStep: selectedState.nextAction ? NEXT_ACTION_LABEL[selectedState.nextAction.kind] : undefined,
       dueAt: selectedState.nextAction?.dueAt,
     });
+  };
+
+  const finishDebrief = (input: { done: string; wentWell: string; wentBadly: string; problems: string }) => {
+    if (!commitment || !selectedState || !debriefFor) return;
+    const message = previewMessage(input);
     const saved = saveDebrief({
       ulid: selectedState.ulid,
       customerName: nameOf.get(selectedState.ulid)?.name ?? selectedState.ulid,
