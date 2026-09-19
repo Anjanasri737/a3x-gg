@@ -378,7 +378,7 @@ export function MovementCare() {
             <Stat label="Connected" value={calls.connected} />
             <Stat label="Connect %" value={calls.rate} />
             <Stat label="Drafted" value={total.drafted} />
-            <Stat label="Good leads" value={total.goodLeads} />
+            <Stat label="Definitely close" value={total.goodLeads} />
             <Stat label="Tours set" value={total.toursScheduled} />
             <Stat label="Tours done" value={total.toursDone} />
             <Stat label="Bookings" value={total.booked} />
