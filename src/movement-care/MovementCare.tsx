@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle, CheckCircle2, ClipboardCopy, Clock3, Flag, Goal,
-  Building2, MessageCircle, Phone, PhoneCall, PhoneOff, ShieldCheck,
+  Building2, Hand, MessageCircle, Phone, PhoneCall, PhoneOff, ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
