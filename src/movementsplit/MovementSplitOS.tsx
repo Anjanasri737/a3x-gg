@@ -7,16 +7,26 @@ import { seedMovement } from "@/movement/seed";
 import {
   ActiveList, Dashboards, DraftingPanel, JourneyTimeline, UnmatchedQueue, WorkPanel,
 } from "@/movement/components";
-import { SplitFlow } from "@/bf100x/SplitFlow";
+import { SplitFlow, type SplitFocus } from "@/bf100x/SplitFlow";
 
 export function MovementSplitOS() {
   useEffect(() => { seedMovement(); }, []);
   const { list, nameOf, me } = useMovementSync();
   const [selected, setSelected] = useState<string | null>(null);
+  const [tab, setTab] = useState("split");
+  const [focus, setFocus] = useState<SplitFocus | undefined>();
 
   useEffect(() => {
     if (!selected && list.length) setSelected(list[0].ulid);
   }, [list, selected]);
+
+  // Click a customer anywhere in Movement OS → they open in the booking flow.
+  function openInBookingFlow(ulid: string) {
+    setSelected(ulid);
+    const m = nameOf.get(ulid);
+    setFocus({ name: m?.name, phone: m?.phone, key: `${ulid}-${Date.now()}` });
+    setTab("split");
+  }
 
   return (
     <div className="space-y-3">
@@ -32,7 +42,7 @@ export function MovementSplitOS() {
         </div>
       </div>
 
-      <Tabs defaultValue="split">
+      <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
           <TabsTrigger value="split">Booking flow (split)</TabsTrigger>
           <TabsTrigger value="work">Work</TabsTrigger>
@@ -44,13 +54,13 @@ export function MovementSplitOS() {
 
         <TabsContent value="split" className="mt-3">
           <div className="overflow-hidden rounded-lg border">
-            <SplitFlow embedded />
+            <SplitFlow embedded focus={focus} />
           </div>
         </TabsContent>
 
         <TabsContent value="work" className="mt-3">
           <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-3">
-            <ActiveList list={list} meta={nameOf} selected={selected} onSelect={setSelected} meId={me.id} />
+            <ActiveList list={list} meta={nameOf} selected={selected} onSelect={openInBookingFlow} meId={me.id} />
             <div className="space-y-3">
               <WorkPanel ulid={selected} meta={nameOf} />
               <JourneyTimeline ulid={selected} />

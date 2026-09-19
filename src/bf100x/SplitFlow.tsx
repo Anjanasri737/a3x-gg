@@ -62,8 +62,13 @@ const MENU: { to: string; label: string; group: string }[] = [
   { group: "Everyday CRM", to: "/admin", label: "Admin" },
 ];
 
-export function SplitFlow({ embedded = false }: { embedded?: boolean }) {
-  const { leads, me, mode, setMode, claim, setNext, logActivity, escalate, batches, buildBatch, closeBatch, reopenBatch } = useBookingFlow();
+/** A customer picked somewhere else (e.g. Movement OS) that this panel should open. */
+export interface SplitFocus { name?: string; phone?: string; key?: string }
+
+const tenDigits = (p?: string) => (p ?? "").replace(/\D/g, "").slice(-10);
+
+export function SplitFlow({ embedded = false, focus }: { embedded?: boolean; focus?: SplitFocus }) {
+  const { leads, me, mode, setMode, claim, setNext, logActivity, escalate, batches, buildBatch, closeBatch, reopenBatch, ensureLead } = useBookingFlow();
   const [widthPct, setWidthPct] = useState(40);
   const [dragging, setDragging] = useState(false);
   const [closeNote, setCloseNote] = useState("");
@@ -113,6 +118,20 @@ export function SplitFlow({ embedded = false }: { embedded?: boolean }) {
   useEffect(() => {
     if (lead) setScreenId(currentScreen(lead.f ?? {}).id);
   }, [lead?.id]);
+
+  // A customer clicked in another view (Movement OS) opens right here.
+  useEffect(() => {
+    if (!focus || leads.length === 0) return;
+    const d = tenDigits(focus.phone);
+    const match =
+      (d ? leads.find((l) => tenDigits(l.phone) === d) : undefined) ??
+      (focus.name ? leads.find((l) => l.name.toLowerCase() === focus.name!.toLowerCase()) : undefined);
+    const id = match?.id ?? ensureLead({ name: focus.name || focus.phone || "Unknown", phone: focus.phone || "", source: "Movement OS" });
+    setLeadId(id);
+    setPane("WORK");
+    if (match) setScreenId(currentScreen(match.f ?? {}).id);
+    if (!match) toast.success(`${focus.name || focus.phone} added to the booking flow`);
+  }, [focus?.key, focus?.phone, focus?.name, leads.length]);
 
   const screen = SCREENS.find((s) => s.id === screenId) ?? (lead ? currentScreen(lead.f ?? {}) : SCREENS[0]!);
   const idx = screenIndex(screen.id);
