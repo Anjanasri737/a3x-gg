@@ -232,7 +232,10 @@ export function LeadControlPanel() {
           <LeadCapturedStrip lead={lead} />
 
           <div className="flex flex-wrap items-center gap-2 pt-1">
-            <Button size="sm" className="h-8 flex-1 min-w-[160px]" onClick={() => setLogOpen(true)}>
+            <Button size="sm" className="h-8 flex-1 min-w-[140px]" onClick={() => setCallEngineOpen(true)}>
+              <Phone className="mr-1.5 h-3.5 w-3.5" /> Log call
+            </Button>
+            <Button size="sm" variant="secondary" className="h-8 flex-1 min-w-[140px]" onClick={() => setLogOpen(true)}>
               <ActivityIcon className="mr-1.5 h-3.5 w-3.5" /> + Log activity
             </Button>
             <Button size="sm" variant="outline" className="h-8" asChild>
@@ -813,6 +816,23 @@ export function LeadControlPanel() {
           onOpenChange={(o) => { setLogOpen(o); if (!o) setLogCallNo(undefined); }}
           onLogged={() => setTab("followups")}
         />
+        <Dialog open={callEngineOpen} onOpenChange={setCallEngineOpen}>
+          <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="font-display">Log call — {lead.name}</DialogTitle>
+              <DialogDescription className="text-xs">
+                The call engine picks the purpose, captures what happened, and writes the WhatsApp message, follow-up and next step for you.
+              </DialogDescription>
+            </DialogHeader>
+            {movementLead ? (
+              <CallEngine lead={movementLead} onLogged={() => setCallEngineOpen(false)} />
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                This customer is not linked to Movement yet, so the call engine cannot run for them here. No duplicate was created.
+              </p>
+            )}
+          </DialogContent>
+        </Dialog>
       </SheetContent>
     </Sheet>
   );
