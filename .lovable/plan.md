@@ -16,6 +16,14 @@ Today the admin Vision page is just the small Vision Hub (work pool, uploads, lo
 
 **6. Risk & leakage** — RED / AMBER / GREEN / GREY as global filters, plus the leakage queue grouped by where the money leaks: capture, identity, ownership, batch, movement, tour, closing, booking, payment, room lock, check-in. Every row shows the customer, why it is red, who is accountable, age, next action, deadline and a Fix Now button that opens the live workspace.
 
+**7. Movement** — the same priority model operators use (customer waiting, revenue now, tour now, follow-up due, high intent, fresh, recovery) as clickable counters, plus each operator's active tray: why each customer is in it, how long, whether it was touched, its next action and deadline. Admin can remove, replace, reprioritise, reassign or escalate. Includes the handoff monitor: from team, to team, sent at, allowed time, acknowledged or red.
+
+**8. Booking Flow** — one row per journey step showing how many customers sit there, how many are overdue and average time, so clogs are obvious. Plus process-integrity violations: a tour scheduled with no budget, a quote sent with no tour outcome, a booking with no room, money taken before approval, a room held with no payment, a check-in marked without confirmation. And guided-versus-expert performance, measured on handling time, missing fields and conversion rather than seniority.
+
+## Who owns what
+
+Draft Vision answers what exists on WhatsApp. Movement OS answers who deserves attention now and who owns it. Booking Flow Split executes the exact next step. Admin only checks whether the company is executing correctly — it never duplicates operator controls.
+
 ## Drill-down
 
 From anywhere, clicking a customer opens an admin split view: left side the full story (every screenshot appearance, WhatsApp account, label and unread changes, owner and claim history, batch history, calls, qualification, tour, quote, payment, booking, check-in); right side the same Booking Flow work panel the operator uses, read-through with reassign and escalate. Also **Open Movement** and **Open Booking Flow** links.
