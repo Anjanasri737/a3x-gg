@@ -192,7 +192,68 @@ function connectedMessage(lead: MovementState, agenda: AgendaKey, c: CallCapture
   }
 }
 
+/**
+ * Everything discussed on the call, written out for the customer so the whole
+ * conversation also lives in the WhatsApp chat — nothing stays only in the CRM.
+ */
+export function callRecap(lead: MovementState, agenda: AgendaKey, c: CallCapture): string {
+  const f = facts(lead, c);
+  const q = lead.q ?? {};
+  const line = (label: string, value?: string | null) => (value ? `• ${label}: ${value}` : "");
+
+  const confirmed = [
+    line("Move-in", dateText(c.moveIn ?? q.moveInDate ?? lead.checkInDate)),
+    line("Area", c.area ?? q.location),
+    line("Office / College", c.officeOrCollege ?? q.officeOrCollege),
+    line("Budget", money(c.budget ?? q.budget)),
+    line("Room", c.roomType ?? q.roomType),
+    line("For", c.forWhom ?? (q.forSelf === true ? "Self" : q.forSelf === false ? "Someone else" : null)),
+    line("What matters most", c.matters?.length ? c.matters.join(", ") : null),
+  ].filter(Boolean);
+
+  const discussed = [
+    line("Property discussed", c.propertyName ?? c.price?.propertyName),
+    line("Your view on it", c.reaction ? REACTION_TEXT[c.reaction] ?? c.reaction : null),
+    line("What you wanted changed", c.dislikeReason),
+    line("Rent quoted", money(c.price?.quoted)),
+    line("Deposit", money(c.price?.deposit)),
+    line("Maintenance", money(c.price?.maintenance)),
+    line("Valid till", c.price?.validity),
+    line("Visit", c.tourAt ? timeText(c.tourAt) : null),
+    line("Points covered", c.activities.length ? c.activities.join(", ") : null),
+    line("Also noted", c.note),
+  ].filter(Boolean);
+
+  const promises = c.promises.length ? c.promises.map((p) => `• ${p}`) : [];
+
+  return [
+    "————————",
+    `📝 Summary of our call (${agenda.replace(/-/g, " ")})`,
+    confirmed.length ? "\nWhat we confirmed:" : "",
+    ...confirmed,
+    discussed.length ? "\nWhat we discussed:" : "",
+    ...discussed,
+    promises.length ? "\nWhat I'll do next:" : "",
+    ...promises,
+    "\nIf anything above is wrong, just correct me here and I'll update it.",
+  ].filter(Boolean).join("\n");
+}
+
+const REACTION_TEXT: Record<string, string> = {
+  loved: "You liked it",
+  "liked-comparing": "You liked it and are comparing a few",
+  "needs-different": "You want a different property",
+  "too-expensive": "Price is above what you wanted",
+  "location-issue": "Location does not suit you",
+  "room-issue": "Room was not right",
+  "food-concern": "Concern about food",
+  "family-approval": "Needs a family decision",
+  "just-exploring": "Still exploring",
+  "not-interested": "Not looking at this one",
+};
+
 function followUpFor(
+
   lead: MovementState,
   agenda: AgendaKey,
   c: CallCapture,
