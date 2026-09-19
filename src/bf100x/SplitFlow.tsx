@@ -112,6 +112,31 @@ export function SplitFlow() {
           <div className="flex shrink-0 gap-1">
             <Button size="sm" variant={mode === "GUIDED" ? "default" : "outline"} className="h-6 px-2 text-[10px]" onClick={() => setMode("GUIDED")}>Understand</Button>
             <Button size="sm" variant={mode === "EXPERT" ? "default" : "outline"} className="h-6 px-2 text-[10px]" onClick={() => setMode("EXPERT")}>Expert</Button>
+            <div className="relative">
+              <Button size="sm" variant="outline" className="h-6 px-2 text-[10px]" onClick={() => setMenuOpen((v) => !v)} aria-expanded={menuOpen} aria-label="Open app menu">
+                <Menu className="h-3 w-3" />
+              </Button>
+              {menuOpen && (
+                <>
+                  <button type="button" aria-label="Close menu" className="fixed inset-0 z-40 cursor-default" onClick={() => setMenuOpen(false)} />
+                  <div className="absolute right-0 z-50 mt-1 max-h-[70vh] w-56 overflow-y-auto rounded-md border bg-popover p-1 shadow-md">
+                    {MENU.filter((m, i) => i === 0 || m.group !== MENU[i - 1]!.group).map((m) => null)}
+                    {(() => {
+                      let lastGroup = "";
+                      return MENU.map((m) => (
+                        <div key={m.to}>
+                          {m.group !== lastGroup && ((lastGroup = m.group), (<p className="px-2 pb-0.5 pt-1.5 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">{m.group}</p>))}
+                          <Link to={m.to} onClick={() => setMenuOpen(false)}
+                            className="block rounded-sm px-2 py-1 text-[11px] hover:bg-accent hover:text-accent-foreground">
+                            {m.label}
+                          </Link>
+                        </div>
+                      ));
+                    })()}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
         {mounted && (
