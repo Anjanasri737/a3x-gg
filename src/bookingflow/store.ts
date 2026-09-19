@@ -54,6 +54,7 @@ interface State {
   setNext: (leadId: string, nextAction: string, nextActionAt: string) => void;
   editFields: (leadId: string, values: Record<string, string>, reason: string) => void;
   claim: (leadId: string) => void;
+  toggleLabel: (leadId: string, label: string) => void;
 
   // expert powers
   setTemp: (leadId: string, temp: Temp, reason: string) => void;
@@ -287,6 +288,19 @@ export const useBookingFlow = create<State>()(
               ? { ...l, owner: s.me, handler: s.me, ownedAt: now(), events: [...l.events, ev(s.me, "Took ownership")] }
               : l,
           ),
+        })),
+
+      toggleLabel: (leadId, label) =>
+        set((s) => ({
+          leads: s.leads.map((l) => {
+            if (l.id !== leadId) return l;
+            const on = l.labels.includes(label);
+            return {
+              ...l,
+              labels: on ? l.labels.filter((x) => x !== label) : [...l.labels, label],
+              events: [...l.events, ev(s.me, on ? `Label removed — ${label}` : `Label added — ${label}`)],
+            };
+          }),
         })),
 
       setTemp: (leadId, temp, reason) =>
