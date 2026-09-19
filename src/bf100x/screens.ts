@@ -12,6 +12,8 @@ export interface Screen {
 }
 
 const MAX_PER_SCREEN = 5;
+// No screen may hold a single lonely question — that wastes a whole click.
+const MIN_PER_SCREEN = 3;
 
 export const SCREENS: Screen[] = (() => {
   const out: Screen[] = [];
@@ -23,6 +25,29 @@ export const SCREENS: Screen[] = (() => {
     }
     out.push({ id: `${step.group}-${out.length}`, title: step.group, group: step.group, steps: [step] });
   });
+
+  // Thin screens get merged into their neighbour so every screen asks a real block
+  // of questions instead of one.
+  for (let i = 0; i < out.length; i += 1) {
+    const s = out[i]!;
+    if (s.steps.length >= MIN_PER_SCREEN) continue;
+    const next = out[i + 1];
+    if (next && s.steps.length + next.steps.length <= MAX_PER_SCREEN) {
+      next.steps = [...s.steps, ...next.steps];
+      if (next.group !== s.group) next.group = `${s.group} → ${next.group}`;
+      out.splice(i, 1);
+      i -= 1;
+      continue;
+    }
+    const prev = out[i - 1];
+    if (prev && prev.steps.length + s.steps.length <= MAX_PER_SCREEN) {
+      prev.steps = [...prev.steps, ...s.steps];
+      if (prev.group !== s.group) prev.group = `${prev.group} → ${s.group}`;
+      out.splice(i, 1);
+      i -= 1;
+    }
+  }
+  out.forEach((s) => { s.title = s.group; });
   // name repeated groups ("Booking 1 of 2") so the rail stays readable
   const counts = new Map<string, number>();
   out.forEach((s) => counts.set(s.group, (counts.get(s.group) ?? 0) + 1));
