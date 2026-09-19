@@ -22,7 +22,7 @@ import { ClosingDesk } from "./ClosingDesk";
 import { ContactActions } from "@/components/common/ContactActions";
 import { CloseCommitButton } from "@/components/commitments/CloseCommitButton";
 
-type Pane = "WORK" | "CAPTURED" | "MATCH" | "LABELS" | "CLOSING" | "QUEUE";
+type Pane = "WORK" | "CAPTURED" | "MATCH" | "LABELS" | "CLOSING" | "QUEUE" | "DRAFTS";
 
 const PANES: { id: Pane; label: string }[] = [
   { id: "WORK", label: "Questions" },
@@ -30,8 +30,12 @@ const PANES: { id: Pane; label: string }[] = [
   { id: "MATCH", label: "Property match" },
   { id: "LABELS", label: "Labels" },
   { id: "CLOSING", label: "Closing" },
+  { id: "DRAFTS", label: "Drafts D1–D4" },
   { id: "QUEUE", label: "All customers" },
 ];
+
+const WIDTH_KEY = "gharpayy-split-width-pct";
+const WIDTH_PRESETS = [40, 50, 60, 100];
 
 const startOfDay = () => new Date(new Date().toDateString()).getTime();
 
