@@ -98,6 +98,7 @@ export function Board({ onOpenLead }: { onOpenLead: (id: string) => void }) {
             <div className="flex flex-wrap items-center gap-2">
               <span className="font-medium">{l.name}</span>
               <span className="text-xs text-muted-foreground">{l.phone}</span>
+              <ContactActions compact phone={l.phone} name={l.name} />
               <Badge variant="outline" className="text-[10px]">{h.stepNo}. {h.complete ? "Checked in" : h.step?.title}</Badge>
               <Badge variant="secondary" className="text-[10px]">{l.owner ?? "no owner"}</Badge>
               {h.sla === "LATE" && <Badge variant="destructive" className="text-[10px]">late {fmtMins(h.minutesLate)}</Badge>}

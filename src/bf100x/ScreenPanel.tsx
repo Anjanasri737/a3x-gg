@@ -277,7 +277,8 @@ export function ScreenPanel({
             <Button size="sm" variant="ghost" onClick={() => setDraft({})} disabled={Object.keys(draft).length === 0}>Clear my edits</Button>
             {nav}
             <span className="text-[11px] text-muted-foreground">
-              Options save the moment you tap them. Typed answers save on Enter or when you click away — the button saves everything at once.
+              Keyboard: <b>Enter</b> saves and jumps to the next box, <b>Enter</b> on the last box moves to the next screen.
+              <b> Ctrl/⌘+Enter</b> jumps ahead any time, <b>←</b> and <b>→</b> walk the screens.
             </span>
           </div>
         </div>
