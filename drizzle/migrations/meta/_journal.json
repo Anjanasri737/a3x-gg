@@ -15,6 +15,13 @@
       "when": 1789811284029,
       "tag": "0001_public_read_draft_batches_audit",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789825394129,
+      "tag": "0002_create_call_records",
+      "breakpoints": true
     }
   ]
 }

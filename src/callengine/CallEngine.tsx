@@ -15,10 +15,11 @@ import { buildOutputs, wasteFlags } from "./compose";
 import { knownFacts, noAnswerPlan, suggestAgenda } from "./infer";
 import { callMission } from "./mission";
 import { useCallEngine } from "./store";
+import { pushCallRecord } from "./sync";
 import {
   ACTIVITIES, AGENDAS, DISLIKE_REASONS, MOVEMENT_LABEL, OUTCOMES, PRICE_REACTIONS, PROMISES, REACTIONS,
   TOUR_REFUSALS, agendaDef, emptyCapture,
-  type AgendaKey, type CallCapture, type CallOutputs, type OutcomeKind,
+  type AgendaKey, type CallCapture, type CallOutputs, type CallRecord, type OutcomeKind,
 } from "./types";
 
 const Chip = ({ on, children, onClick }: { on?: boolean; children: React.ReactNode; onClick: () => void }) => (
@@ -128,7 +129,7 @@ export function CallEngine({ lead, onLogged }: Props) {
     });
     mv.log(lead.ulid, "note", `${def.label} · ${MOVEMENT_LABEL[outputs.movement]}${cap.note ? ` — ${cap.note}` : ""}`);
 
-    engine.save({
+    const record = {
       id: `call-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       ts: new Date().toISOString(),
       ulid: lead.ulid,
@@ -149,6 +150,11 @@ export function CallEngine({ lead, onLogged }: Props) {
       nextStep: outputs.nextStep,
       stageAfter: lead.stage,
       waste,
+    } as CallRecord;
+
+    engine.save(record);
+    void pushCallRecord(record).then((res) => {
+      if (!res.ok) toast.warning(`Saved on this device — not synced yet: ${res.error}`);
     });
 
     toast.success(`${def.label} logged · ${MOVEMENT_LABEL[outputs.movement]} · next: ${outputs.nextStep.label}`);
@@ -167,7 +173,7 @@ export function CallEngine({ lead, onLogged }: Props) {
   return (
     <div className="space-y-3 rounded-lg border p-3">
       <div className="flex items-center justify-between gap-2">
-        <Title>Call conversation engine</Title>
+        <Title>M-POWER CALL · conversation engine</Title>
         {lead.nextAction && (
           <Badge variant="outline" className="text-[10px]">
             next: {NEXT_ACTION_LABEL[lead.nextAction.kind]} ·{" "}

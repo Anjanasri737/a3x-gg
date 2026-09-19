@@ -136,6 +136,81 @@ export type Database = {
         }
         Relationships: []
       }
+      call_records: {
+        Row: {
+          agenda: string
+          agenda_source: string | null
+          called_at: string
+          canonical_id: string | null
+          capture: Json
+          client_id: string | null
+          created_at: string
+          customer_name: string | null
+          duration_sec: number | null
+          follow_up: Json | null
+          follow_up_state: string | null
+          id: string
+          lead_ulid: string | null
+          message_now: string | null
+          message_sent: boolean
+          movement: string | null
+          next_step: Json | null
+          operator_id: string | null
+          operator_name: string | null
+          outcome: string
+          stage_after: string | null
+          waste: Json
+        }
+        Insert: {
+          agenda: string
+          agenda_source?: string | null
+          called_at?: string
+          canonical_id?: string | null
+          capture?: Json
+          client_id?: string | null
+          created_at?: string
+          customer_name?: string | null
+          duration_sec?: number | null
+          follow_up?: Json | null
+          follow_up_state?: string | null
+          id?: string
+          lead_ulid?: string | null
+          message_now?: string | null
+          message_sent?: boolean
+          movement?: string | null
+          next_step?: Json | null
+          operator_id?: string | null
+          operator_name?: string | null
+          outcome: string
+          stage_after?: string | null
+          waste?: Json
+        }
+        Update: {
+          agenda?: string
+          agenda_source?: string | null
+          called_at?: string
+          canonical_id?: string | null
+          capture?: Json
+          client_id?: string | null
+          created_at?: string
+          customer_name?: string | null
+          duration_sec?: number | null
+          follow_up?: Json | null
+          follow_up_state?: string | null
+          id?: string
+          lead_ulid?: string | null
+          message_now?: string | null
+          message_sent?: boolean
+          movement?: string | null
+          next_step?: Json | null
+          operator_id?: string | null
+          operator_name?: string | null
+          outcome?: string
+          stage_after?: string | null
+          waste?: Json
+        }
+        Relationships: []
+      }
       conversation_compilations: {
         Row: {
           action_due_at: string | null

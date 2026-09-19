@@ -43,7 +43,7 @@ export function LeadActionsMenu({ lead, size = 'sm' }: Props) {
           <Sparkles className="h-3.5 w-3.5 mr-2" /> Open control panel
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => { logCall(lead.id); toast.success(`Call logged for ${lead.name}`); }}>
-          <Phone className="h-3.5 w-3.5 mr-2" /> Log call
+          <Phone className="h-3.5 w-3.5 mr-2" /> M-Power Call
         </DropdownMenuItem>
         <DropdownMenuItem onClick={() => { sendMessage(lead.id, '👋 Quick check-in from Gharpayy'); toast.success('Message sent'); }}>
           <MessageCircle className="h-3.5 w-3.5 mr-2" /> Send check-in
