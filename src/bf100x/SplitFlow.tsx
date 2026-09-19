@@ -126,13 +126,11 @@ export function SplitFlow({ embedded = false, focus }: { embedded?: boolean; foc
     const match =
       (d ? leads.find((l) => tenDigits(l.phone) === d) : undefined) ??
       (focus.name ? leads.find((l) => l.name.toLowerCase() === focus.name!.toLowerCase()) : undefined);
-    if (match) {
-      setLeadId(match.id);
-      setPane("WORK");
-      setScreenId(currentScreen(match.f ?? {}).id);
-    } else {
-      toast.info(`${focus.name || focus.phone || "This customer"} is not in the booking flow yet`);
-    }
+    const id = match?.id ?? ensureLead({ name: focus.name || focus.phone || "Unknown", phone: focus.phone || "", source: "Movement OS" });
+    setLeadId(id);
+    setPane("WORK");
+    if (match) setScreenId(currentScreen(match.f ?? {}).id);
+    if (!match) toast.success(`${focus.name || focus.phone} added to the booking flow`);
   }, [focus?.key, focus?.phone, focus?.name, leads.length]);
 
   const screen = SCREENS.find((s) => s.id === screenId) ?? (lead ? currentScreen(lead.f ?? {}) : SCREENS[0]!);
