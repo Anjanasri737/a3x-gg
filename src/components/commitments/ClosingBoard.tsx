@@ -1,5 +1,10 @@
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
+import { Link } from "@tanstack/react-router";
+import { useBookingFlow } from "@/bookingflow/store";
+import { useHydrated } from "@/bookingflow/useHydrated";
+import { health } from "@/bookingflow/engine";
+import { CloseCommitButton } from "@/components/commitments/CloseCommitButton";
 import { ContactActions } from "@/components/common/ContactActions";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -418,6 +423,60 @@ function Stat({ label, value, icon, tone }: { label: string; value: number | str
         )}
       >
         {value}
+      </div>
+    </Card>
+  );
+}
+
+/** An empty bucket is not an empty screen: show who can be promised right now,
+ * with their number, the WhatsApp chat and the promise button on the row. */
+function ClosingCandidates() {
+  const hydrated = useHydrated();
+  const { leads, me } = useBookingFlow();
+
+  const rows = useMemo(() => {
+    if (!hydrated) return [];
+    return leads
+      .map((l) => ({ l, f: l.f ?? {}, h: health(l) }))
+      .filter(({ h, f }) => !h.closed && (Boolean(f["tourFeedback"]) || Boolean(f["bookingAmount"]) || Boolean(f["quotation"]) || h.stepNo >= 14))
+      .sort((a, b) => b.h.stepNo - a.h.stepNo)
+      .slice(0, 12);
+  }, [leads, hydrated]);
+
+  return (
+    <Card className="p-3">
+      <div className="flex flex-wrap items-baseline gap-2">
+        <p className="text-sm font-semibold">Nobody has promised yet — here is who to promise</p>
+        <span className="text-[11px] text-muted-foreground">
+          These customers are past the tour or already quoted. Promise a close window on the row.
+        </span>
+      </div>
+
+      {!hydrated && <p className="mt-3 text-xs text-muted-foreground">Loading your customers…</p>}
+      {hydrated && rows.length === 0 && (
+        <p className="mt-3 text-xs text-muted-foreground">
+          No customer is past the tour yet. Move tours forward on Booking Flow and they appear here.
+        </p>
+      )}
+
+      <div className="mt-2 space-y-1.5">
+        {rows.map(({ l, f, h }) => (
+          <div key={l.id} className="flex flex-wrap items-center gap-2 rounded-lg border p-2.5">
+            <span className="text-sm font-medium">{l.name}</span>
+            <span className="text-[11px] tabular-nums text-muted-foreground">{l.phone}</span>
+            <ContactActions compact phone={l.phone} name={l.name} />
+            <Badge variant="outline" className="text-[10px]">{h.stepNo}. {h.step?.title ?? "Checked in"}</Badge>
+            <Badge variant="secondary" className="text-[10px]">{l.owner ?? "no owner"}</Badge>
+            {f["rent"] && <span className="text-[11px] text-muted-foreground">₹{Number(f["rent"]).toLocaleString("en-IN")} rent</span>}
+            <span className="text-[11px] text-muted-foreground">Next: {l.nextAction ?? "not set"}</span>
+            <span className="ml-auto flex items-center gap-1.5">
+              <CloseCommitButton leadId={l.id} leadName={l.name} leadPhone={l.phone} actorName={l.owner ?? me} size="sm" />
+              <Button asChild size="sm" variant="ghost" className="h-7 px-2 text-[11px]">
+                <Link to="/tower/leads/$id" params={{ id: l.id }}>Open</Link>
+              </Button>
+            </span>
+          </div>
+        ))}
       </div>
     </Card>
   );
