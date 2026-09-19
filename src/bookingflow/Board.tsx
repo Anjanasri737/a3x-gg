@@ -120,7 +120,7 @@ export function Board({ onOpenLead }: { onOpenLead: (id: string) => void }) {
                 <span key={s} className="flex items-center gap-1 text-destructive"><AlertTriangle className="h-3 w-3" />{s}</span>
               ))}
             </div>
-          </button>
+          </div>
         ))}
         {hydrated && rows.length === 0 && (
           <Card className="p-6 text-center text-sm text-muted-foreground">No customer matches this filter. Try another one.</Card>
