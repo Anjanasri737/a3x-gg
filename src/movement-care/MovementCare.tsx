@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  AlertTriangle, ArrowRight, CheckCircle2, Clock3, Flag, Goal,
-  Building2, Handshake, History, Phone, PhoneCall, PhoneOff, ShieldCheck, Target, Trophy, Users,
+  AlertTriangle, CheckCircle2, ClipboardCopy, Clock3, Flag, Goal,
+  Building2, MessageCircle, Phone, PhoneCall, PhoneOff, ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,10 +16,11 @@ import { DraftChip, JourneyTimeline, WorkPanel } from "@/movement/components";
 import { totals } from "@/movement/metrics";
 import { NEXT_ACTION_LABEL, OPERATORS, type CallResult, type NextActionKind } from "@/movement/types";
 import { toast } from "sonner";
-import { CARE_GOALS, CARE_PLAYBOOKS, ROUND_COPY, type CareGoal, type CareRole, type CareRound } from "./playbooks";
+import { CARE_PLAYBOOKS, GOAL_TITLE, ROUND_COPY, type CareGoal, type CareRole, type CareRound } from "./playbooks";
 import { actualForGoal, callStats, queueForGoal, resultStatus } from "./results";
 import { optionById, propertyOptions, propertyProgress, rankedForCustomer } from "./properties";
 import { todaysCommitment, useMovementCare } from "./store";
+import { debriefMessage } from "./debrief";
 
 const GOAL_TONE: Record<CareGoal, string> = {
   FIND: "border-info/40 bg-info/10 text-info",
@@ -52,9 +53,12 @@ export function MovementCare() {
   const commit = useMovementCare((state) => state.commit);
   const report = useMovementCare((state) => state.report);
   const clearCommitment = useMovementCare((state) => state.clearCommitment);
+  const saveDebrief = useMovementCare((state) => state.saveDebrief);
+  const markDebriefSent = useMovementCare((state) => state.markDebriefSent);
+  const debriefs = useMovementCare((state) => state.debriefs);
   const [role, setRole] = useState<CareRole>(commitment?.role ?? "flow-ops");
   const [goal, setGoal] = useState<CareGoal>(commitment?.goal ?? "FIND");
-  const [target, setTarget] = useState(commitment?.target ?? CARE_PLAYBOOKS[role].stages[0].defaultTarget);
+  const [commitCount, setCommitCount] = useState(commitment?.commitCount ?? CARE_PLAYBOOKS[role].stages[0].dayCount);
   const [support, setSupport] = useState(commitment?.supportNeeded ?? "");
   const [selected, setSelected] = useState<string | null>(null);
   const [round, setRound] = useState<CareRound>("BUILD");
@@ -64,6 +68,7 @@ export function MovementCare() {
   const [showPlaybook, setShowPlaybook] = useState(false);
   const [aimProperties, setAimProperties] = useState<string[]>([]);
   const [propertyQuery, setPropertyQuery] = useState("");
+  const [debriefFor, setDebriefFor] = useState<{ ulid: string; code: string } | null>(null);
 
   const activeRole = commitment?.role ?? role;
   const activeGoal = commitment?.goal ?? goal;
@@ -73,13 +78,15 @@ export function MovementCare() {
   const actual = useMemo(() => actualForGoal(activeGoal, list, events), [activeGoal, list, events]);
   const total = useMemo(() => totals(list, events), [list, events]);
   const calls = useMemo(() => callStats(events), [events]);
-  const aimed = commitment?.targetPropertyIds ?? aimProperties;
+  const aimed = commitment?.closingPropertyIds ?? aimProperties;
   const aimProgress = useMemo(() => propertyProgress(aimed, list), [aimed, list]);
-  const progress = commitment ? Math.min(100, Math.round((actual / Math.max(commitment.target, 1)) * 100)) : 0;
+  const progress = commitment ? Math.min(100, Math.round((actual / Math.max(commitment.commitCount, 1)) * 100)) : 0;
   const selectedState = selected ? list.find((item) => item.ulid === selected) : undefined;
   const selectedResult = selectedState ? resultStatus(selectedState) : null;
-  const todaysReports = reports.filter((item) => item.date === new Date().toISOString().slice(0, 10));
-  const weakRounds = todaysReports.filter((item) => item.actual < item.target * 0.65).length;
+  const today = new Date().toISOString().slice(0, 10);
+  const todaysReports = reports.filter((item) => item.date === today);
+  const weakRounds = todaysReports.filter((item) => item.actual < item.committed * 0.65).length;
+  const todaysDebriefs = debriefs.filter((item) => item.date === today);
 
   useEffect(() => {
     const roleOperator = activeRole === "tcm" ? OPERATORS.find((operator) => operator.role === "tcm") : undefined;
@@ -94,17 +101,17 @@ export function MovementCare() {
     setRole(nextRole);
     const first = CARE_PLAYBOOKS[nextRole].stages[0];
     setGoal(first.goal);
-    setTarget(first.defaultTarget);
+    setCommitCount(first.dayCount);
   };
 
   const chooseGoal = (nextGoal: CareGoal) => {
     setGoal(nextGoal);
     const nextStage = CARE_PLAYBOOKS[role].stages.find((item) => item.goal === nextGoal);
-    if (nextStage) setTarget(nextStage.defaultTarget);
+    if (nextStage) setCommitCount(nextStage.dayCount);
   };
 
   const startDay = () => {
-    commit({ role, goal, target: Math.max(1, target), supportNeeded: support.trim(), targetPropertyIds: aimProperties });
+    commit({ role, goal, commitCount: Math.max(1, commitCount), supportNeeded: support.trim(), closingPropertyIds: aimProperties });
     toast.success(`${goal} result committed for today`);
   };
 
@@ -120,7 +127,44 @@ export function MovementCare() {
       ownerName: selectedState.primaryOwnerId ? selectedState.primaryOwnerName : mv.actor.name,
       note: `${activeGoal}: ${stage.outcome}`,
     });
-    toast.success(`Draft tied to ${activeGoal} result, owner and deadline`);
+    setDebriefFor({ ulid: selectedState.ulid, code });
+    toast.success(`${code} done — write the wrap-up and send it on WhatsApp`);
+  };
+
+  const finishDebrief = (input: { done: string; wentWell: string; wentBadly: string; problems: string }) => {
+    if (!commitment || !selectedState || !debriefFor) return;
+    const message = debriefMessage({
+      ...input,
+      customerName: nameOf.get(selectedState.ulid)?.name ?? selectedState.ulid,
+      draftCode: debriefFor.code,
+      goal: activeGoal,
+      operatorName: mv.actor.name,
+      resultNow: actual,
+      commitCount: commitment.commitCount,
+      property: selectedState.tourProperty ?? undefined,
+      nextStep: selectedState.nextAction ? NEXT_ACTION_LABEL[selectedState.nextAction.kind] : undefined,
+      dueAt: selectedState.nextAction?.dueAt,
+    });
+    const saved = saveDebrief({
+      ulid: selectedState.ulid,
+      customerName: nameOf.get(selectedState.ulid)?.name ?? selectedState.ulid,
+      draftCode: debriefFor.code,
+      goal: activeGoal,
+      message,
+      ...input,
+    });
+    mv.log(selectedState.ulid, "note", `${debriefFor.code} wrap-up · done: ${input.done || "—"} · well: ${input.wentWell || "—"} · badly: ${input.wentBadly || "—"} · problem: ${input.problems || "none"}`);
+    return saved;
+  };
+
+  const copyMessage = async (id: string, message: string) => {
+    try {
+      await navigator.clipboard.writeText(message);
+      markDebriefSent(id);
+      toast.success("Copied — paste it in the team WhatsApp group");
+    } catch {
+      toast.error("Could not copy. Select the text and copy it manually.");
+    }
   };
 
   const dial = () => {
@@ -149,7 +193,7 @@ export function MovementCare() {
     const option = optionById(propertyId);
     if (!option) return;
     mv.patch(selectedState.ulid, { tourProperty: option.name });
-    mv.log(selectedState.ulid, "note", `Closing target property: ${option.name} · ${option.area} · from ₹${option.fromPrice.toLocaleString("en-IN")}`);
+    mv.log(selectedState.ulid, "note", `Property to close: ${option.name} · ${option.area} · from ₹${option.fromPrice.toLocaleString("en-IN")}`);
     mv.setNextAction(selectedState.ulid, {
       kind: "send-property",
       dueAt: dueForGoal(activeGoal),
@@ -157,7 +201,7 @@ export function MovementCare() {
       ownerName: selectedState.primaryOwnerName || mv.actor.name,
       note: `Send ${option.name} and lock the tour`,
     });
-    toast.success(`${option.name} set as the closing target`);
+    toast.success(`${option.name} locked as the property to close`);
   };
 
   const saveReport = () => {
@@ -167,7 +211,7 @@ export function MovementCare() {
       role: commitment.role,
       goal: commitment.goal,
       actual,
-      target: commitment.target,
+      committed: commitment.commitCount,
       moved: moved.trim(),
       stuck: stuck.trim(),
       need: need.trim(),
@@ -176,10 +220,10 @@ export function MovementCare() {
       label: round === "BUILD" ? "1PM" : round === "MOVE" ? "5PM" : "EOD",
       operatorId: mv.actor.id,
       totals: total as unknown as Record<string, number>,
-      required: { [commitment.goal.toLowerCase()]: commitment.target },
-      status: actual >= commitment.target ? "ON TRACK" : "BEHIND",
+      required: { [commitment.goal.toLowerCase()]: commitment.commitCount },
+      status: actual >= commitment.commitCount ? "ON TRACK" : "BEHIND",
       mainLeak: stuck.trim() || "No blocker reported",
-      inference: `${commitment.goal} ${actual}/${commitment.target} · ${moved.trim() || "movement pending"}`,
+      inference: `${commitment.goal} ${actual}/${commitment.commitCount} · ${moved.trim() || "movement pending"}`,
     });
     setMoved("");
     setStuck("");
@@ -213,7 +257,7 @@ export function MovementCare() {
           <div className="mt-2 grid grid-cols-[minmax(180px,1fr)_repeat(6,minmax(70px,auto))] gap-1.5 overflow-x-auto">
             <div className="min-w-[180px] rounded-md border bg-background px-2 py-1.5">
               <div className="flex items-center justify-between gap-2 text-[10px] font-semibold">
-                <span>MY RESULT · {activeGoal}</span><span>{actual}/{commitment.target}</span>
+                <span>MY RESULT · {activeGoal}</span><span>{actual}/{commitment.commitCount}</span>
               </div>
               <Progress value={progress} className="mt-1 h-1.5" />
             </div>
@@ -225,16 +269,17 @@ export function MovementCare() {
             <Stat label="Tours set" value={total.toursScheduled} />
             <Stat label="Tours done" value={total.toursDone} />
             <Stat label="Bookings" value={total.booked} />
+            <Stat label="Wrap-ups sent" value={todaysDebriefs.filter((item) => item.sentOnWhatsapp).length} />
             <Stat label="At risk" value={total.breached + total.p0} danger={total.breached + total.p0 > 0} />
           </div>
         )}
       </header>
 
       {!commitment ? (
-        <CommitmentGate role={role} goal={goal} target={target} support={support}
+        <CommitmentGate role={role} goal={goal} commitCount={commitCount} support={support}
           aimProperties={aimProperties} onAimProperties={setAimProperties}
           query={propertyQuery} onQuery={setPropertyQuery}
-          onRole={chooseRole} onGoal={chooseGoal} onTarget={setTarget} onSupport={setSupport} onStart={startDay} />
+          onRole={chooseRole} onGoal={chooseGoal} onCommitCount={setCommitCount} onSupport={setSupport} onStart={startDay} />
       ) : (
         <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[320px_minmax(420px,1fr)_330px]">
           <section className="min-h-0 overflow-hidden border-r bg-card">
@@ -284,7 +329,7 @@ export function MovementCare() {
                       <h2 className="truncate text-base font-semibold">{nameOf.get(selectedState.ulid)?.name ?? selectedState.ulid}</h2>
                       <p className="text-xs text-muted-foreground">{selectedState.lastCustomerMsg ?? "Latest WhatsApp message is waiting to be captured."}</p>
                     </div>
-                    <Button size="sm" onClick={acceptDraft}><Target className="h-3.5 w-3.5" /> Accept draft + result</Button>
+                    <Button size="sm" onClick={acceptDraft}><CheckCircle2 className="h-3.5 w-3.5" /> Draft done · write wrap-up</Button>
                   </div>
                   <div className="mt-3 grid grid-cols-2 gap-1.5 sm:grid-cols-3">
                     <ContractCell label="Expected result" value={stage.outcome} />
@@ -299,6 +344,17 @@ export function MovementCare() {
                       <AlertTriangle className="h-3.5 w-3.5" /> Not under control: add {selectedResult.missing.join(", ")}.
                     </div>
                   )}
+                  <div className="mt-2 border-t pt-2">
+                    <p className="text-[10px] font-semibold uppercase text-muted-foreground">How this result is produced</p>
+                    <ol className="mt-1 grid gap-0.5 sm:grid-cols-2">
+                      {stage.steps.map((step, index) => (
+                        <li key={step} className="flex gap-1.5 text-[11px] leading-snug">
+                          <span className="font-mono text-[10px] text-muted-foreground">{index + 1}.</span>{step}
+                        </li>
+                      ))}
+                    </ol>
+                    <p className="mt-1 text-[10px] text-destructive">Does not count: {stage.doesNotCount}</p>
+                  </div>
                 </div>
                 <div className="border bg-card p-3">
                   <div className="flex flex-wrap items-center gap-2">
@@ -342,6 +398,11 @@ export function MovementCare() {
                   </div>
                 </div>
 
+                {debriefFor?.ulid === selectedState.ulid && (
+                  <DebriefCard code={debriefFor.code} customer={nameOf.get(selectedState.ulid)?.name ?? selectedState.ulid}
+                    onSave={finishDebrief} onCopy={copyMessage} onClose={() => setDebriefFor(null)} />
+                )}
+
                 <WorkPanel ulid={selected} meta={nameOf} />
               </div>
             ) : (
@@ -350,7 +411,7 @@ export function MovementCare() {
           </main>
 
           <aside className="min-h-0 overflow-y-auto border-l bg-card p-2">
-            <ProgressReporter round={round} onRound={setRound} actual={actual} target={commitment.target}
+            <ProgressReporter round={round} onRound={setRound} actual={actual} committed={commitment.commitCount}
               moved={moved} stuck={stuck} need={need} onMoved={setMoved} onStuck={setStuck} onNeed={setNeed} onSave={saveReport} />
 
             {weakRounds >= 2 && (
@@ -365,7 +426,7 @@ export function MovementCare() {
                 <p className="text-[10px] font-semibold uppercase text-muted-foreground">Today’s promise</p>
                 <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[9px]" onClick={clearCommitment}>Reset</Button>
               </div>
-              <p className="mt-1 text-xs font-semibold">I will achieve {commitment.target} {activeGoal.toLowerCase()} results today.</p>
+              <p className="mt-1 text-xs font-semibold">I will deliver {commitment.commitCount} {stage.unit} today.</p>
               <p className="mt-1 text-[10px] text-muted-foreground">{stage.outcome}</p>
               {commitment.supportNeeded && <p className="mt-1 text-[10px]"><strong>Support:</strong> {commitment.supportNeeded}</p>}
             </div>
@@ -387,6 +448,27 @@ export function MovementCare() {
               )}
             </div>
 
+            <div className="mt-2 border p-2">
+              <div className="flex items-center gap-1.5"><MessageCircle className="h-3.5 w-3.5 text-primary" /><p className="text-[10px] font-semibold uppercase text-muted-foreground">Wrap-ups sent today</p></div>
+              {todaysDebriefs.length === 0 ? (
+                <p className="mt-1 text-[10px] text-muted-foreground">After each draft, write the wrap-up and paste it in the team group.</p>
+              ) : (
+                <div className="mt-1.5 space-y-1.5">
+                  {todaysDebriefs.slice(0, 6).map((item) => (
+                    <div key={item.id} className="border px-2 py-1.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="truncate text-[11px] font-semibold">{item.draftCode} · {item.customerName}</p>
+                        <Button size="sm" variant="ghost" className="h-6 px-1 text-[9px]" onClick={() => copyMessage(item.id, item.message)}>
+                          <ClipboardCopy className="h-3 w-3" /> Copy
+                        </Button>
+                      </div>
+                      <p className="text-[9px] text-muted-foreground">{item.sentOnWhatsapp ? "Copied for WhatsApp" : "Not sent yet"} · {new Date(item.createdAt).toLocaleTimeString()}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div className="mt-2"><JourneyTimeline ulid={selected} /></div>
           </aside>
         </div>
@@ -397,12 +479,12 @@ export function MovementCare() {
   );
 }
 
-function CommitmentGate({ role, goal, target, support, aimProperties, onAimProperties, query, onQuery, onRole, onGoal, onTarget, onSupport, onStart }: {
-  role: CareRole; goal: CareGoal; target: number; support: string;
+function CommitmentGate({ role, goal, commitCount, support, aimProperties, onAimProperties, query, onQuery, onRole, onGoal, onCommitCount, onSupport, onStart }: {
+  role: CareRole; goal: CareGoal; commitCount: number; support: string;
   aimProperties: string[]; onAimProperties: (ids: string[]) => void;
   query: string; onQuery: (value: string) => void;
   onRole: (role: CareRole) => void; onGoal: (goal: CareGoal) => void;
-  onTarget: (target: number) => void; onSupport: (support: string) => void; onStart: () => void;
+  onCommitCount: (value: number) => void; onSupport: (support: string) => void; onStart: () => void;
 }) {
   const toggleProperty = (id: string) =>
     onAimProperties(aimProperties.includes(id) ? aimProperties.filter((item) => item !== id) : [...aimProperties, id]);
@@ -433,13 +515,17 @@ function CommitmentGate({ role, goal, target, support, aimProperties, onAimPrope
                 {playbook.stages.map((item) => (
                   <Button key={item.goal} variant="outline" onClick={() => onGoal(item.goal)}
                     className={cn("h-auto min-h-20 justify-start whitespace-normal p-3 text-left", goal === item.goal && GOAL_TONE[item.goal])}>
-                    <span><span className="block text-xs font-bold">{item.goal} · {item.meaning}</span><span className="mt-1 block text-[10px] font-normal">{item.outcome}</span></span>
+                    <span>
+                      <span className="block text-xs font-bold">{GOAL_TITLE[item.goal]}</span>
+                      <span className="mt-1 block text-[10px] font-normal">{item.outcome}</span>
+                      <span className="mt-1 block text-[10px] font-semibold">Usual day: {item.dayCount} {item.unit}</span>
+                    </span>
                   </Button>
                 ))}
               </div>
             </div>
-            <div className="grid gap-3 sm:grid-cols-[160px_1fr]">
-              <label className="text-xs font-medium">Target result count<Input type="number" min={1} value={target} onChange={(event) => onTarget(Number(event.target.value) || 1)} className="mt-1" /></label>
+            <div className="grid gap-3 sm:grid-cols-[200px_1fr]">
+              <label className="text-xs font-medium">How many {active.unit} today<Input type="number" min={1} value={commitCount} onChange={(event) => onCommitCount(Number(event.target.value) || 1)} className="mt-1" /></label>
               <label className="text-xs font-medium">Support needed today<Input value={support} onChange={(event) => onSupport(event.target.value)} placeholder="Inventory check, manager help, pricing approval…" className="mt-1" /></label>
             </div>
             <div>
@@ -460,14 +546,20 @@ function CommitmentGate({ role, goal, target, support, aimProperties, onAimPrope
                 ))}
               </div>
             </div>
-            <Button onClick={onStart} className="w-full sm:w-auto"><Target className="h-4 w-4" /> Commit result and open drafts</Button>
+            <Button onClick={onStart} className="w-full sm:w-auto"><Flag className="h-4 w-4" /> Commit this result and open drafts</Button>
           </div>
           <div className="border bg-muted/30 p-3">
             <p className="text-[10px] font-semibold uppercase text-muted-foreground">Your contract</p>
-            <p className="mt-2 text-sm font-semibold">I will deliver {target} accepted {goal.toLowerCase()} results today.</p>
+            <p className="mt-2 text-sm font-semibold">I will deliver {commitCount} {active.unit} today.</p>
             <p className="mt-2 text-xs text-muted-foreground">{active.outcome}</p>
+            <ol className="mt-3 space-y-1 text-[11px]">
+              {active.steps.map((step, index) => (
+                <li key={step} className="flex gap-1.5"><span className="font-mono text-muted-foreground">{index + 1}.</span>{step}</li>
+              ))}
+            </ol>
             <dl className="mt-3 space-y-2 text-xs">
               <div><dt className="text-muted-foreground">Proof</dt><dd>{active.proof}</dd></div>
+              <div><dt className="text-muted-foreground">Does not count</dt><dd className="text-destructive">{active.doesNotCount}</dd></div>
               <div><dt className="text-muted-foreground">Accepted by</dt><dd>{active.receiver}</dd></div>
               <div><dt className="text-muted-foreground">Required when</dt><dd>{active.requireWhen}</dd></div>
               <div><dt className="text-muted-foreground">Closing these properties</dt><dd>{aimProperties.length ? aimProperties.map((id) => propertyOptions.find((option) => option.id === id)?.name).join(", ") : "Not chosen yet"}</dd></div>
@@ -479,8 +571,8 @@ function CommitmentGate({ role, goal, target, support, aimProperties, onAimPrope
   );
 }
 
-function ProgressReporter({ round, onRound, actual, target, moved, stuck, need, onMoved, onStuck, onNeed, onSave }: {
-  round: CareRound; onRound: (round: CareRound) => void; actual: number; target: number;
+function ProgressReporter({ round, onRound, actual, committed, moved, stuck, need, onMoved, onStuck, onNeed, onSave }: {
+  round: CareRound; onRound: (round: CareRound) => void; actual: number; committed: number;
   moved: string; stuck: string; need: string; onMoved: (value: string) => void;
   onStuck: (value: string) => void; onNeed: (value: string) => void; onSave: () => void;
 }) {
@@ -493,8 +585,8 @@ function ProgressReporter({ round, onRound, actual, target, moved, stuck, need, 
         ))}
       </div>
       <p className="mt-2 text-xs font-semibold">{ROUND_COPY[round].question}</p>
-      <div className="mt-2 flex items-center justify-between text-[10px]"><span>System actual</span><strong>{actual}/{target}</strong></div>
-      <Progress value={Math.min(100, Math.round((actual / Math.max(target, 1)) * 100))} className="mt-1" />
+      <div className="mt-2 flex items-center justify-between text-[10px]"><span>Counted by the system</span><strong>{actual}/{committed}</strong></div>
+      <Progress value={Math.min(100, Math.round((actual / Math.max(committed, 1)) * 100))} className="mt-1" />
       <div className="mt-2 space-y-1.5">
         <Textarea value={moved} onChange={(event) => onMoved(event.target.value)} placeholder="Moved — what result changed?" className="min-h-14 text-xs" />
         <Textarea value={stuck} onChange={(event) => onStuck(event.target.value)} placeholder="Stuck — what is blocking the result?" className="min-h-14 text-xs" />
@@ -517,15 +609,82 @@ function PlaybookDrawer({ playbook, onClose }: { playbook: (typeof CARE_PLAYBOOK
         <div className="border p-3"><p className="text-[10px] font-semibold uppercase text-muted-foreground">Role promise</p><p className="mt-1 text-sm">{playbook.promise}</p></div>
         {playbook.stages.map((item) => (
           <div key={item.goal} className="border p-3">
-            <div className="flex items-center justify-between"><Badge className={cn("border", GOAL_TONE[item.goal])}>{item.goal}</Badge><span className="text-xs font-semibold">Guide {item.defaultTarget}</span></div>
-            <p className="mt-2 text-sm font-semibold">{item.meaning}</p>
+            <div className="flex items-center justify-between gap-2">
+              <Badge className={cn("border", GOAL_TONE[item.goal])}>{item.goal}</Badge>
+              <span className="text-xs font-semibold">A usual day: {item.dayCount} {item.unit}</span>
+            </div>
+            <p className="mt-2 text-sm font-semibold">{GOAL_TITLE[item.goal]}</p>
             <p className="mt-1 text-xs text-muted-foreground">{item.outcome}</p>
-            <div className="mt-2 grid gap-2 text-xs"><p><strong>Proof:</strong> {item.proof}</p><p><strong>Recommend:</strong> {item.recommendWhen}</p><p><strong>Require:</strong> {item.requireWhen}</p><p><strong>Receiver:</strong> {item.receiver}</p></div>
+            <p className="mt-2 text-[10px] font-semibold uppercase text-muted-foreground">Step by step</p>
+            <ol className="mt-1 space-y-1 text-xs">
+              {item.steps.map((step, index) => (
+                <li key={step} className="flex gap-1.5"><span className="font-mono text-muted-foreground">{index + 1}.</span>{step}</li>
+              ))}
+            </ol>
+            <div className="mt-2 grid gap-1.5 text-xs">
+              <p><strong>It counts when:</strong> {item.proof}</p>
+              <p className="text-destructive"><strong>It does not count when:</strong> {item.doesNotCount}</p>
+              <p><strong>Handed to:</strong> {item.receiver}</p>
+              <p><strong>Choose this day when:</strong> {item.recommendWhen}</p>
+              <p><strong>You must choose it when:</strong> {item.requireWhen}</p>
+            </div>
           </div>
         ))}
         <div className="border p-3"><p className="text-[10px] font-semibold uppercase text-muted-foreground">Acceptance gate</p><p className="mt-1 text-xs">{playbook.acceptanceGate}</p></div>
         <div className="border p-3"><p className="text-[10px] font-semibold uppercase text-muted-foreground">Non-negotiable safeguards</p>{playbook.safeguards.map((item) => <p key={item} className="mt-2 flex gap-2 text-xs"><ShieldCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-success" />{item}</p>)}</div>
       </div>
+    </div>
+  );
+}
+
+function DebriefCard({ code, customer, onSave, onCopy, onClose }: {
+  code: string; customer: string;
+  onSave: (input: { done: string; wentWell: string; wentBadly: string; problems: string }) => { id: string; message: string } | undefined;
+  onCopy: (id: string, message: string) => void;
+  onClose: () => void;
+}) {
+  const [done, setDone] = useState("");
+  const [wentWell, setWentWell] = useState("");
+  const [wentBadly, setWentBadly] = useState("");
+  const [problems, setProblems] = useState("");
+  const [saved, setSaved] = useState<{ id: string; message: string } | null>(null);
+
+  const build = () => {
+    const result = onSave({ done, wentWell, wentBadly, problems });
+    if (result) setSaved({ id: result.id, message: result.message });
+  };
+
+  return (
+    <div className="border-2 border-primary bg-card p-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <MessageCircle className="h-4 w-4 text-primary" />
+        <p className="text-xs font-semibold">{code} is done for {customer} — wrap it up before you move on</p>
+        <Button size="sm" variant="ghost" className="ml-auto h-6 px-2 text-[10px]" onClick={onClose}>Close</Button>
+      </div>
+      <div className="mt-2 grid gap-1.5 sm:grid-cols-2">
+        <label className="text-[10px] font-semibold uppercase text-muted-foreground">What is done?
+          <Textarea value={done} onChange={(event) => setDone(event.target.value)} placeholder="Called, qualified, shared 2 properties…" className="mt-1 min-h-14 text-xs" />
+        </label>
+        <label className="text-[10px] font-semibold uppercase text-muted-foreground">What went well?
+          <Textarea value={wentWell} onChange={(event) => setWentWell(event.target.value)} placeholder="Customer picked a date straight away…" className="mt-1 min-h-14 text-xs" />
+        </label>
+        <label className="text-[10px] font-semibold uppercase text-muted-foreground">What went badly?
+          <Textarea value={wentBadly} onChange={(event) => setWentBadly(event.target.value)} placeholder="Budget below our price, went cold on rent…" className="mt-1 min-h-14 text-xs" />
+        </label>
+        <label className="text-[10px] font-semibold uppercase text-muted-foreground">Any other problem or help needed?
+          <Textarea value={problems} onChange={(event) => setProblems(event.target.value)} placeholder="Need inventory truth for Salarpuria, need pricing approval…" className="mt-1 min-h-14 text-xs" />
+        </label>
+      </div>
+      <Button size="sm" className="mt-2" onClick={build}><CheckCircle2 className="h-3.5 w-3.5" /> Make the WhatsApp update</Button>
+      {saved && (
+        <div className="mt-2 border bg-muted/30 p-2">
+          <p className="text-[10px] font-semibold uppercase text-muted-foreground">Copy this and paste it in the team WhatsApp group</p>
+          <pre className="mt-1 whitespace-pre-wrap break-words text-[11px] leading-snug">{saved.message}</pre>
+          <Button size="sm" className="mt-2" onClick={() => onCopy(saved.id, saved.message)}>
+            <ClipboardCopy className="h-3.5 w-3.5" /> Copy for WhatsApp
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

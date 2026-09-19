@@ -6,9 +6,10 @@ export interface DailyCommitment {
   date: string;
   role: CareRole;
   goal: CareGoal;
-  target: number;
+  /** How many accepted results the person is committing to today. */
+  commitCount: number;
   supportNeeded: string;
-  targetPropertyIds: string[];
+  closingPropertyIds: string[];
   committedAt: string;
 }
 
@@ -19,19 +20,38 @@ export interface RoundReport {
   role: CareRole;
   goal: CareGoal;
   actual: number;
-  target: number;
+  committed: number;
   moved: string;
   stuck: string;
   need: string;
   reportedAt: string;
 }
 
+export interface DraftDebrief {
+  id: string;
+  date: string;
+  ulid: string;
+  customerName: string;
+  draftCode: string;
+  goal: CareGoal;
+  done: string;
+  wentWell: string;
+  wentBadly: string;
+  problems: string;
+  message: string;
+  sentOnWhatsapp: boolean;
+  createdAt: string;
+}
+
 interface MovementCareStore {
   commitment: DailyCommitment | null;
   reports: RoundReport[];
+  debriefs: DraftDebrief[];
   commit: (input: Omit<DailyCommitment, "date" | "committedAt">) => DailyCommitment;
-  setTargetProperties: (ids: string[]) => void;
+  setClosingProperties: (ids: string[]) => void;
   report: (input: Omit<RoundReport, "id" | "date" | "reportedAt">) => RoundReport;
+  saveDebrief: (input: Omit<DraftDebrief, "id" | "date" | "createdAt" | "sentOnWhatsapp">) => DraftDebrief;
+  markDebriefSent: (id: string) => void;
   clearCommitment: () => void;
 }
 
@@ -42,6 +62,7 @@ export const useMovementCare = create<MovementCareStore>()(
     (set) => ({
       commitment: null,
       reports: [],
+      debriefs: [],
       commit: (input) => {
         const commitment: DailyCommitment = {
           ...input,
@@ -61,11 +82,26 @@ export const useMovementCare = create<MovementCareStore>()(
         set((state) => ({ reports: [report, ...state.reports].slice(0, 90) }));
         return report;
       },
-      setTargetProperties: (ids) =>
-        set((state) => ({ commitment: state.commitment ? { ...state.commitment, targetPropertyIds: ids } : null })),
+      saveDebrief: (input) => {
+        const debrief: DraftDebrief = {
+          ...input,
+          id: `debrief-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          date: dayKey(),
+          sentOnWhatsapp: false,
+          createdAt: new Date().toISOString(),
+        };
+        set((state) => ({ debriefs: [debrief, ...state.debriefs].slice(0, 200) }));
+        return debrief;
+      },
+      markDebriefSent: (id) =>
+        set((state) => ({
+          debriefs: state.debriefs.map((item) => (item.id === id ? { ...item, sentOnWhatsapp: true } : item)),
+        })),
+      setClosingProperties: (ids) =>
+        set((state) => ({ commitment: state.commitment ? { ...state.commitment, closingPropertyIds: ids } : null })),
       clearCommitment: () => set({ commitment: null }),
     }),
-    { name: "gharpayy.movement-care.v2" },
+    { name: "gharpayy.movement-care.v3" },
   ),
 );
 
