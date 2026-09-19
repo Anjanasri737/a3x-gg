@@ -79,7 +79,14 @@ export function CallEngine({ lead, onLogged }: Props) {
 
   function finish(kind: OutcomeKind) {
     setOutcome(kind);
-    const out = buildOutputs(lead, agenda, cap, kind, kind === "connected" ? undefined : plan.ask);
+    const out = buildOutputs(
+      lead,
+      agenda,
+      cap,
+      kind,
+      kind === "connected" ? undefined : plan.ask,
+      kind === "connected" ? undefined : nextPlan.ask,
+    );
     setOutputs(out);
     setNowText(out.now);
     setFollowText(out.followUp.text);
