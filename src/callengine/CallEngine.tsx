@@ -12,7 +12,8 @@ import { useMovement } from "@/movement/store";
 import { NEXT_ACTION_LABEL, type MovementState } from "@/movement/types";
 import { rankedForCustomer } from "@/movement-care/properties";
 import { buildOutputs, wasteFlags } from "./compose";
-import { knownFacts, noAnswerPlan, primaryCta, suggestAgenda } from "./infer";
+import { knownFacts, noAnswerPlan, suggestAgenda } from "./infer";
+import { callMission } from "./mission";
 import { useCallEngine } from "./store";
 import {
   ACTIVITIES, AGENDAS, DISLIKE_REASONS, MOVEMENT_LABEL, OUTCOMES, PRICE_REACTIONS, PROMISES, REACTIONS,
@@ -61,7 +62,7 @@ export function CallEngine({ lead, onLogged }: Props) {
   const attempt = engine.noAnswerStreak(lead.ulid) + 1;
   const plan = useMemo(() => noAnswerPlan(lead, attempt), [lead, attempt]);
   const nextPlan = useMemo(() => noAnswerPlan(lead, attempt + 1), [lead, attempt]);
-  const cta = primaryCta(lead, cap);
+  const mission = useMemo(() => callMission(lead, agenda, cap), [lead, agenda, cap]);
   const media = useMemo(() => rankedForCustomer(lead, []).slice(0, 3), [lead]);
 
   const set = (p: Partial<CallCapture>) => setCap((c) => ({ ...c, ...p }));
