@@ -150,7 +150,7 @@ export function CallEngine({ lead, onLogged }: Props) {
       nextStep: outputs.nextStep,
       stageAfter: lead.stage,
       waste,
-    } satisfies CallRecord;
+    } as CallRecord;
 
     engine.save(record);
     void pushCallRecord(record).then((res) => {

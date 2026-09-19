@@ -1,6 +1,7 @@
 // Every M-POWER CALL is written to the database as well as the local store,
 // so the operator and the admin see the same record from any device.
 import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
 import type { CallRecord } from "./types";
 
 export async function pushCallRecord(r: CallRecord): Promise<{ ok: boolean; error?: string }> {
@@ -16,15 +17,15 @@ export async function pushCallRecord(r: CallRecord): Promise<{ ok: boolean; erro
     agenda_source: r.agendaSource ?? null,
     outcome: r.outcome,
     duration_sec: r.durationSec ?? null,
-    capture: r.capture as unknown as Record<string, unknown>,
+    capture: r.capture as unknown as Json,
     movement: r.movement ?? null,
     message_now: r.messageNow ?? null,
     message_sent: !!r.messageSent,
-    follow_up: r.followUp as unknown as Record<string, unknown>,
+    follow_up: r.followUp as unknown as Json,
     follow_up_state: r.followUpState ?? null,
-    next_step: r.nextStep as unknown as Record<string, unknown>,
+    next_step: r.nextStep as unknown as Json,
     stage_after: r.stageAfter ?? null,
-    waste: (r.waste ?? []) as unknown as Record<string, unknown>,
+    waste: (r.waste ?? []) as unknown as Json,
     client_id: r.id,
   };
   const { error } = await supabase.from("call_records").insert(row);
