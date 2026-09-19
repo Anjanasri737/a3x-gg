@@ -115,6 +115,20 @@ export const useMovementCare = create<MovementCareStore>()(
         })),
       setClosingProperties: (ids) =>
         set((state) => ({ commitment: state.commitment ? { ...state.commitment, closingPropertyIds: ids } : null })),
+      setManualMode: (on) => set({ manualMode: on }),
+      setManualSize: (size) => set({ manualSize: Math.max(1, Math.min(200, Math.round(size) || 1)) }),
+      setManualList: (ulids) => set({ manualList: Array.from(new Set(ulids)) }),
+      addToManual: (ulid) =>
+        set((state) => (state.manualList.includes(ulid) ? state : { manualList: [...state.manualList, ulid] })),
+      removeFromManual: (ulid) =>
+        set((state) => ({ manualList: state.manualList.filter((item) => item !== ulid) })),
+      replaceInManual: (outUlid, inUlid) =>
+        set((state) => ({
+          manualList: state.manualList.includes(inUlid)
+            ? state.manualList.filter((item) => item !== outUlid)
+            : state.manualList.map((item) => (item === outUlid ? inUlid : item)),
+        })),
+      clearManual: () => set({ manualList: [] }),
       clearCommitment: () => set({ commitment: null }),
     }),
     { name: "gharpayy.movement-care.v3" },
