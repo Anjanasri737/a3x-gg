@@ -1,6 +1,7 @@
 // Every lead, with filters an operator and an admin actually use.
 import { useMemo, useState } from "react";
 import { AlertTriangle, Search, ShieldAlert } from "lucide-react";
+import { ContactActions } from "@/components/common/ContactActions";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -94,10 +95,18 @@ export function Board({ onOpenLead }: { onOpenLead: (id: string) => void }) {
 
       <div className="space-y-1.5">
         {rows.map(({ l, h }) => (
-          <button key={l.id} type="button" onClick={() => onOpenLead(l.id)} className="w-full rounded-lg border p-3 text-left transition hover:border-primary hover:bg-accent">
+          <div
+            key={l.id}
+            role="button"
+            tabIndex={0}
+            onClick={() => onOpenLead(l.id)}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpenLead(l.id); } }}
+            className="w-full cursor-pointer rounded-lg border p-3 text-left transition hover:border-primary hover:bg-accent focus-visible:ring-1 focus-visible:ring-primary"
+          >
             <div className="flex flex-wrap items-center gap-2">
               <span className="font-medium">{l.name}</span>
               <span className="text-xs text-muted-foreground">{l.phone}</span>
+              <ContactActions compact phone={l.phone} name={l.name} />
               <Badge variant="outline" className="text-[10px]">{h.stepNo}. {h.complete ? "Checked in" : h.step?.title}</Badge>
               <Badge variant="secondary" className="text-[10px]">{l.owner ?? "no owner"}</Badge>
               {h.sla === "LATE" && <Badge variant="destructive" className="text-[10px]">late {fmtMins(h.minutesLate)}</Badge>}
@@ -111,7 +120,7 @@ export function Board({ onOpenLead }: { onOpenLead: (id: string) => void }) {
                 <span key={s} className="flex items-center gap-1 text-destructive"><AlertTriangle className="h-3 w-3" />{s}</span>
               ))}
             </div>
-          </button>
+          </div>
         ))}
         {hydrated && rows.length === 0 && (
           <Card className="p-6 text-center text-sm text-muted-foreground">No customer matches this filter. Try another one.</Card>

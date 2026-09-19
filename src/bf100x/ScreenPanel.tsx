@@ -1,6 +1,6 @@
 // Four or five questions on one screen. Same options, same rules, fewer clicks:
 // picking an option saves itself, and one button saves + moves to the next screen.
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, ArrowLeft, ArrowRight, Check, History, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -40,6 +40,7 @@ export function ScreenPanel({
   const { answerStep, editFields } = useBookingFlow();
   const f = lead.f ?? {};
   const [draft, setDraft] = useState<Record<string, string>>({});
+  const rootRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => setDraft({}), [screen.id, lead.id]);
 
@@ -118,10 +119,48 @@ export function ScreenPanel({
     return true;
   }
 
-  function saveAndNext() {
+  const saveAndNext = useCallback(() => {
     if (Object.keys(draft).length > 0 && !saveAll(true)) return;
-    onNext?.();
+    if (canNext) onNext?.();
+    else toast.success("This is the last screen");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draft, canNext, onNext]);
+
+  /** Enter moves to the next box, and from the last box to the next screen. */
+  function focusNextField(from: HTMLElement) {
+    const list = rootRef.current?.querySelectorAll("input:not([disabled])");
+    const boxes: HTMLInputElement[] = list ? (Array.from(list) as HTMLInputElement[]) : [];
+    const i = boxes.indexOf(from as HTMLInputElement);
+    const next: HTMLInputElement | undefined = i >= 0 ? boxes[i + 1] : undefined;
+    if (next) {
+      next.focus();
+      next.select?.();
+      return;
+    }
+    saveAndNext();
   }
+
+  // Keyboard on the whole screen: Enter or Ctrl/Cmd+Enter moves on, arrows walk screens.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const el = document.activeElement as HTMLElement | null;
+      const typing = el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT");
+      if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        saveAndNext();
+        return;
+      }
+      if (e.key === "Enter" && !typing && el?.tagName !== "BUTTON") {
+        e.preventDefault();
+        saveAndNext();
+        return;
+      }
+      if (!typing && (e.key === "ArrowRight" || e.key === "PageDown")) { e.preventDefault(); saveAndNext(); }
+      if (!typing && (e.key === "ArrowLeft" || e.key === "PageUp")) { e.preventDefault(); if (canPrev) onPrev?.(); }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [saveAndNext, canPrev, onPrev]);
 
   const nav = (
     <div className="flex items-center gap-1.5">
@@ -135,7 +174,7 @@ export function ScreenPanel({
   );
 
   return (
-    <Card className="p-4">
+    <Card className="p-4" ref={rootRef}>
       <div className="flex flex-wrap items-center gap-2">
         <Badge variant="outline" className="text-[10px]">Screen {idx + 1} of {SCREENS.length}</Badge>
         <Badge variant="secondary" className="text-[10px]">{screen.title}</Badge>
@@ -189,7 +228,13 @@ export function ScreenPanel({
                     value={val(st.field)}
                     onChange={(e) => put(st.field, e.target.value)}
                     onBlur={() => commitTyped(st)}
-                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commitTyped(st); } }}
+                    onKeyDown={(e) => {
+                      if (e.key !== "Enter") return;
+                      e.preventDefault();
+                      commitTyped(st);
+                      if (e.ctrlKey || e.metaKey) saveAndNext();
+                      else focusNextField(e.currentTarget);
+                    }}
                   />
                 )}
 
@@ -204,7 +249,13 @@ export function ScreenPanel({
                         value={val(x.field)}
                         onChange={(e) => put(x.field, e.target.value)}
                         onBlur={() => commitTyped(st)}
-                        onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commitTyped(st); } }}
+                        onKeyDown={(e) => {
+                          if (e.key !== "Enter") return;
+                          e.preventDefault();
+                          commitTyped(st);
+                          if (e.ctrlKey || e.metaKey) saveAndNext();
+                          else focusNextField(e.currentTarget);
+                        }}
                       />
                     </label>
                   ))}
@@ -226,7 +277,8 @@ export function ScreenPanel({
             <Button size="sm" variant="ghost" onClick={() => setDraft({})} disabled={Object.keys(draft).length === 0}>Clear my edits</Button>
             {nav}
             <span className="text-[11px] text-muted-foreground">
-              Options save the moment you tap them. Typed answers save on Enter or when you click away — the button saves everything at once.
+              Keyboard: <b>Enter</b> saves and jumps to the next box, <b>Enter</b> on the last box moves to the next screen.
+              <b> Ctrl/⌘+Enter</b> jumps ahead any time, <b>←</b> and <b>→</b> walk the screens.
             </span>
           </div>
         </div>

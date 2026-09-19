@@ -5,6 +5,7 @@ import { IndianRupee, ShieldAlert } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ContactActions } from "@/components/common/ContactActions";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { health, fmtMins } from "@/bookingflow/engine";
@@ -72,6 +73,7 @@ export function ClosingDesk({ onOpenLead }: { onOpenLead: (id: string) => void }
           <div className="flex flex-wrap items-center gap-2">
             <button type="button" className="text-sm font-medium underline-offset-2 hover:underline" onClick={() => onOpenLead(l.id)}>{l.name}</button>
             <span className="text-xs text-muted-foreground">{l.phone}</span>
+            <ContactActions compact phone={l.phone} name={l.name} />
             <Badge variant="secondary" className="text-[10px]">{l.owner ?? "no owner"}</Badge>
             <Badge variant="outline" className="text-[10px]">{h.stepNo}. {h.step?.title ?? "Checked in"}</Badge>
             {h.sla === "LATE" && <Badge variant="destructive" className="text-[10px]">late {fmtMins(h.minutesLate)}</Badge>}

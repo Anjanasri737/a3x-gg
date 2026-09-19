@@ -83,12 +83,23 @@ export function BookingFlow100x() {
       {screen === "BATCH" && <BatchBoard onOpenLead={open} />}
       {screen === "BOARD" && <Board onOpenLead={open} />}
       {screen === "CLOSING" && <ClosingDesk onOpenLead={open} />}
+      {/* No dumb screens: if no customer is picked yet, the customer list itself is the screen. */}
       {screen === "LABELS" && (lead
         ? <LabelConsole lead={lead} />
-        : <p className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">Open a customer from the board, then label them here.</p>)}
+        : <PickFirst hint="Pick the customer you want to label — the label console opens on them." onOpenLead={open} />)}
       {screen === "LEAD" && (lead
         ? <LeadPanel lead={lead} onBack={() => setScreen("BOARD")} onNext={openNextUnmarked} />
-        : <p className="rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground">Pick a customer from the board first.</p>)}
+        : <PickFirst hint="Pick a customer and their whole journey opens here." onOpenLead={open} />)}
+    </div>
+  );
+}
+
+/** Instead of an empty screen with one line of text, show the customers to pick from. */
+function PickFirst({ hint, onOpenLead }: { hint: string; onOpenLead: (id: string) => void }) {
+  return (
+    <div className="space-y-2">
+      <p className="rounded-lg border border-dashed p-2.5 text-xs text-muted-foreground">{hint}</p>
+      <Board onOpenLead={onOpenLead} />
     </div>
   );
 }

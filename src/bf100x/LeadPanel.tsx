@@ -6,6 +6,7 @@ import { AlertTriangle, ArrowLeft, Clock, ExternalLink, ShieldAlert, UserCheck }
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ContactActions } from "@/components/common/ContactActions";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -68,6 +69,7 @@ export function LeadPanel({ lead, onBack, onNext }: { lead: FlowLead; onBack: ()
           <div>
             <h2 className="text-lg font-semibold">{lead.name}</h2>
             <p className="text-xs text-muted-foreground">{lead.phone} · {lead.waAccount}</p>
+            <ContactActions className="mt-1.5" phone={lead.phone} name={lead.name} />
             <p className="mt-1 max-w-lg text-xs text-muted-foreground">Last message: “{lead.lastMessage}”</p>
             <div className="mt-1.5 flex flex-wrap gap-1">
               {lead.labels.map((l) => <Badge key={l} variant="outline" className="text-[10px]">{l}</Badge>)}
