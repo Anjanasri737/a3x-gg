@@ -48,6 +48,7 @@ export function SplitFlow() {
   const [nextAction, setNextAction] = useState(NEXT_ACTIONS[0]!);
   const [due, setDue] = useState(() => new Date(Date.now() + 2 * 3_600_000).toISOString().slice(0, 16));
   const [mounted, setMounted] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   useEffect(() => setMounted(true), []);
 
   // the queue: everyone who still needs a decision, worst first
