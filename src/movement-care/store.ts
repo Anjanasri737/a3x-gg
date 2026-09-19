@@ -47,11 +47,24 @@ interface MovementCareStore {
   commitment: DailyCommitment | null;
   reports: RoundReport[];
   debriefs: DraftDebrief[];
+  /** When on, the person picks every customer in the draft by hand. */
+  manualMode: boolean;
+  /** How many customers the hand-picked draft should hold (30 by default). */
+  manualSize: number;
+  /** Hand-picked customers, in the order the person wants to work them. */
+  manualList: string[];
   commit: (input: Omit<DailyCommitment, "date" | "committedAt">) => DailyCommitment;
   setClosingProperties: (ids: string[]) => void;
   report: (input: Omit<RoundReport, "id" | "date" | "reportedAt">) => RoundReport;
   saveDebrief: (input: Omit<DraftDebrief, "id" | "date" | "createdAt" | "sentOnWhatsapp">) => DraftDebrief;
   markDebriefSent: (id: string) => void;
+  setManualMode: (on: boolean) => void;
+  setManualSize: (size: number) => void;
+  setManualList: (ulids: string[]) => void;
+  addToManual: (ulid: string) => void;
+  removeFromManual: (ulid: string) => void;
+  replaceInManual: (outUlid: string, inUlid: string) => void;
+  clearManual: () => void;
   clearCommitment: () => void;
 }
 
@@ -63,6 +76,9 @@ export const useMovementCare = create<MovementCareStore>()(
       commitment: null,
       reports: [],
       debriefs: [],
+      manualMode: false,
+      manualSize: 30,
+      manualList: [],
       commit: (input) => {
         const commitment: DailyCommitment = {
           ...input,
@@ -99,6 +115,20 @@ export const useMovementCare = create<MovementCareStore>()(
         })),
       setClosingProperties: (ids) =>
         set((state) => ({ commitment: state.commitment ? { ...state.commitment, closingPropertyIds: ids } : null })),
+      setManualMode: (on) => set({ manualMode: on }),
+      setManualSize: (size) => set({ manualSize: Math.max(1, Math.min(200, Math.round(size) || 1)) }),
+      setManualList: (ulids) => set({ manualList: Array.from(new Set(ulids)) }),
+      addToManual: (ulid) =>
+        set((state) => (state.manualList.includes(ulid) ? state : { manualList: [...state.manualList, ulid] })),
+      removeFromManual: (ulid) =>
+        set((state) => ({ manualList: state.manualList.filter((item) => item !== ulid) })),
+      replaceInManual: (outUlid, inUlid) =>
+        set((state) => ({
+          manualList: state.manualList.includes(inUlid)
+            ? state.manualList.filter((item) => item !== outUlid)
+            : state.manualList.map((item) => (item === outUlid ? inUlid : item)),
+        })),
+      clearManual: () => set({ manualList: [] }),
       clearCommitment: () => set({ commitment: null }),
     }),
     { name: "gharpayy.movement-care.v3" },

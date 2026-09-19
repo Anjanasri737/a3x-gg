@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle, CheckCircle2, ClipboardCopy, Clock3, Flag, Goal,
-  Building2, MessageCircle, Phone, PhoneCall, PhoneOff, ShieldCheck,
+  Building2, Hand, MessageCircle, Phone, PhoneCall, PhoneOff, ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +17,8 @@ import { totals } from "@/movement/metrics";
 import { NEXT_ACTION_LABEL, OPERATORS, type CallResult, type NextActionKind } from "@/movement/types";
 import { toast } from "sonner";
 import { CARE_PLAYBOOKS, GOAL_TITLE, ROUND_COPY, type CareGoal, type CareRole, type CareRound } from "./playbooks";
+import { ManualDraftPanel, type ManualCandidate, type NewLeadInput } from "./ManualDraft";
+import { useIdentityStore } from "@/lib/lead-identity/store";
 import { actualForGoal, callStats, queueForGoal, resultStatus } from "./results";
 import { optionById, propertyOptions, propertyProgress, rankedForCustomer } from "./properties";
 import { todaysCommitment, useMovementCare } from "./store";
@@ -69,12 +71,40 @@ export function MovementCare() {
   const [aimProperties, setAimProperties] = useState<string[]>([]);
   const [propertyQuery, setPropertyQuery] = useState("");
   const [debriefFor, setDebriefFor] = useState<{ ulid: string; code: string } | null>(null);
+  const [showManual, setShowManual] = useState(false);
+  const manualMode = useMovementCare((state) => state.manualMode);
+  const manualSize = useMovementCare((state) => state.manualSize);
+  const manualList = useMovementCare((state) => state.manualList);
+  const setManualMode = useMovementCare((state) => state.setManualMode);
+  const setManualSize = useMovementCare((state) => state.setManualSize);
+  const setManualList = useMovementCare((state) => state.setManualList);
+  const addToManual = useMovementCare((state) => state.addToManual);
+  const removeFromManual = useMovementCare((state) => state.removeFromManual);
+  const replaceInManual = useMovementCare((state) => state.replaceInManual);
+  const clearManual = useMovementCare((state) => state.clearManual);
+  const createLead = useIdentityStore((state) => state.createLead);
 
   const activeRole = commitment?.role ?? role;
   const activeGoal = commitment?.goal ?? goal;
   const playbook = CARE_PLAYBOOKS[activeRole];
   const stage = playbook.stages.find((item) => item.goal === activeGoal) ?? playbook.stages[0];
-  const queue = useMemo(() => queueForGoal(activeGoal, list), [activeGoal, list]);
+  const systemQueue = useMemo(() => queueForGoal(activeGoal, list), [activeGoal, list]);
+  const queue = useMemo(() => {
+    if (!manualMode) return systemQueue;
+    const byId = new Map(systemQueue.map((item) => [item.ulid, item]));
+    return manualList.map((ulid) => byId.get(ulid)).filter(Boolean) as typeof systemQueue;
+  }, [manualMode, manualList, systemQueue]);
+  const candidates = useMemo<ManualCandidate[]>(() => systemQueue.map((item) => {
+    const info = nameOf.get(item.ulid);
+    return {
+      ulid: item.ulid,
+      name: info?.name ?? item.ulid,
+      phone: info?.phone ?? item.state.phone ?? "",
+      area: info?.area ?? "—",
+      note: item.reason,
+      bucket: item.bucket,
+    };
+  }), [systemQueue, nameOf]);
   const actual = useMemo(() => actualForGoal(activeGoal, list, events), [activeGoal, list, events]);
   const total = useMemo(() => totals(list, events), [list, events]);
   const calls = useMemo(() => callStats(events), [events]);
@@ -113,6 +143,40 @@ export function MovementCare() {
   const startDay = () => {
     commit({ role, goal, commitCount: Math.max(1, commitCount), supportNeeded: support.trim(), closingPropertyIds: aimProperties });
     toast.success(`${goal} result committed for today`);
+  };
+
+  const createManualLead = (input: NewLeadInput) => {
+    const lead = createLead({
+      name: input.name.trim() || "Unnamed lead",
+      phone: input.phone.trim(),
+      email: "",
+      location: input.area.trim(),
+      areas: input.area.trim() ? [input.area.trim()] : [],
+      fullAddress: "",
+      budget: input.budget.trim(),
+      moveIn: input.moveIn.trim(),
+      type: "",
+      room: "",
+      need: "",
+      specialReqs: input.note.trim(),
+      inBLR: null,
+      zone: "",
+      rawSource: "Added by hand in Movement CARE",
+    });
+    addToManual(lead.ulid);
+    setManualMode(true);
+    toast.success(`${lead.name} added by hand and put in your draft`);
+  };
+
+  const fillManualDemo = () => {
+    const picked = new Set(manualList);
+    for (const item of systemQueue) {
+      if (picked.size >= manualSize) break;
+      picked.add(item.ulid);
+    }
+    setManualList(Array.from(picked));
+    setManualMode(true);
+    toast.success(`Demo draft built — ${Math.min(picked.size, manualSize)} leads picked by hand`);
   };
 
   const acceptDraft = () => {
@@ -248,6 +312,9 @@ export function MovementCare() {
               </Button>
             ))}
           </div>
+          <Button size="sm" variant={manualMode ? "default" : "outline"} className="h-7 text-[10px]" onClick={() => setShowManual(true)}>
+            <Hand className="h-3 w-3" /> Draft by hand{manualMode ? ` · ${manualList.length}/${manualSize}` : ""}
+          </Button>
           <Button size="sm" variant="outline" className="h-7 text-[10px]" onClick={() => setShowPlaybook((value) => !value)}>
             <ShieldCheck className="h-3 w-3" /> Playbook
           </Button>
@@ -282,17 +349,31 @@ export function MovementCare() {
           onRole={chooseRole} onGoal={chooseGoal} onCommitCount={setCommitCount} onSupport={setSupport} onStart={startDay} />
       ) : (
         <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[320px_minmax(420px,1fr)_330px]">
-          <section className="min-h-0 overflow-hidden border-r bg-card">
+          <section className="flex min-h-0 flex-col overflow-hidden border-r bg-card">
             <div className="border-b px-3 py-2">
               <div className="flex items-center justify-between gap-2">
                 <div>
-                  <p className="text-[10px] font-semibold uppercase text-muted-foreground">Result queue</p>
-                  <p className="text-xs font-medium">{stage.meaning} · {queue.length} open</p>
+                  <p className="text-[10px] font-semibold uppercase text-muted-foreground">
+                    {manualMode ? "My hand-picked draft" : "Result queue"}
+                  </p>
+                  <p className="text-xs font-medium">
+                    {manualMode ? `${queue.length} of ${manualSize} picked` : `${stage.meaning} · ${queue.length} open`}
+                  </p>
                 </div>
                 <Badge className={cn("border text-[9px]", GOAL_TONE[activeGoal])}>{activeGoal}</Badge>
               </div>
+              <div className="mt-1.5 flex flex-wrap gap-1">
+                <Button size="sm" variant="outline" className="h-6 px-2 text-[10px]" onClick={() => setShowManual(true)}>
+                  <Hand className="h-3 w-3" /> Add · remove · replace
+                </Button>
+                {manualMode && (
+                  <Button size="sm" variant="ghost" className="h-6 px-2 text-[10px]" onClick={() => setManualMode(false)}>
+                    Back to system picks
+                  </Button>
+                )}
+              </div>
             </div>
-            <div className="h-[calc(100%-53px)] divide-y overflow-y-auto">
+            <div className="min-h-0 flex-1 divide-y overflow-y-auto">
               {queue.map((item, index) => {
                 const info = nameOf.get(item.ulid);
                 const status = resultStatus(item.state);
@@ -473,6 +554,12 @@ export function MovementCare() {
           </aside>
         </div>
       )}
+
+      <ManualDraftPanel open={showManual} onClose={() => setShowManual(false)} candidates={candidates}
+        manualList={manualList} manualMode={manualMode} manualSize={manualSize}
+        onManualMode={setManualMode} onManualSize={setManualSize} onAdd={addToManual}
+        onRemove={removeFromManual} onReplace={replaceInManual} onClear={clearManual}
+        onCreateLead={createManualLead} onFillDemo={fillManualDemo} />
 
       {showPlaybook && <PlaybookDrawer playbook={playbook} onClose={() => setShowPlaybook(false)} />}
     </div>
