@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ArrowLeftRight, Hand, PlusCircle, Search, Trash2, UserPlus, Wand2, X } from "lucide-react";
+import { ArrowLeftRight, Hand, PlusCircle, Search, Timer, Trash2, UserPlus, Wand2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -38,11 +38,14 @@ interface Props {
   onClear: () => void;
   onCreateLead: (input: NewLeadInput) => void;
   onFillDemo: () => void;
+  onStartEmpty: () => void;
+  runningFor: string | null;
 }
 
 export function ManualDraftPanel({
   open, onClose, candidates, manualList, manualMode, manualSize,
   onManualMode, onManualSize, onAdd, onRemove, onReplace, onClear, onCreateLead, onFillDemo,
+  onStartEmpty, runningFor,
 }: Props) {
   const [query, setQuery] = useState("");
   const [replacing, setReplacing] = useState<string | null>(null);
@@ -92,6 +95,9 @@ export function ManualDraftPanel({
           <Badge variant={picked.length >= manualSize ? "default" : "outline"} className="text-[10px]">
             {picked.length} of {manualSize} picked
           </Badge>
+          <Button size="sm" variant="outline" className="h-7 text-[10px]" onClick={onStartEmpty}>
+            <Timer className="h-3 w-3" /> {runningFor ? `Restart · clock ${runningFor}` : `Start with ${manualSize} empty rows`}
+          </Button>
           <Button size="sm" variant="outline" className="h-7 text-[10px]" onClick={onFillDemo}>
             <Wand2 className="h-3 w-3" /> Demo: fill all {manualSize}
           </Button>
@@ -182,7 +188,7 @@ export function ManualDraftPanel({
               ))}
               {picked.length === 0 && (
                 <p className="px-3 py-4 text-xs text-muted-foreground">
-                  Nothing picked yet. Add from the left, add a brand new lead, or use the demo to fill all {manualSize}.
+                          You have {manualSize} empty rows. Fill them one at a time while you work — add from the left, add a brand new lead, or use the demo to fill all {manualSize} at once.
                 </p>
               )}
             </div>
