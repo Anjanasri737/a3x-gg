@@ -438,7 +438,22 @@ export function SplitFlow({ embedded = false }: { embedded?: boolean }) {
           </DialogContent>
         </Dialog>
       )}
+
+      <Dialog open={!!closingId} onOpenChange={(o) => !o && setClosingId(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>Close this draft</DialogTitle></DialogHeader>
+          <label className="block text-xs font-medium">
+            What happened in this draft?
+            <Input className="mt-1" autoFocus placeholder="30 customers worked, 6 tours set…" value={closeNote} onChange={(e) => setCloseNote(e.target.value)} />
+          </label>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setClosingId(null)}>Cancel</Button>
+            <Button onClick={() => { if (closingId) closeBatch(closingId, closeNote); setClosingId(null); toast.success("Draft closed"); }}>Close draft</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
+
 
       {/* Drag this edge to set the panel width, exactly like a sheet column */}
       {widthPct < 100 && (
