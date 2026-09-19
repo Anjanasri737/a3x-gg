@@ -20,6 +20,8 @@ import { useControlFilters, type DayWindow, type HealthFilter } from "./filters"
 import { derive, LEAKS, type CustomerRow } from "./derive";
 import { deepen, money } from "./deep";
 import { canonicalCustomerId } from "@/lib/canonical/customer-id";
+import { ViewerBar } from "./ViewerBar";
+import { powersOf, scopeControlData, scopeOptions, useViewer } from "./viewer";
 
 /** Rows whose stage, journey step or conversation type mentions this phase. */
 const phase = (rows: CustomerRow[], re: RegExp) =>
@@ -65,14 +67,22 @@ const ago = (t: number) => {
 
 export function AdminControl() {
   const f = useControlFilters();
+  const viewer = useViewer();
+  const can = powersOf(viewer.role);
   const [tab, setTab] = useState("command");
   const [openRow, setOpenRow] = useState<CustomerRow | null>(null);
 
-  const { data, isLoading, refetch, isFetching } = useQuery({
+  const { data: raw, isLoading, refetch, isFetching } = useQuery({
     queryKey: ["admin-control-data"],
     queryFn: () => getAdminControlData(),
     staleTime: 60_000,
   });
+
+  const allOptions = useMemo(() => scopeOptions(raw), [raw]);
+  const data = useMemo(
+    () => (raw ? scopeControlData(raw, { role: viewer.role, zones: viewer.zones, accounts: viewer.accounts, person: viewer.person }) : undefined),
+    [raw, viewer.role, viewer.zones, viewer.accounts, viewer.person],
+  );
 
   const d = useMemo(() => (data ? derive(data, f) : null), [data, f]);
   const deep = useMemo(() => (data && d ? deepen(data, d) : null), [data, d]);
@@ -94,6 +104,8 @@ export function AdminControl() {
 
   return (
     <div className="mx-auto w-full max-w-[1500px] space-y-3 p-3 sm:p-4">
+      <ViewerBar options={allOptions} />
+
       <header className="rounded-xl border bg-card p-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
@@ -155,12 +167,12 @@ export function AdminControl() {
             <TabsTrigger value="zones">Zones</TabsTrigger>
             <TabsTrigger value="accuracy">Reading quality</TabsTrigger>
             <TabsTrigger value="compliance">Compliance</TabsTrigger>
-            <TabsTrigger value="balance">Workload</TabsTrigger>
-            <TabsTrigger value="value">Money at risk</TabsTrigger>
+            {can.seeWorkloadBalance && <TabsTrigger value="balance">Workload</TabsTrigger>}
+            {can.seeMoney && <TabsTrigger value="value">Money at risk</TabsTrigger>}
             <TabsTrigger value="heat">When chats land</TabsTrigger>
             <TabsTrigger value="anomalies">Alerts</TabsTrigger>
-            <TabsTrigger value="people">People</TabsTrigger>
-            <TabsTrigger value="history">History</TabsTrigger>
+            {can.seePeopleQuality && <TabsTrigger value="people">People</TabsTrigger>}
+            {can.seeFullHistory && <TabsTrigger value="history">History</TabsTrigger>}
             <TabsTrigger value="upload">Add screenshots</TabsTrigger>
             <TabsTrigger value="customer">Customer</TabsTrigger>
           </TabsList>
@@ -177,7 +189,9 @@ export function AdminControl() {
             </div>
 
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
-              <Kpi icon={IndianRupee} label="Money at risk" value={money(deep.value.atRisk)} tone="red" onClick={() => setTab("value")} />
+              {can.seeMoney
+                ? <Kpi icon={IndianRupee} label="Money at risk" value={money(deep.value.atRisk)} tone="red" onClick={() => setTab("value")} />
+                : <Kpi icon={ShieldAlert} label="Red customers" value={d.kpi.red} tone="red" onClick={() => f.set({ health: "RED" })} />}
               <Kpi icon={Clock} label="Due in 2 hours" value={deep.forecast.next2h} onClick={() => setTab("sla")} />
               <Kpi icon={Clock} label="No deadline" value={deep.forecast.missing} tone="amber" onClick={() => setTab("sla")} />
               <Kpi icon={AlertTriangle} label="Slowest stage" value={deep.bottlenecks[0]?.stage ?? "—"} hint={`${deep.bottlenecks[0]?.avgIdleH ?? 0}h average idle`} onClick={() => setTab("bottlenecks")} />
@@ -603,6 +617,7 @@ export function AdminControl() {
                         row={openRow}
                         onAssign={(handler) => run(`${openRow.name} given to ${handler}`, () => assignOwner({ data: { leadId: openRow.id, handler } }))}
                         onNext={(kind, mins2) => run("Next action set", () => setNextAction({ data: { leadId: openRow.id, kind, dueInMinutes: mins2 } }))}
+                        canEscalate={can.escalateToTower}
                         onEscalate={() => run("Sent to Control Tower", () => escalateToTower({ data: { leadId: openRow.id, reason: openRow.reasons[0] ?? "Nobody moved this in time" } }))}
                       />
                       <div className="flex flex-wrap gap-2 pt-1">
@@ -821,11 +836,12 @@ const QUICK: Array<[string, number]> = [
   ["Fix tour date", 1440],
 ];
 
-function FixNow({ row, onAssign, onNext, onEscalate }: {
+function FixNow({ row, onAssign, onNext, onEscalate, canEscalate = true }: {
   row: CustomerRow;
   onAssign: (handler: string) => void;
   onNext: (kind: string, dueInMinutes: number) => void;
   onEscalate: () => void;
+  canEscalate?: boolean;
 }) {
   const [who, setWho] = useState("");
   const [what, setWhat] = useState("");
@@ -838,7 +854,11 @@ function FixNow({ row, onAssign, onNext, onEscalate }: {
         <Button size="sm" className="h-7 px-2 text-[11px]" disabled={!who.trim()} onClick={() => { onAssign(who.trim()); setWho(""); }}>
           Give owner
         </Button>
-        <Button size="sm" variant="outline" className="h-7 px-2 text-[11px]" onClick={onEscalate}>Send to Control Tower</Button>
+        {canEscalate ? (
+          <Button size="sm" variant="outline" className="h-7 px-2 text-[11px]" onClick={onEscalate}>Send to Control Tower</Button>
+        ) : (
+          <span className="text-[11px] text-muted-foreground">Only the founder can send this to Control Tower.</span>
+        )}
       </div>
       <div className="flex flex-wrap items-center gap-1.5">
         <Input value={what} onChange={(e) => setWhat(e.target.value)} placeholder="What must happen next?" className="h-7 w-48 text-xs" />
