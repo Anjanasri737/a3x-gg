@@ -1,7 +1,8 @@
 // The 100x funnel squeezed into 40% of the screen, so WhatsApp can live in the
 // other 60%. One screen, nothing to scroll except the questions themselves.
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, ArrowRight, ListChecks, PhoneCall, ShieldAlert, UserCheck } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { ArrowLeft, ArrowRight, ListChecks, Menu, PhoneCall, ShieldAlert, UserCheck } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,28 @@ import { CloseCommitButton } from "@/components/commitments/CloseCommitButton";
 
 const startOfDay = () => new Date(new Date().toDateString()).getTime();
 
+// Everywhere you can jump without leaving the split screen.
+const MENU: { to: string; label: string; group: string }[] = [
+  { group: "This funnel", to: "/booking-flow", label: "Booking Flow — full screen" },
+  { group: "This funnel", to: "/booking-flow-100x", label: "Booking Flow 100x" },
+  { group: "This funnel", to: "/closing", label: "Closing desk" },
+  { group: "This funnel", to: "/final-moment", label: "Draft Vision (screenshots)" },
+  { group: "Lead OS", to: "/flow-os", label: "Flow OS — Lead OS" },
+  { group: "Lead OS", to: "/final-e2e-plus", label: "Final E2E Plus" },
+  { group: "Lead OS", to: "/mymoves", label: "My Moves" },
+  { group: "Lead OS", to: "/booking-os", label: "Booking OS" },
+  { group: "Lead OS", to: "/ways", label: "10 Ways" },
+  { group: "Lead OS", to: "/conversation-library", label: "Conversation Library" },
+  { group: "Everyday CRM", to: "/", label: "Dashboard" },
+  { group: "Everyday CRM", to: "/today", label: "Today" },
+  { group: "Everyday CRM", to: "/leads", label: "Leads" },
+  { group: "Everyday CRM", to: "/tours", label: "Tours" },
+  { group: "Everyday CRM", to: "/follow-ups", label: "Follow-ups" },
+  { group: "Everyday CRM", to: "/inventory", label: "Inventory" },
+  { group: "Everyday CRM", to: "/control-tower-team", label: "Control Tower" },
+  { group: "Everyday CRM", to: "/admin", label: "Admin" },
+];
+
 export function SplitFlow() {
   const { leads, me, mode, setMode, claim, setNext, escalate } = useBookingFlow();
   const [leadId, setLeadId] = useState<string>("");
@@ -25,6 +48,7 @@ export function SplitFlow() {
   const [nextAction, setNextAction] = useState(NEXT_ACTIONS[0]!);
   const [due, setDue] = useState(() => new Date(Date.now() + 2 * 3_600_000).toISOString().slice(0, 16));
   const [mounted, setMounted] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
   useEffect(() => setMounted(true), []);
 
   // the queue: everyone who still needs a decision, worst first
@@ -88,6 +112,30 @@ export function SplitFlow() {
           <div className="flex shrink-0 gap-1">
             <Button size="sm" variant={mode === "GUIDED" ? "default" : "outline"} className="h-6 px-2 text-[10px]" onClick={() => setMode("GUIDED")}>Understand</Button>
             <Button size="sm" variant={mode === "EXPERT" ? "default" : "outline"} className="h-6 px-2 text-[10px]" onClick={() => setMode("EXPERT")}>Expert</Button>
+            <div className="relative">
+              <Button size="sm" variant="outline" className="h-6 px-2 text-[10px]" onClick={() => setMenuOpen((v) => !v)} aria-expanded={menuOpen} aria-label="Open app menu">
+                <Menu className="h-3 w-3" />
+              </Button>
+              {menuOpen && (
+                <>
+                  <button type="button" aria-label="Close menu" className="fixed inset-0 z-40 cursor-default" onClick={() => setMenuOpen(false)} />
+                  <div className="absolute right-0 z-50 mt-1 max-h-[70vh] w-56 overflow-y-auto rounded-md border bg-popover p-1 shadow-md">
+                    {(() => {
+                      let lastGroup = "";
+                      return MENU.map((m) => (
+                        <div key={m.to}>
+                          {m.group !== lastGroup && ((lastGroup = m.group), (<p className="px-2 pb-0.5 pt-1.5 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">{m.group}</p>))}
+                          <Link to={m.to} onClick={() => setMenuOpen(false)}
+                            className="block rounded-sm px-2 py-1 text-[11px] hover:bg-accent hover:text-accent-foreground">
+                            {m.label}
+                          </Link>
+                        </div>
+                      ));
+                    })()}
+                  </div>
+                </>
+              )}
+            </div>
           </div>
         </div>
         {mounted && (
