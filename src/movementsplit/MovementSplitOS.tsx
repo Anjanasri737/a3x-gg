@@ -7,16 +7,26 @@ import { seedMovement } from "@/movement/seed";
 import {
   ActiveList, Dashboards, DraftingPanel, JourneyTimeline, UnmatchedQueue, WorkPanel,
 } from "@/movement/components";
-import { SplitFlow } from "@/bf100x/SplitFlow";
+import { SplitFlow, type SplitFocus } from "@/bf100x/SplitFlow";
 
 export function MovementSplitOS() {
   useEffect(() => { seedMovement(); }, []);
   const { list, nameOf, me } = useMovementSync();
   const [selected, setSelected] = useState<string | null>(null);
+  const [tab, setTab] = useState("split");
+  const [focus, setFocus] = useState<SplitFocus | undefined>();
 
   useEffect(() => {
     if (!selected && list.length) setSelected(list[0].ulid);
   }, [list, selected]);
+
+  // Click a customer anywhere in Movement OS → they open in the booking flow.
+  function openInBookingFlow(ulid: string) {
+    setSelected(ulid);
+    const m = nameOf.get(ulid);
+    setFocus({ name: m?.name, phone: m?.phone, key: `${ulid}-${Date.now()}` });
+    setTab("split");
+  }
 
   return (
     <div className="space-y-3">
