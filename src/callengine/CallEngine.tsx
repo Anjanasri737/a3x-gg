@@ -15,6 +15,7 @@ import { buildOutputs, wasteFlags } from "./compose";
 import { knownFacts, noAnswerPlan, suggestAgenda } from "./infer";
 import { callMission } from "./mission";
 import { useCallEngine } from "./store";
+import { pushCallRecord } from "./sync";
 import {
   ACTIVITIES, AGENDAS, DISLIKE_REASONS, MOVEMENT_LABEL, OUTCOMES, PRICE_REACTIONS, PROMISES, REACTIONS,
   TOUR_REFUSALS, agendaDef, emptyCapture,
