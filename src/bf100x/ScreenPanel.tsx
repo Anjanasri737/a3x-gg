@@ -174,7 +174,7 @@ export function ScreenPanel({
   );
 
   return (
-    <Card className="p-4">
+    <Card className="p-4" ref={rootRef}>
       <div className="flex flex-wrap items-center gap-2">
         <Badge variant="outline" className="text-[10px]">Screen {idx + 1} of {SCREENS.length}</Badge>
         <Badge variant="secondary" className="text-[10px]">{screen.title}</Badge>
@@ -228,7 +228,13 @@ export function ScreenPanel({
                     value={val(st.field)}
                     onChange={(e) => put(st.field, e.target.value)}
                     onBlur={() => commitTyped(st)}
-                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commitTyped(st); } }}
+                    onKeyDown={(e) => {
+                      if (e.key !== "Enter") return;
+                      e.preventDefault();
+                      commitTyped(st);
+                      if (e.ctrlKey || e.metaKey) saveAndNext();
+                      else focusNextField(e.currentTarget);
+                    }}
                   />
                 )}
 
@@ -243,7 +249,13 @@ export function ScreenPanel({
                         value={val(x.field)}
                         onChange={(e) => put(x.field, e.target.value)}
                         onBlur={() => commitTyped(st)}
-                        onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commitTyped(st); } }}
+                        onKeyDown={(e) => {
+                          if (e.key !== "Enter") return;
+                          e.preventDefault();
+                          commitTyped(st);
+                          if (e.ctrlKey || e.metaKey) saveAndNext();
+                          else focusNextField(e.currentTarget);
+                        }}
                       />
                     </label>
                   ))}
