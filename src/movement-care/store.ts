@@ -83,6 +83,15 @@ export const useMovementCare = create<MovementCareStore>()(
       manualMode: false,
       manualSize: 30,
       manualList: [],
+      draftStartedAt: null,
+      startRollingDraft: (size) =>
+        set({
+          manualMode: true,
+          manualSize: Math.max(1, Math.min(200, Math.round(size) || 1)),
+          manualList: [],
+          draftStartedAt: new Date().toISOString(),
+        }),
+      stopDraftClock: () => set({ draftStartedAt: null }),
       commit: (input) => {
         const commitment: DailyCommitment = {
           ...input,
