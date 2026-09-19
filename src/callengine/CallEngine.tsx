@@ -60,6 +60,7 @@ export function CallEngine({ lead, onLogged }: Props) {
   const def = agendaDef(agenda);
   const attempt = engine.noAnswerStreak(lead.ulid) + 1;
   const plan = useMemo(() => noAnswerPlan(lead, attempt), [lead, attempt]);
+  const nextPlan = useMemo(() => noAnswerPlan(lead, attempt + 1), [lead, attempt]);
   const cta = primaryCta(lead, cap);
   const media = useMemo(() => rankedForCustomer(lead, []).slice(0, 3), [lead]);
 
