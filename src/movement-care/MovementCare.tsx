@@ -145,6 +145,40 @@ export function MovementCare() {
     toast.success(`${goal} result committed for today`);
   };
 
+  const createManualLead = (input: NewLeadInput) => {
+    const lead = createLead({
+      name: input.name.trim() || "Unnamed lead",
+      phone: input.phone.trim(),
+      email: "",
+      location: input.area.trim(),
+      areas: input.area.trim() ? [input.area.trim()] : [],
+      fullAddress: "",
+      budget: input.budget.trim(),
+      moveIn: input.moveIn.trim(),
+      type: "",
+      room: "",
+      need: "",
+      specialReqs: input.note.trim(),
+      inBLR: null,
+      zone: "",
+      rawSource: "Added by hand in Movement CARE",
+    });
+    addToManual(lead.ulid);
+    setManualMode(true);
+    toast.success(`${lead.name} added by hand and put in your draft`);
+  };
+
+  const fillManualDemo = () => {
+    const picked = new Set(manualList);
+    for (const item of systemQueue) {
+      if (picked.size >= manualSize) break;
+      picked.add(item.ulid);
+    }
+    setManualList(Array.from(picked));
+    setManualMode(true);
+    toast.success(`Demo draft built — ${Math.min(picked.size, manualSize)} leads picked by hand`);
+  };
+
   const acceptDraft = () => {
     if (!commitment || !selectedState) return;
     const code = selectedState.waDraft ?? (activeGoal === "CLOSE" ? "D1" : activeGoal === "SCHEDULE" ? "D2" : "D3");
