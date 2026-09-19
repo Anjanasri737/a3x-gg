@@ -60,7 +60,7 @@ export function MovementSplitOS() {
 
         <TabsContent value="work" className="mt-3">
           <div className="grid grid-cols-1 lg:grid-cols-[380px_1fr] gap-3">
-            <ActiveList list={list} meta={nameOf} selected={selected} onSelect={setSelected} meId={me.id} />
+            <ActiveList list={list} meta={nameOf} selected={selected} onSelect={openInBookingFlow} meId={me.id} />
             <div className="space-y-3">
               <WorkPanel ulid={selected} meta={nameOf} />
               <JourneyTimeline ulid={selected} />
