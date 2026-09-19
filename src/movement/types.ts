@@ -147,6 +147,8 @@ export interface PrebookPipeline {
 
 export interface MovementState {
   ulid: string;
+  /** Stable customer key shared by every operating surface. */
+  canonicalId: string;
   name?: string;
   phone?: string;
   waAccount: string;

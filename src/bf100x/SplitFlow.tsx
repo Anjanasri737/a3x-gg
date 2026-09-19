@@ -124,12 +124,13 @@ export function SplitFlow({ embedded = false, focus, panelOnly = false }: { embe
   useEffect(() => {
     if (!focus || leads.length === 0) return;
     const want = focus.canonicalId || canonicalCustomerId({ phone: focus.phone, name: focus.name });
-    const match = want ? leads.find((l) => canonicalCustomerId({ phone: l.phone, name: l.name }) === want) : undefined;
+    const match = want ? leads.find((l) => (l.canonicalId || canonicalCustomerId({ phone: l.phone, name: l.name })) === want) : undefined;
     const id = match?.id ?? ensureLead({ name: focus.name || focus.phone || "Unknown", phone: focus.phone || "", source: "Movement OS" });
+    if (!id) return;
     setLeadId(id);
     setPane("WORK");
     if (match) setScreenId(currentScreen(match.f ?? {}).id);
-    if (!match) toast.success(`${focus.name || focus.phone} added to the booking flow`);
+    if (!match) toast.success(`${focus.name || focus.phone} linked to the booking flow`);
   }, [focus?.key, focus?.phone, focus?.name, focus?.canonicalId, leads.length]);
 
   const screen = SCREENS.find((s) => s.id === screenId) ?? (lead ? currentScreen(lead.f ?? {}) : SCREENS[0]!);

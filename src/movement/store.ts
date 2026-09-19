@@ -11,6 +11,7 @@ import {
   type BatchLabel,
 } from "./types";
 import { evaluateGoodLead } from "./priority";
+import { canonicalCustomerId } from "@/lib/canonical/customer-id";
 
 const now = () => new Date().toISOString();
 const uid = (p: string) => `${p}-${Math.random().toString(36).slice(2, 9)}`;
@@ -117,6 +118,7 @@ export function blank(seed: ShadowSeed): MovementState {
   const ts = now();
   return {
     ulid: seed.ulid,
+    canonicalId: canonicalCustomerId({ phone: seed.phone, name: seed.name }) || seed.ulid,
     name: seed.name,
     phone: seed.phone,
     waAccount: seed.waAccount ?? "Kora WA 1",

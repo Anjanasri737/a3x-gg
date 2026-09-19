@@ -28,6 +28,8 @@ export function useMovementSync() {
     ensureMany(
       leads.map((l) => ({
         ulid: l.ulid,
+        name: l.name,
+        phone: l.phoneE164 || normalizePhoneIN(l.phoneRaw || ""),
         ownerId: claims[l.ulid]?.ownerId ?? l.assigneeId ?? l.primaryOwnerId ?? "",
         ownerName: claims[l.ulid]?.ownerName ?? l.assigneeName ?? "Unassigned",
         unread: unread[l.ulid]?.count ?? 0,
