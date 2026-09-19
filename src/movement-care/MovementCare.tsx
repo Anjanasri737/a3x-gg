@@ -571,8 +571,8 @@ function CommitmentGate({ role, goal, commitCount, support, aimProperties, onAim
   );
 }
 
-function ProgressReporter({ round, onRound, actual, target, moved, stuck, need, onMoved, onStuck, onNeed, onSave }: {
-  round: CareRound; onRound: (round: CareRound) => void; actual: number; target: number;
+function ProgressReporter({ round, onRound, actual, committed, moved, stuck, need, onMoved, onStuck, onNeed, onSave }: {
+  round: CareRound; onRound: (round: CareRound) => void; actual: number; committed: number;
   moved: string; stuck: string; need: string; onMoved: (value: string) => void;
   onStuck: (value: string) => void; onNeed: (value: string) => void; onSave: () => void;
 }) {
@@ -585,8 +585,8 @@ function ProgressReporter({ round, onRound, actual, target, moved, stuck, need, 
         ))}
       </div>
       <p className="mt-2 text-xs font-semibold">{ROUND_COPY[round].question}</p>
-      <div className="mt-2 flex items-center justify-between text-[10px]"><span>System actual</span><strong>{actual}/{target}</strong></div>
-      <Progress value={Math.min(100, Math.round((actual / Math.max(target, 1)) * 100))} className="mt-1" />
+      <div className="mt-2 flex items-center justify-between text-[10px]"><span>Counted by the system</span><strong>{actual}/{committed}</strong></div>
+      <Progress value={Math.min(100, Math.round((actual / Math.max(committed, 1)) * 100))} className="mt-1" />
       <div className="mt-2 space-y-1.5">
         <Textarea value={moved} onChange={(event) => onMoved(event.target.value)} placeholder="Moved — what result changed?" className="min-h-14 text-xs" />
         <Textarea value={stuck} onChange={(event) => onStuck(event.target.value)} placeholder="Stuck — what is blocking the result?" className="min-h-14 text-xs" />
@@ -609,10 +609,25 @@ function PlaybookDrawer({ playbook, onClose }: { playbook: (typeof CARE_PLAYBOOK
         <div className="border p-3"><p className="text-[10px] font-semibold uppercase text-muted-foreground">Role promise</p><p className="mt-1 text-sm">{playbook.promise}</p></div>
         {playbook.stages.map((item) => (
           <div key={item.goal} className="border p-3">
-            <div className="flex items-center justify-between"><Badge className={cn("border", GOAL_TONE[item.goal])}>{item.goal}</Badge><span className="text-xs font-semibold">Guide {item.defaultTarget}</span></div>
-            <p className="mt-2 text-sm font-semibold">{item.meaning}</p>
+            <div className="flex items-center justify-between gap-2">
+              <Badge className={cn("border", GOAL_TONE[item.goal])}>{item.goal}</Badge>
+              <span className="text-xs font-semibold">A usual day: {item.dayCount} {item.unit}</span>
+            </div>
+            <p className="mt-2 text-sm font-semibold">{GOAL_TITLE[item.goal]}</p>
             <p className="mt-1 text-xs text-muted-foreground">{item.outcome}</p>
-            <div className="mt-2 grid gap-2 text-xs"><p><strong>Proof:</strong> {item.proof}</p><p><strong>Recommend:</strong> {item.recommendWhen}</p><p><strong>Require:</strong> {item.requireWhen}</p><p><strong>Receiver:</strong> {item.receiver}</p></div>
+            <p className="mt-2 text-[10px] font-semibold uppercase text-muted-foreground">Step by step</p>
+            <ol className="mt-1 space-y-1 text-xs">
+              {item.steps.map((step, index) => (
+                <li key={step} className="flex gap-1.5"><span className="font-mono text-muted-foreground">{index + 1}.</span>{step}</li>
+              ))}
+            </ol>
+            <div className="mt-2 grid gap-1.5 text-xs">
+              <p><strong>It counts when:</strong> {item.proof}</p>
+              <p className="text-destructive"><strong>It does not count when:</strong> {item.doesNotCount}</p>
+              <p><strong>Handed to:</strong> {item.receiver}</p>
+              <p><strong>Choose this day when:</strong> {item.recommendWhen}</p>
+              <p><strong>You must choose it when:</strong> {item.requireWhen}</p>
+            </div>
           </div>
         ))}
         <div className="border p-3"><p className="text-[10px] font-semibold uppercase text-muted-foreground">Acceptance gate</p><p className="mt-1 text-xs">{playbook.acceptanceGate}</p></div>
