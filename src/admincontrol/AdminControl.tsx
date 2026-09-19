@@ -104,6 +104,8 @@ export function AdminControl() {
 
   return (
     <div className="mx-auto w-full max-w-[1500px] space-y-3 p-3 sm:p-4">
+      <ViewerBar options={allOptions} />
+
       <header className="rounded-xl border bg-card p-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
