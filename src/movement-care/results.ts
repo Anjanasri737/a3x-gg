@@ -14,6 +14,19 @@ export function actualForGoal(goal: CareGoal, states: MovementState[], events: M
   return today.filter((event) => ["booked", "payment-received"].includes(event.kind)).length;
 }
 
+export function callStats(events: MovementEvent[]) {
+  const today = events.filter((event) => isToday(event.ts));
+  const results = today.filter((event) => event.kind === "call-result");
+  const connected = results.filter((event) => event.to === "connected").length;
+  const dialled = Math.max(results.length, today.filter((event) => event.kind === "call-started").length);
+  return {
+    dialled,
+    connected,
+    notConnected: results.length - connected,
+    rate: dialled ? Math.round((connected / dialled) * 100) : 0,
+  };
+}
+
 function careWeight(goal: CareGoal, state: MovementState) {
   if (goal === "FIND") return state.stage === "new" || !state.goodLead ? 500 : 0;
   if (goal === "SCHEDULE") return state.goodLead && !state.tourAt ? 500 : state.stage === "qualified" ? 400 : 0;
