@@ -617,6 +617,7 @@ export function AdminControl() {
                         row={openRow}
                         onAssign={(handler) => run(`${openRow.name} given to ${handler}`, () => assignOwner({ data: { leadId: openRow.id, handler } }))}
                         onNext={(kind, mins2) => run("Next action set", () => setNextAction({ data: { leadId: openRow.id, kind, dueInMinutes: mins2 } }))}
+                        canEscalate={can.escalateToTower}
                         onEscalate={() => run("Sent to Control Tower", () => escalateToTower({ data: { leadId: openRow.id, reason: openRow.reasons[0] ?? "Nobody moved this in time" } }))}
                       />
                       <div className="flex flex-wrap gap-2 pt-1">
