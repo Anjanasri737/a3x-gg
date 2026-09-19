@@ -352,7 +352,11 @@ export function buildOutputs(
 ): CallOutputs {
   const movement = classifyMovement(capture, outcome);
   // Unanswered call → send the approved message for this condition, exactly as written.
-  const now = outcome === "connected" ? connectedMessage(lead, agenda, capture) : (noAnswerAsk ?? "");
+  const now =
+    outcome === "connected"
+      ? `${connectedMessage(lead, agenda, capture)}\n\n${callRecap(lead, agenda, capture)}`
+      : (noAnswerAsk ?? "");
+
 
   return {
     now,
