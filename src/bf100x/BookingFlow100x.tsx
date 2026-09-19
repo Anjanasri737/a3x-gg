@@ -93,3 +93,13 @@ export function BookingFlow100x() {
     </div>
   );
 }
+
+/** Instead of an empty screen with one line of text, show the customers to pick from. */
+function PickFirst({ hint, onOpenLead }: { hint: string; onOpenLead: (id: string) => void }) {
+  return (
+    <div className="space-y-2">
+      <p className="rounded-lg border border-dashed p-2.5 text-xs text-muted-foreground">{hint}</p>
+      <Board onOpenLead={onOpenLead} />
+    </div>
+  );
+}
