@@ -627,7 +627,7 @@ export function MovementCare() {
             wentWell: "Customer picked Saturday 11 AM",
             wentBadly: "Budget ₹1,000 below our price",
             problems: "Need inventory truth for Sobha Dream Acres",
-          }) || SAMPLE_FALLBACK} />
+          }) || sampleMessage()} />
       )}
 
       {showPlaybook && <PlaybookDrawer playbook={playbook} onClose={() => setShowPlaybook(false)} />}
@@ -793,8 +793,9 @@ function PlaybookDrawer({ playbook, onClose }: { playbook: (typeof CARE_PLAYBOOK
   );
 }
 
-function DebriefCard({ code, customer, onSave, onCopy, onClose }: {
+function DebriefCard({ code, customer, onSave, onCopy, onPreview, onClose }: {
   code: string; customer: string;
+  onPreview: (input: { done: string; wentWell: string; wentBadly: string; problems: string }) => string;
   onSave: (input: { done: string; wentWell: string; wentBadly: string; problems: string }) => { id: string; message: string } | undefined;
   onCopy: (id: string, message: string) => void;
   onClose: () => void;
@@ -831,6 +832,10 @@ function DebriefCard({ code, customer, onSave, onCopy, onClose }: {
           <Textarea value={problems} onChange={(event) => setProblems(event.target.value)} placeholder="Need inventory truth for Salarpuria, need pricing approval…" className="mt-1 min-h-14 text-xs" />
         </label>
       </div>
+      <div className="mt-2 border bg-muted/30 p-2">
+        <p className="text-[10px] font-semibold uppercase text-muted-foreground">WhatsApp message being written — live</p>
+        <pre className="mt-1 whitespace-pre-wrap break-words text-[11px] leading-snug">{onPreview({ done, wentWell, wentBadly, problems })}</pre>
+      </div>
       <Button size="sm" className="mt-2" onClick={build}><CheckCircle2 className="h-3.5 w-3.5" /> Make the WhatsApp update</Button>
       {saved && (
         <div className="mt-2 border bg-muted/30 p-2">
@@ -841,6 +846,72 @@ function DebriefCard({ code, customer, onSave, onCopy, onClose }: {
           </Button>
         </div>
       )}
+    </div>
+  );
+}
+
+const SAMPLE_INPUT = {
+  done: "Called, qualified, shared 2 properties",
+  wentWell: "Customer picked Saturday 11 AM",
+  wentBadly: "Budget ₹1,000 below our price",
+  problems: "Need inventory truth for Sobha Dream Acres",
+};
+
+/** Used only when no customer is open, so the format is always visible. */
+function sampleMessage() {
+  return debriefMessage({
+    ...SAMPLE_INPUT,
+    customerName: "Kavya Reddy",
+    draftCode: "D1",
+    goal: "FIND",
+    operatorName: "You",
+    resultNow: 12,
+    commitCount: 40,
+    property: "Embassy Springs",
+    nextStep: "Call back",
+    dueAt: new Date(Date.now() + 3 * 3600_000).toISOString(),
+  });
+}
+
+function FormatDrawer({ sample, onClose }: { sample: string; onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-50 flex justify-end bg-background/70 backdrop-blur-sm">
+      <div className="flex h-full w-full max-w-lg flex-col border-l bg-card shadow-xl">
+        <header className="flex shrink-0 items-center gap-2 border-b px-3 py-2">
+          <MessageCircle className="h-4 w-4 text-primary" />
+          <div>
+            <p className="text-sm font-semibold">WhatsApp update — how it is written</p>
+            <p className="text-[10px] text-muted-foreground">This exact message is built after every draft is done.</p>
+          </div>
+          <Button size="sm" variant="ghost" className="ml-auto h-7 px-2 text-[10px]" onClick={onClose}>Close</Button>
+        </header>
+        <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
+          <div className="border bg-muted/30 p-2">
+            <p className="text-[10px] font-semibold uppercase text-muted-foreground">The shape of every message</p>
+            <pre className="mt-1 whitespace-pre-wrap break-words text-[11px] leading-snug">{`*<draft code> update · <customer name>*
+<your name> · <time> · <result you chose>
+
+✅ Done: <what you did>
+👍 Went well: <what worked>
+👎 Went badly: <what did not work>
+⚠️ Problem / help needed: <what you need>
+🏠 Property in play: <property, if locked>
+➡️ Next step: <next action> by <time>
+
+📊 My day so far: <done>/<promised> results`}</pre>
+          </div>
+          <div className="border p-2">
+            <p className="text-[10px] font-semibold uppercase text-muted-foreground">Live example with your numbers</p>
+            <pre className="mt-1 whitespace-pre-wrap break-words text-[11px] leading-snug">{sample}</pre>
+            <Button size="sm" className="mt-2 h-7 text-[10px]" onClick={() => navigator.clipboard?.writeText(sample)}>
+              <ClipboardCopy className="h-3 w-3" /> Copy this example
+            </Button>
+          </div>
+          <p className="text-[10px] text-muted-foreground">
+            Property and next step appear only when they exist on the customer. Nothing else is added automatically.
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
