@@ -76,7 +76,7 @@ export function ContactActions({
         }}
       >
         <Copy className="h-3 w-3" />
-        {!compact && <span className="hidden sm:inline">Copy</span>}
+        {!compact && <span className="inline">Copy</span>}
       </Button>
 
       <Button
@@ -88,7 +88,7 @@ export function ContactActions({
       >
         <a href={`tel:${phone.replace(/\s/g, "")}`} aria-label={`Call ${phone}`} onClick={(e) => e.stopPropagation()}>
           <Phone className="h-3 w-3" />
-          {!compact && <span className="hidden sm:inline">Call</span>}
+          {!compact && <span className="inline">Call</span>}
         </a>
       </Button>
 
@@ -102,7 +102,7 @@ export function ContactActions({
         >
           <a href={chat} target="_blank" rel="noreferrer" aria-label={`Open WhatsApp chat with ${name ?? phone}`} onClick={(e) => e.stopPropagation()}>
             <WaMark />
-            {!compact && <span className="hidden sm:inline">WhatsApp</span>}
+            {!compact && <span className="inline">WhatsApp</span>}
           </a>
         </Button>
       )}

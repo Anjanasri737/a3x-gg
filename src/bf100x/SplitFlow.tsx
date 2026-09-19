@@ -14,6 +14,7 @@ import { useBookingFlow } from "@/bookingflow/store";
 import { SCREENS, currentScreen, screenIndex, screenProgress } from "./screens";
 import { ScreenPanel } from "./ScreenPanel";
 import { CapturedPanel } from "./CapturedPanel";
+import { KnownStrip } from "./KnownStrip";
 import { LabelConsole } from "./LabelConsole";
 import { PropertyMatch } from "./PropertyMatch";
 import { ClosingDesk } from "./ClosingDesk";
@@ -173,7 +174,6 @@ export function SplitFlow() {
               <p className="truncate text-[10px] text-muted-foreground">“{lead.lastMessage}”</p>
             </div>
             <div className="flex shrink-0 items-center gap-1">
-              <ContactActions phone={lead.phone} name={lead.name} compact />
               <Button size="sm" variant="ghost" className="h-6 px-2 text-[10px]" onClick={nextCustomer}>Next<ArrowRight className="ml-1 h-3 w-3" /></Button>
             </div>
           </div>
@@ -188,8 +188,15 @@ export function SplitFlow() {
               </Badge>
             </div>
           )}
+          {/* Copy the number, dial it, or open the WhatsApp chat — always labelled */}
+          <div className="mt-1.5">
+            <ContactActions phone={lead.phone} name={lead.name} />
+          </div>
         </div>
       )}
+
+      {/* What is already filled — pinned, readable while answering */}
+      {lead && <KnownStrip lead={lead} />}
 
       {/* Pane tabs — every tool of the funnel, inside the split panel */}
       <div className="shrink-0 overflow-x-auto border-b px-3 py-1.5">
