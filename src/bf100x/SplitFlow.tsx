@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { health, fmtMins } from "@/bookingflow/engine";
 import { NEXT_ACTIONS } from "@/bookingflow/journey";
 import { useBookingFlow } from "@/bookingflow/store";
+import { BATCH_SIZE, ROUNDS } from "@/bookingflow/types";
 import { SCREENS, currentScreen, screenIndex, screenProgress } from "./screens";
 import { ScreenPanel } from "./ScreenPanel";
 import { CapturedPanel } from "./CapturedPanel";
