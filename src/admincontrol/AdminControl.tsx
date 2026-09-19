@@ -211,6 +211,20 @@ export function AdminControl() {
               <Kpi icon={AlertTriangle} label="Silently dropped" value={d.kpi.silentDrops} tone="red" />
               <Kpi icon={ShieldAlert} label="Waiting for a decision" value={d.kpi.review} tone="amber" />
             </div>
+            <Card title="Decide these rows now — accept or reject each one">
+              <ResolveRows
+                rows={d.observations.filter((o) => o.state === "needs_review").slice(0, 25).map((o) => ({
+                  id: o.id,
+                  name: o.contactName ?? "Unknown",
+                  phone: o.phone ?? "",
+                  preview: (o.preview ?? "").slice(0, 70),
+                  reason: o.reason ?? "no reason recorded",
+                }))}
+                onDecide={(id, decision) =>
+                  run(decision === "reconciled" ? "Row accepted as a customer" : "Row marked not a customer",
+                    () => resolveRow({ data: { observationId: id, decision } }))}
+              />
+            </Card>
             <Card title="Why rows are stuck">
               <Table head={["Reason", "Rows"]} rows={d.reviewReasons.map(([r, c]) => [r, c])} />
             </Card>
