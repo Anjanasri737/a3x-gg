@@ -282,6 +282,52 @@ export function SplitFlow({ embedded = false }: { embedded?: boolean }) {
       <main className="min-h-0 flex-1 overflow-y-auto px-3 py-2">
         {pane === "CLOSING" ? (
           <ClosingDesk onOpenLead={(id) => { setLeadId(id); setPane("WORK"); }} />
+        ) : pane === "DRAFTS" ? (
+          <div className="space-y-2">
+            <p className="text-[10px] text-muted-foreground">Four drafts a day for {me} — D1, D2, D3, D4 · {BATCH_SIZE} customers each. Close a draft when all 30 have a next step and a deadline.</p>
+            {ROUNDS.map((r) => {
+              const batch = batches.find((b) => b.handler === me && b.round === r);
+              const rows = batch ? batch.leadIds.map((id) => leads.find((l) => l.id === id)).filter(Boolean) as typeof leads : [];
+              const done = rows.filter((l) => l.nextAction && l.nextActionAt).length;
+              return (
+                <div key={r} className={cn("rounded-md border p-2", batch?.closedAt && "border-primary/40 bg-primary/5")}>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold">D{r} · {rows.length || BATCH_SIZE} customers</p>
+                      <p className="truncate text-[10px] text-muted-foreground">
+                        {!batch ? "Not opened yet" : batch.closedAt ? `Closed ${new Date(batch.closedAt).toLocaleString()}${batch.closeNote ? ` — ${batch.closeNote}` : ""}` : `${done}/${rows.length} have a next step and deadline`}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 gap-1">
+                      {!batch ? (
+                        <Button size="sm" className="h-7 px-2 text-[10px]" onClick={() => {
+                          const made = buildBatch(me, r);
+                          toast[made ? "success" : "error"](made ? `D${r} opened with ${made.leadIds.length} customers` : "No customers left to fill this draft");
+                        }}>Open D{r}</Button>
+                      ) : batch.closedAt ? (
+                        <Button size="sm" variant="outline" className="h-7 px-2 text-[10px]" onClick={() => { reopenBatch(batch.id); toast.success(`D${r} reopened`); }}>Reopen</Button>
+                      ) : (
+                        <Button size="sm" variant="secondary" className="h-7 px-2 text-[10px]" onClick={() => { setClosingId(batch.id); setCloseNote(""); }}>Close draft</Button>
+                      )}
+                    </div>
+                  </div>
+                  {batch && !batch.closedAt && rows.length > 0 && (
+                    <div className="mt-1.5 space-y-1">
+                      {rows.slice(0, 30).map((l) => (
+                        <button key={l.id} type="button" onClick={() => { setLeadId(l.id); setPane("WORK"); }}
+                          className={cn("flex w-full items-center justify-between gap-2 rounded border px-2 py-1 text-left", l.id === lead?.id && "border-primary bg-primary/5")}>
+                          <span className="truncate text-[11px]">{l.name}</span>
+                          <Badge variant={l.nextAction && l.nextActionAt ? "outline" : "destructive"} className="shrink-0 text-[9px]">
+                            {l.nextAction && l.nextActionAt ? "done" : "pending"}
+                          </Badge>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         ) : pane === "QUEUE" ? (
           <div className="space-y-1.5">
             <p className="text-[10px] text-muted-foreground">{queue.length} customers still need a decision — worst first.</p>
