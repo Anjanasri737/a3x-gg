@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { health, fmtMins } from "@/bookingflow/engine";
 import { NEXT_ACTIONS } from "@/bookingflow/journey";
 import { useBookingFlow } from "@/bookingflow/store";
+import { BATCH_SIZE, ROUNDS } from "@/bookingflow/types";
 import { SCREENS, currentScreen, screenIndex, screenProgress } from "./screens";
 import { ScreenPanel } from "./ScreenPanel";
 import { CapturedPanel } from "./CapturedPanel";
@@ -22,7 +23,7 @@ import { ClosingDesk } from "./ClosingDesk";
 import { ContactActions } from "@/components/common/ContactActions";
 import { CloseCommitButton } from "@/components/commitments/CloseCommitButton";
 
-type Pane = "WORK" | "CAPTURED" | "MATCH" | "LABELS" | "CLOSING" | "QUEUE";
+type Pane = "WORK" | "CAPTURED" | "MATCH" | "LABELS" | "CLOSING" | "QUEUE" | "DRAFTS";
 
 const PANES: { id: Pane; label: string }[] = [
   { id: "WORK", label: "Questions" },
@@ -30,8 +31,12 @@ const PANES: { id: Pane; label: string }[] = [
   { id: "MATCH", label: "Property match" },
   { id: "LABELS", label: "Labels" },
   { id: "CLOSING", label: "Closing" },
+  { id: "DRAFTS", label: "Drafts D1–D4" },
   { id: "QUEUE", label: "All customers" },
 ];
+
+const WIDTH_KEY = "gharpayy-split-width-pct";
+const WIDTH_PRESETS = [40, 50, 60, 100];
 
 const startOfDay = () => new Date(new Date().toDateString()).getTime();
 
@@ -57,8 +62,30 @@ const MENU: { to: string; label: string; group: string }[] = [
   { group: "Everyday CRM", to: "/admin", label: "Admin" },
 ];
 
-export function SplitFlow() {
-  const { leads, me, mode, setMode, claim, setNext, logActivity, escalate } = useBookingFlow();
+export function SplitFlow({ embedded = false }: { embedded?: boolean }) {
+  const { leads, me, mode, setMode, claim, setNext, logActivity, escalate, batches, buildBatch, closeBatch, reopenBatch } = useBookingFlow();
+  const [widthPct, setWidthPct] = useState(40);
+  const [dragging, setDragging] = useState(false);
+  const [closeNote, setCloseNote] = useState("");
+  const [closingId, setClosingId] = useState<string | null>(null);
+
+  // remember the width the operator picked, like a column width in a sheet
+  useEffect(() => {
+    const saved = Number(localStorage.getItem(WIDTH_KEY));
+    if (saved >= 20 && saved <= 100) setWidthPct(saved);
+  }, []);
+  useEffect(() => { localStorage.setItem(WIDTH_KEY, String(widthPct)); }, [widthPct]);
+  useEffect(() => {
+    if (!dragging) return;
+    const move = (e: PointerEvent) => {
+      const pct = Math.min(100, Math.max(25, Math.round((e.clientX / window.innerWidth) * 100)));
+      setWidthPct(pct);
+    };
+    const up = () => setDragging(false);
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+    return () => { window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", up); };
+  }, [dragging]);
   const [leadId, setLeadId] = useState<string>("");
   const [screenId, setScreenId] = useState<string>("");
   const [pane, setPane] = useState<Pane>("WORK");
@@ -121,7 +148,8 @@ export function SplitFlow() {
   }
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-background">
+    <div className={cn("flex w-full overflow-hidden", embedded ? "h-[calc(100vh-10rem)]" : "h-screen")}>
+    <div className="flex min-w-0 flex-col overflow-hidden bg-background" style={{ width: `${widthPct}%` }}>
       {/* Result header — never scrolls away */}
       <header className="shrink-0 border-b px-2 py-1">
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
@@ -135,7 +163,16 @@ export function SplitFlow() {
               </div>
             )}
           </div>
-          <div className="flex shrink-0 gap-1">
+          <div className="flex shrink-0 items-center gap-1">
+            <div className="flex items-center gap-0.5 rounded-md border px-1 py-0.5">
+              <span className="text-[9px] text-muted-foreground">W</span>
+              {WIDTH_PRESETS.map((p) => (
+                <button key={p} type="button" onClick={() => setWidthPct(p)}
+                  className={cn("rounded px-1 text-[9px]", widthPct === p ? "bg-primary/15 text-primary" : "text-muted-foreground")}>
+                  {p}%
+                </button>
+              ))}
+            </div>
             <Button size="sm" variant={mode === "GUIDED" ? "default" : "outline"} className="h-6 px-2 text-[10px]" onClick={() => setMode("GUIDED")}>Understand</Button>
             <Button size="sm" variant={mode === "EXPERT" ? "default" : "outline"} className="h-6 px-2 text-[10px]" onClick={() => setMode("EXPERT")}>Expert</Button>
             <div className="relative">
@@ -246,6 +283,52 @@ export function SplitFlow() {
       <main className="min-h-0 flex-1 overflow-y-auto px-3 py-2">
         {pane === "CLOSING" ? (
           <ClosingDesk onOpenLead={(id) => { setLeadId(id); setPane("WORK"); }} />
+        ) : pane === "DRAFTS" ? (
+          <div className="space-y-2">
+            <p className="text-[10px] text-muted-foreground">Four drafts a day for {me} — D1, D2, D3, D4 · {BATCH_SIZE} customers each. Close a draft when all 30 have a next step and a deadline.</p>
+            {ROUNDS.map((r) => {
+              const batch = batches.find((b) => b.handler === me && b.round === r);
+              const rows = batch ? batch.leadIds.map((id) => leads.find((l) => l.id === id)).filter(Boolean) as typeof leads : [];
+              const done = rows.filter((l) => l.nextAction && l.nextActionAt).length;
+              return (
+                <div key={r} className={cn("rounded-md border p-2", batch?.closedAt && "border-primary/40 bg-primary/5")}>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold">D{r} · {rows.length || BATCH_SIZE} customers</p>
+                      <p className="truncate text-[10px] text-muted-foreground">
+                        {!batch ? "Not opened yet" : batch.closedAt ? `Closed ${new Date(batch.closedAt).toLocaleString()}${batch.closeNote ? ` — ${batch.closeNote}` : ""}` : `${done}/${rows.length} have a next step and deadline`}
+                      </p>
+                    </div>
+                    <div className="flex shrink-0 gap-1">
+                      {!batch ? (
+                        <Button size="sm" className="h-7 px-2 text-[10px]" onClick={() => {
+                          const made = buildBatch(me, r);
+                          toast[made ? "success" : "error"](made ? `D${r} opened with ${made.leadIds.length} customers` : "No customers left to fill this draft");
+                        }}>Open D{r}</Button>
+                      ) : batch.closedAt ? (
+                        <Button size="sm" variant="outline" className="h-7 px-2 text-[10px]" onClick={() => { reopenBatch(batch.id); toast.success(`D${r} reopened`); }}>Reopen</Button>
+                      ) : (
+                        <Button size="sm" variant="secondary" className="h-7 px-2 text-[10px]" onClick={() => { setClosingId(batch.id); setCloseNote(""); }}>Close draft</Button>
+                      )}
+                    </div>
+                  </div>
+                  {batch && !batch.closedAt && rows.length > 0 && (
+                    <div className="mt-1.5 space-y-1">
+                      {rows.slice(0, 30).map((l) => (
+                        <button key={l.id} type="button" onClick={() => { setLeadId(l.id); setPane("WORK"); }}
+                          className={cn("flex w-full items-center justify-between gap-2 rounded border px-2 py-1 text-left", l.id === lead?.id && "border-primary bg-primary/5")}>
+                          <span className="truncate text-[11px]">{l.name}</span>
+                          <Badge variant={l.nextAction && l.nextActionAt ? "outline" : "destructive"} className="shrink-0 text-[9px]">
+                            {l.nextAction && l.nextActionAt ? "done" : "pending"}
+                          </Badge>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
         ) : pane === "QUEUE" ? (
           <div className="space-y-1.5">
             <p className="text-[10px] text-muted-foreground">{queue.length} customers still need a decision — worst first.</p>
@@ -354,6 +437,39 @@ export function SplitFlow() {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+      )}
+
+      <Dialog open={!!closingId} onOpenChange={(o) => !o && setClosingId(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader><DialogTitle>Close this draft</DialogTitle></DialogHeader>
+          <label className="block text-xs font-medium">
+            What happened in this draft?
+            <Input className="mt-1" autoFocus placeholder="30 customers worked, 6 tours set…" value={closeNote} onChange={(e) => setCloseNote(e.target.value)} />
+          </label>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setClosingId(null)}>Cancel</Button>
+            <Button onClick={() => { if (closingId) closeBatch(closingId, closeNote); setClosingId(null); toast.success("Draft closed"); }}>Close draft</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+
+
+      {/* Drag this edge to set the panel width, exactly like a sheet column */}
+      {widthPct < 100 && (
+        <>
+          <div
+            role="separator"
+            aria-label="Drag to resize the panel"
+            onPointerDown={() => setDragging(true)}
+            className={cn("w-1.5 shrink-0 cursor-col-resize bg-border transition-colors hover:bg-primary", dragging && "bg-primary")}
+          />
+          <div className="flex min-w-0 flex-1 items-center justify-center bg-muted/30 p-4 text-center">
+            <p className="text-[11px] text-muted-foreground">
+              Keep WhatsApp Web open in this space.<br />Drag the grey bar, or use the width buttons, to set the sizes you want.
+            </p>
+          </div>
+        </>
       )}
     </div>
   );

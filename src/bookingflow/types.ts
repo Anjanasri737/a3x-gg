@@ -89,6 +89,9 @@ export interface Batch {
   round: number;
   createdAt: string;
   leadIds: string[];
+  /** a draft (D1–D4) is closed only when the handler signs it off */
+  closedAt?: string;
+  closeNote?: string;
 }
 
 export const HANDLERS = ["Riya", "Aman", "Sneha", "Vikas", "Pooja", "Kunal", "Neha", "Rahul"];

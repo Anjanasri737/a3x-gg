@@ -43,6 +43,8 @@ interface State {
   // batches
   buildBatch: (handler: string, round: number) => Batch | undefined;
   buildAllRounds: () => number;
+  closeBatch: (batchId: string, note: string) => void;
+  reopenBatch: (batchId: string) => void;
   stuckCount: () => number;
 
   // qualification (legacy short flow, kept for compatibility)
@@ -177,6 +179,26 @@ export const useBookingFlow = create<State>()(
         });
         return made;
       },
+
+      closeBatch: (batchId, note) =>
+        set((s) => {
+          const batch = s.batches.find((b) => b.id === batchId);
+          if (!batch) return s;
+          const ids = new Set(batch.leadIds);
+          return {
+            batches: s.batches.map((b) => (b.id === batchId ? { ...b, closedAt: now(), closeNote: note } : b)),
+            leads: s.leads.map((l) =>
+              ids.has(l.id)
+                ? { ...l, events: [...l.events, ev(s.me, `Draft D${batch.round} closed`, note || undefined)] }
+                : l,
+            ),
+          };
+        }),
+
+      reopenBatch: (batchId) =>
+        set((s) => ({
+          batches: s.batches.map((b) => (b.id === batchId ? { ...b, closedAt: undefined, closeNote: undefined } : b)),
+        })),
 
       stuckCount: () => get().leads.filter((l) => !l.qualifiedAt && daysOld(l.lastActivityAt) > 7).length,
 
