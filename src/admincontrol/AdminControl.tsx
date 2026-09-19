@@ -643,3 +643,36 @@ function CustomerTable({ rows, onOpen }: { rows: CustomerRow[]; onOpen: (r: Cust
     </div>
   );
 }
+
+function Heat({ weekdays }: { weekdays: Array<{ day: string; counts: number[]; total: number }> }) {
+  const max = Math.max(1, ...weekdays.flatMap((w) => w.counts));
+  return (
+    <div className="overflow-x-auto">
+      <table className="text-[10px]">
+        <thead>
+          <tr>
+            <th />
+            {Array.from({ length: 24 }, (_, h) => (
+              <th key={h} className="px-0.5 text-muted-foreground">{h}</th>
+            ))}
+            <th className="px-1 text-muted-foreground">All</th>
+          </tr>
+        </thead>
+        <tbody>
+          {weekdays.map((w) => (
+            <tr key={w.day}>
+              <td className="pr-1 text-muted-foreground">{w.day}</td>
+              {w.counts.map((n, h) => (
+                <td key={h} className="p-0.5">
+                  <div title={`${w.day} ${h}:00 — ${n} rows`} className="h-4 w-4 rounded-sm bg-primary"
+                    style={{ opacity: n === 0 ? 0.06 : 0.15 + (n / max) * 0.85 }} />
+                </td>
+              ))}
+              <td className="px-1 font-semibold">{w.total}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
