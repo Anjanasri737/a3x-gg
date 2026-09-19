@@ -1,6 +1,7 @@
-// Four or five questions on one screen. Same options, same rules, fewer clicks.
+// Four or five questions on one screen. Same options, same rules, fewer clicks:
+// picking an option saves itself, and one button saves + moves to the next screen.
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, Check, Lock } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ArrowRight, Check, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,7 +18,25 @@ import type { Screen } from "./screens";
 const inputType = (kind: JStep["kind"] | "TEXT" | "NUMBER" | "DATE" | "DATETIME") =>
   kind === "DATE" ? "date" : kind === "DATETIME" ? "datetime-local" : kind === "NUMBER" ? "number" : "text";
 
-export function ScreenPanel({ lead, screen, expert }: { lead: FlowLead; screen: Screen; expert: boolean }) {
+const fieldsOf = (st: JStep) => [st.field, ...(st.extra ?? []).map((x) => x.field)];
+
+export function ScreenPanel({
+  lead,
+  screen,
+  expert,
+  onPrev,
+  onNext,
+  canPrev,
+  canNext,
+}: {
+  lead: FlowLead;
+  screen: Screen;
+  expert: boolean;
+  onPrev?: () => void;
+  onNext?: () => void;
+  canPrev?: boolean;
+  canNext?: boolean;
+}) {
   const { answerStep, editFields } = useBookingFlow();
   const f = lead.f ?? {};
   const [draft, setDraft] = useState<Record<string, string>>({});
@@ -34,32 +53,74 @@ export function ScreenPanel({ lead, screen, expert }: { lead: FlowLead; screen: 
 
   const merged = useMemo(() => ({ ...f, ...draft }), [f, draft]);
 
-  function saveAll() {
-    const touched = screen.steps.filter((st) =>
-      [st.field, ...(st.extra ?? []).map((x) => x.field)].some((k) => draft[k] !== undefined && draft[k] !== f[k]),
-    );
-    if (touched.length === 0) {
-      toast.error("Answer at least one question on this screen first");
+  /** Writes one step's answers to the timeline. Returns false if it is half-filled. */
+  function commit(st: JStep, source: Record<string, string>, quiet = false) {
+    const full = { ...f, ...source };
+    if (!full[st.field]) {
+      if (!quiet) toast.error(`${st.title} still needs an answer`);
+      return false;
+    }
+    const missingExtra = (st.extra ?? []).filter((x) => !full[x.field] && isExtraRequired(full, st, x.field));
+    if (missingExtra.length) {
+      if (!quiet) toast.error(`${st.title}: also fill ${missingExtra.map((m) => m.label).join(", ")}`);
+      return false;
+    }
+    const payload: Record<string, string> = {};
+    fieldsOf(st).forEach((k) => {
+      if (source[k] !== undefined && source[k] !== f[k]) payload[k] = source[k]!;
+    });
+    if (Object.keys(payload).length === 0) return true;
+    if (isStepDone(f, st)) editFields(lead.id, payload, "corrected on the 100x screen");
+    else answerStep(lead.id, st.key, payload);
+    return true;
+  }
+
+  /** One click on an option is the answer — save it right away when nothing else is needed. */
+  function chooseOption(st: JStep, value: string) {
+    const nextDraft = { ...draft, [st.field]: value };
+    const full = { ...f, ...nextDraft };
+    const stillNeeded = (st.extra ?? []).filter((x) => !full[x.field] && isExtraRequired(full, st, x.field));
+    if (stillNeeded.length === 0 && commit(st, nextDraft, true)) {
+      setDraft((s) => {
+        const copy = { ...s };
+        fieldsOf(st).forEach((k) => delete copy[k]);
+        return copy;
+      });
+      toast.success(`${st.title} saved`);
       return;
     }
-    // block a half-filled step instead of saving nonsense
-    for (const st of touched) {
-      const main = merged[st.field];
-      if (!main) { toast.error(`${st.title} still needs an answer`); return; }
-      const missingExtra = (st.extra ?? []).filter((x) => !merged[x.field] && isExtraRequired(merged, st, x.field));
-      if (missingExtra.length) { toast.error(`${st.title}: also fill ${missingExtra.map((m) => m.label).join(", ")}`); return; }
+    setDraft(nextDraft);
+  }
+
+  function saveAll(silent = false) {
+    const touched = screen.steps.filter((st) =>
+      fieldsOf(st).some((k) => draft[k] !== undefined && draft[k] !== f[k]),
+    );
+    if (touched.length === 0) {
+      if (!silent) toast.error("Answer at least one question on this screen first");
+      return touched.length === 0;
     }
-    touched.forEach((st) => {
-      const payload: Record<string, string> = {};
-      [st.field, ...(st.extra ?? []).map((x) => x.field)].forEach((k) => {
-        if (draft[k] !== undefined) payload[k] = draft[k]!;
-      });
-      if (isStepDone(f, st)) editFields(lead.id, payload, "corrected on the 100x screen");
-      else answerStep(lead.id, st.key, payload);
-    });
+    for (const st of touched) if (!commit(st, draft)) return false;
     setDraft({});
     toast.success(`${touched.length} ${touched.length === 1 ? "answer" : "answers"} saved on one screen`);
+    return true;
   }
+
+  function saveAndNext() {
+    if (Object.keys(draft).length > 0 && !saveAll(true)) return;
+    onNext?.();
+  }
+
+  const nav = (
+    <div className="flex items-center gap-1.5">
+      <Button size="sm" variant="outline" className="h-7 px-2 text-[11px]" disabled={!canPrev} onClick={() => onPrev?.()}>
+        <ArrowLeft className="mr-1 h-3.5 w-3.5" />Previous screen
+      </Button>
+      <Button size="sm" variant="outline" className="h-7 px-2 text-[11px]" disabled={!canNext} onClick={saveAndNext}>
+        Save &amp; next screen<ArrowRight className="ml-1 h-3.5 w-3.5" />
+      </Button>
+    </div>
+  );
 
   return (
     <Card className="p-4">
@@ -69,6 +130,7 @@ export function ScreenPanel({ lead, screen, expert }: { lead: FlowLead; screen: 
         <Badge variant="outline" className="text-[10px]">{p.done}/{p.total} answered</Badge>
         {locked && <Badge variant="outline" className="text-[10px]"><Lock className="mr-1 h-3 w-3" />Opens after “{now.title}”</Badge>}
         {idx === nowIdx && <Badge className="text-[10px]">Do this now</Badge>}
+        <div className="ml-auto">{nav}</div>
       </div>
 
       {locked ? (
@@ -95,7 +157,7 @@ export function ScreenPanel({ lead, screen, expert }: { lead: FlowLead; screen: 
                       <button
                         key={o.value}
                         type="button"
-                        onClick={() => put(st.field, o.value)}
+                        onClick={() => chooseOption(st, o.value)}
                         title={o.hint}
                         className={cn(
                           "rounded-full border px-2.5 py-1 text-[11px] transition",
@@ -117,10 +179,10 @@ export function ScreenPanel({ lead, screen, expert }: { lead: FlowLead; screen: 
                   />
                 )}
 
-                <div className="mt-2 flex flex-wrap gap-2">
+                <div className="mt-2 flex flex-wrap gap-3">
                   {(st.extra ?? []).map((x) => (
                     <label key={x.field} className="text-[11px]">
-                      <span className="text-muted-foreground">{x.label}</span>
+                      <span className="text-muted-foreground">{x.label}{isExtraRequired(merged, st, x.field) ? " *" : ""}</span>
                       <Input
                         className="mt-1 h-8 w-[13rem] text-xs"
                         type={inputType(x.kind)}
@@ -142,10 +204,11 @@ export function ScreenPanel({ lead, screen, expert }: { lead: FlowLead; screen: 
           })}
 
           <div className="flex flex-wrap items-center gap-2 border-t pt-3">
-            <Button size="sm" onClick={saveAll}>Save this screen</Button>
+            <Button size="sm" onClick={() => saveAll()}>Save this screen</Button>
             <Button size="sm" variant="ghost" onClick={() => setDraft({})} disabled={Object.keys(draft).length === 0}>Clear my edits</Button>
+            {nav}
             <span className="text-[11px] text-muted-foreground">
-              One save writes every answer on this screen to the timeline.
+              Options save the moment you tap them; typed answers save with the button.
             </span>
           </div>
         </div>
