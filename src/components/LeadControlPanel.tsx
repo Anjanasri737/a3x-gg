@@ -45,6 +45,10 @@ import { LeadTalkTrack } from "./leads/LeadTalkTrack";
 import { LeadCapturedStrip } from "./leads/LeadCapturedStrip";
 import { LogActivityDialog } from "./leads/LogActivityDialog";
 import { LeadFollowUpsPanel } from "./leads/LeadFollowUpsPanel";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { CallEngine } from "@/callengine/CallEngine";
+import { useMovement } from "@/movement/store";
+import { canonicalCustomerId } from "@/lib/canonical/customer-id";
 
 const TAG_OPTIONS = ["price-issue", "location-mismatch", "parents-involved", "urgent", "budget-low"];
 const OBJECTIONS = ["Budget", "Location", "Amenities", "Timing", "Parents", "Comparing options", "Other"];
@@ -111,7 +115,16 @@ export function LeadControlPanel() {
   const [selectedCall, setSelectedCall] = useState(1);
   const [logOpen, setLogOpen] = useState(false);
   const [logCallNo, setLogCallNo] = useState<number | undefined>(undefined);
+  const [callEngineOpen, setCallEngineOpen] = useState(false);
   const drawerScrollRef = useRef<HTMLDivElement>(null);
+
+  // The Call Conversation Engine runs on the Movement lead — match by canonical customer ID.
+  const mvStates = useMovement((s) => s.states);
+  const movementLead = useMemo(() => {
+    if (!lead) return null;
+    const cid = canonicalCustomerId({ phone: lead.phone, name: lead.name });
+    return Object.values(mvStates).find((s) => s.canonicalId === cid || s.canonicalId === lead.id) ?? null;
+  }, [mvStates, lead]);
   const actionEngineRef = useRef<HTMLDivElement>(null);
 
   const pendingPostTour = leadTours.find(
