@@ -190,8 +190,21 @@ export function SplitFlow() {
         </div>
       )}
 
+      {/* Pane tabs — every tool of the funnel, inside the split panel */}
+      <div className="shrink-0 overflow-x-auto border-b px-3 py-1.5">
+        <div className="flex gap-1">
+          {PANES.map((p) => (
+            <button key={p.id} type="button" onClick={() => setPane(p.id)}
+              className={cn("shrink-0 rounded-md border px-2 py-0.5 text-[10px]",
+                p.id === pane ? "border-primary bg-primary/10 text-primary" : "text-muted-foreground")}>
+              {p.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Screen rail — one row, horizontally scrollable, never wraps the layout */}
-      {lead && (
+      {lead && pane === "WORK" && (
         <div className="shrink-0 overflow-x-auto border-b px-3 py-1.5">
           <div className="flex gap-1">
             {SCREENS.map((s, i) => {
@@ -210,7 +223,30 @@ export function SplitFlow() {
 
       {/* The only scrolling area */}
       <main className="min-h-0 flex-1 overflow-y-auto px-3 py-2">
-        {!lead ? (
+        {pane === "CLOSING" ? (
+          <ClosingDesk onOpenLead={(id) => { setLeadId(id); setPane("WORK"); }} />
+        ) : pane === "QUEUE" ? (
+          <div className="space-y-1.5">
+            <p className="text-[10px] text-muted-foreground">{queue.length} customers still need a decision — worst first.</p>
+            {queue.slice(0, 60).map((l) => {
+              const lh = health(l);
+              return (
+                <div key={l.id} className={cn("rounded-md border p-2", l.id === lead?.id && "border-primary bg-primary/5")}>
+                  <div className="flex items-start justify-between gap-2">
+                    <button type="button" className="min-w-0 flex-1 text-left" onClick={() => { setLeadId(l.id); setPane("WORK"); }}>
+                      <p className="truncate text-xs font-medium">{l.name} <span className="font-normal text-muted-foreground">{l.phone}</span></p>
+                      <p className="truncate text-[10px] text-muted-foreground">{lh.stepNo}. {lh.step?.title ?? "Checked in"} · {l.owner ?? "no owner"} · {l.nextAction ?? "no next step"}</p>
+                    </button>
+                    <div className="flex shrink-0 items-center gap-1">
+                      {lh.sla === "LATE" && <Badge variant="destructive" className="text-[10px]">late</Badge>}
+                      <ContactActions phone={l.phone} name={l.name} compact />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : !lead ? (
           <p className="pt-10 text-center text-sm text-muted-foreground">Nothing left in the queue — every customer is closed or checked in.</p>
         ) : pane === "WORK" ? (
           <ScreenPanel
@@ -222,6 +258,10 @@ export function SplitFlow() {
             onPrev={() => step(-1)}
             onNext={() => step(1)}
           />
+        ) : pane === "MATCH" ? (
+          <PropertyMatch lead={lead} />
+        ) : pane === "LABELS" ? (
+          <LabelConsole lead={lead} />
         ) : (
           <CapturedPanel lead={lead} />
         )}
