@@ -95,7 +95,14 @@ export function Board({ onOpenLead }: { onOpenLead: (id: string) => void }) {
 
       <div className="space-y-1.5">
         {rows.map(({ l, h }) => (
-          <button key={l.id} type="button" onClick={() => onOpenLead(l.id)} className="w-full rounded-lg border p-3 text-left transition hover:border-primary hover:bg-accent">
+          <div
+            key={l.id}
+            role="button"
+            tabIndex={0}
+            onClick={() => onOpenLead(l.id)}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpenLead(l.id); } }}
+            className="w-full cursor-pointer rounded-lg border p-3 text-left transition hover:border-primary hover:bg-accent focus-visible:ring-1 focus-visible:ring-primary"
+          >
             <div className="flex flex-wrap items-center gap-2">
               <span className="font-medium">{l.name}</span>
               <span className="text-xs text-muted-foreground">{l.phone}</span>
