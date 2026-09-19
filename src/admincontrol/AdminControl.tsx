@@ -167,12 +167,12 @@ export function AdminControl() {
             <TabsTrigger value="zones">Zones</TabsTrigger>
             <TabsTrigger value="accuracy">Reading quality</TabsTrigger>
             <TabsTrigger value="compliance">Compliance</TabsTrigger>
-            <TabsTrigger value="balance">Workload</TabsTrigger>
-            <TabsTrigger value="value">Money at risk</TabsTrigger>
+            {can.seeWorkloadBalance && <TabsTrigger value="balance">Workload</TabsTrigger>}
+            {can.seeMoney && <TabsTrigger value="value">Money at risk</TabsTrigger>}
             <TabsTrigger value="heat">When chats land</TabsTrigger>
             <TabsTrigger value="anomalies">Alerts</TabsTrigger>
-            <TabsTrigger value="people">People</TabsTrigger>
-            <TabsTrigger value="history">History</TabsTrigger>
+            {can.seePeopleQuality && <TabsTrigger value="people">People</TabsTrigger>}
+            {can.seeFullHistory && <TabsTrigger value="history">History</TabsTrigger>}
             <TabsTrigger value="upload">Add screenshots</TabsTrigger>
             <TabsTrigger value="customer">Customer</TabsTrigger>
           </TabsList>
