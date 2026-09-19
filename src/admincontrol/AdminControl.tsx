@@ -854,7 +854,11 @@ function FixNow({ row, onAssign, onNext, onEscalate, canEscalate = true }: {
         <Button size="sm" className="h-7 px-2 text-[11px]" disabled={!who.trim()} onClick={() => { onAssign(who.trim()); setWho(""); }}>
           Give owner
         </Button>
-        <Button size="sm" variant="outline" className="h-7 px-2 text-[11px]" onClick={onEscalate}>Send to Control Tower</Button>
+        {canEscalate ? (
+          <Button size="sm" variant="outline" className="h-7 px-2 text-[11px]" onClick={onEscalate}>Send to Control Tower</Button>
+        ) : (
+          <span className="text-[11px] text-muted-foreground">Only the founder can send this to Control Tower.</span>
+        )}
       </div>
       <div className="flex flex-wrap items-center gap-1.5">
         <Input value={what} onChange={(e) => setWhat(e.target.value)} placeholder="What must happen next?" className="h-7 w-48 text-xs" />
