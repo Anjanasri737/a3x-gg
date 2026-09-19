@@ -20,6 +20,8 @@ import { useControlFilters, type DayWindow, type HealthFilter } from "./filters"
 import { derive, LEAKS, type CustomerRow } from "./derive";
 import { deepen, money } from "./deep";
 import { canonicalCustomerId } from "@/lib/canonical/customer-id";
+import { ViewerBar } from "./ViewerBar";
+import { powersOf, scopeControlData, scopeOptions, useViewer } from "./viewer";
 
 /** Rows whose stage, journey step or conversation type mentions this phase. */
 const phase = (rows: CustomerRow[], re: RegExp) =>
