@@ -62,7 +62,12 @@ const MENU: { to: string; label: string; group: string }[] = [
   { group: "Everyday CRM", to: "/admin", label: "Admin" },
 ];
 
-export function SplitFlow({ embedded = false }: { embedded?: boolean }) {
+/** A customer picked somewhere else (e.g. Movement OS) that this panel should open. */
+export interface SplitFocus { name?: string; phone?: string; key?: string }
+
+const tenDigits = (p?: string) => (p ?? "").replace(/\D/g, "").slice(-10);
+
+export function SplitFlow({ embedded = false, focus }: { embedded?: boolean; focus?: SplitFocus }) {
   const { leads, me, mode, setMode, claim, setNext, logActivity, escalate, batches, buildBatch, closeBatch, reopenBatch } = useBookingFlow();
   const [widthPct, setWidthPct] = useState(40);
   const [dragging, setDragging] = useState(false);
