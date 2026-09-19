@@ -836,11 +836,12 @@ const QUICK: Array<[string, number]> = [
   ["Fix tour date", 1440],
 ];
 
-function FixNow({ row, onAssign, onNext, onEscalate }: {
+function FixNow({ row, onAssign, onNext, onEscalate, canEscalate = true }: {
   row: CustomerRow;
   onAssign: (handler: string) => void;
   onNext: (kind: string, dueInMinutes: number) => void;
   onEscalate: () => void;
+  canEscalate?: boolean;
 }) {
   const [who, setWho] = useState("");
   const [what, setWhat] = useState("");
