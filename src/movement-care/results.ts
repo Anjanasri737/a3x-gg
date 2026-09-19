@@ -58,7 +58,7 @@ export function resultStatus(state: MovementState) {
       : state.tourAt
         ? state.tourConfirmed ? "Tour confirmed" : "Tour needs confirmation"
         : state.goodLead
-          ? "Qualified good lead"
+          ? "Qualified · definitely close"
           : state.crmDraft
             ? "Drafted — result still due"
             : "Result not chosen";
