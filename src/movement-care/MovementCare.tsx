@@ -637,6 +637,58 @@ function PlaybookDrawer({ playbook, onClose }: { playbook: (typeof CARE_PLAYBOOK
   );
 }
 
+function DebriefCard({ code, customer, onSave, onCopy, onClose }: {
+  code: string; customer: string;
+  onSave: (input: { done: string; wentWell: string; wentBadly: string; problems: string }) => { id: string; message: string } | undefined;
+  onCopy: (id: string, message: string) => void;
+  onClose: () => void;
+}) {
+  const [done, setDone] = useState("");
+  const [wentWell, setWentWell] = useState("");
+  const [wentBadly, setWentBadly] = useState("");
+  const [problems, setProblems] = useState("");
+  const [saved, setSaved] = useState<{ id: string; message: string } | null>(null);
+
+  const build = () => {
+    const result = onSave({ done, wentWell, wentBadly, problems });
+    if (result) setSaved({ id: result.id, message: result.message });
+  };
+
+  return (
+    <div className="border-2 border-primary bg-card p-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <MessageCircle className="h-4 w-4 text-primary" />
+        <p className="text-xs font-semibold">{code} is done for {customer} — wrap it up before you move on</p>
+        <Button size="sm" variant="ghost" className="ml-auto h-6 px-2 text-[10px]" onClick={onClose}>Close</Button>
+      </div>
+      <div className="mt-2 grid gap-1.5 sm:grid-cols-2">
+        <label className="text-[10px] font-semibold uppercase text-muted-foreground">What is done?
+          <Textarea value={done} onChange={(event) => setDone(event.target.value)} placeholder="Called, qualified, shared 2 properties…" className="mt-1 min-h-14 text-xs" />
+        </label>
+        <label className="text-[10px] font-semibold uppercase text-muted-foreground">What went well?
+          <Textarea value={wentWell} onChange={(event) => setWentWell(event.target.value)} placeholder="Customer picked a date straight away…" className="mt-1 min-h-14 text-xs" />
+        </label>
+        <label className="text-[10px] font-semibold uppercase text-muted-foreground">What went badly?
+          <Textarea value={wentBadly} onChange={(event) => setWentBadly(event.target.value)} placeholder="Budget below our price, went cold on rent…" className="mt-1 min-h-14 text-xs" />
+        </label>
+        <label className="text-[10px] font-semibold uppercase text-muted-foreground">Any other problem or help needed?
+          <Textarea value={problems} onChange={(event) => setProblems(event.target.value)} placeholder="Need inventory truth for Salarpuria, need pricing approval…" className="mt-1 min-h-14 text-xs" />
+        </label>
+      </div>
+      <Button size="sm" className="mt-2" onClick={build}><CheckCircle2 className="h-3.5 w-3.5" /> Make the WhatsApp update</Button>
+      {saved && (
+        <div className="mt-2 border bg-muted/30 p-2">
+          <p className="text-[10px] font-semibold uppercase text-muted-foreground">Copy this and paste it in the team WhatsApp group</p>
+          <pre className="mt-1 whitespace-pre-wrap break-words text-[11px] leading-snug">{saved.message}</pre>
+          <Button size="sm" className="mt-2" onClick={() => onCopy(saved.id, saved.message)}>
+            <ClipboardCopy className="h-3.5 w-3.5" /> Copy for WhatsApp
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Stat({ label, value, danger }: { label: string; value: number; danger?: boolean }) {
   return <div className="min-w-[70px] rounded-md border bg-background px-2 py-1"><p className="text-[9px] text-muted-foreground">{label}</p><p className={cn("text-sm font-semibold", danger && "text-destructive")}>{value}</p></div>;
 }
