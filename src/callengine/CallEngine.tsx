@@ -60,6 +60,7 @@ export function CallEngine({ lead, onLogged }: Props) {
   const def = agendaDef(agenda);
   const attempt = engine.noAnswerStreak(lead.ulid) + 1;
   const plan = useMemo(() => noAnswerPlan(lead, attempt), [lead, attempt]);
+  const nextPlan = useMemo(() => noAnswerPlan(lead, attempt + 1), [lead, attempt]);
   const cta = primaryCta(lead, cap);
   const media = useMemo(() => rankedForCustomer(lead, []).slice(0, 3), [lead]);
 
@@ -78,7 +79,14 @@ export function CallEngine({ lead, onLogged }: Props) {
 
   function finish(kind: OutcomeKind) {
     setOutcome(kind);
-    const out = buildOutputs(lead, agenda, cap, kind, kind === "connected" ? undefined : plan.ask);
+    const out = buildOutputs(
+      lead,
+      agenda,
+      cap,
+      kind,
+      kind === "connected" ? undefined : plan.ask,
+      kind === "connected" ? undefined : nextPlan.ask,
+    );
     setOutputs(out);
     setNowText(out.now);
     setFollowText(out.followUp.text);
@@ -228,6 +236,7 @@ export function CallEngine({ lead, onLogged }: Props) {
 
           {outcome === "connected" ? (
             <div className="space-y-3">
+              <VerifyPanel lead={lead} cap={cap} set={set} />
               {(agenda === "qualification" || agenda === "follow-up") && (
                 <>
                   <div>
@@ -382,8 +391,9 @@ export function CallEngine({ lead, onLogged }: Props) {
           ) : (
             <div className="space-y-2 rounded-md border bg-muted/40 p-2.5">
               <div className="text-xs font-semibold">{plan.title} · attempt #{plan.attempt}</div>
-              <div className="text-[11px] text-muted-foreground">Condition {plan.condition} — the system picked this message.</div>
+              <div className="text-[11px] text-muted-foreground">Condition {plan.condition} — approved message, sent exactly as written.</div>
               <div className="rounded border bg-background p-2 text-[11px] whitespace-pre-wrap">{plan.ask}</div>
+              <div className="text-[10px] text-muted-foreground">Next attempt if still silent: {nextPlan.ask}</div>
               <div className="flex flex-wrap gap-1">
                 {plan.options.map((o) => (
                   <Badge key={o} variant="outline" className="text-[10px]">{o}</Badge>
@@ -450,6 +460,103 @@ export function CallEngine({ lead, onLogged }: Props) {
 }
 
 const isoInDays = (d: number) => new Date(Date.now() + d * 86400000).toISOString();
+
+/** Every call is a re-verification call: the details stay on screen, tick to confirm or type to correct. */
+function VerifyPanel({
+  lead,
+  cap,
+  set,
+}: {
+  lead: MovementState;
+  cap: CallCapture;
+  set: (p: Partial<CallCapture>) => void;
+}) {
+  const q = lead.q ?? {};
+  const verified = cap.verified ?? [];
+  const tick = (label: string) =>
+    set({ verified: verified.includes(label) ? verified.filter((v) => v !== label) : [...verified, label] });
+
+  const rows: {
+    label: string;
+    crm: string;
+    live: string;
+    onChange: (v: string) => void;
+  }[] = [
+    {
+      label: "Move-in",
+      crm: fmtDate(q.moveInDate ?? lead.checkInDate),
+      live: cap.moveIn ? fmtDate(cap.moveIn) : "",
+      onChange: (v) => set({ moveIn: v ? new Date(v).toISOString() : null }),
+    },
+    { label: "Area", crm: q.location ?? "", live: cap.area ?? "", onChange: (v) => set({ area: v }) },
+    {
+      label: "Office / College",
+      crm: q.officeOrCollege ?? "",
+      live: cap.officeOrCollege ?? "",
+      onChange: (v) => set({ officeOrCollege: v }),
+    },
+    {
+      label: "Budget",
+      crm: q.budget ? String(q.budget) : "",
+      live: cap.budget ? String(cap.budget) : "",
+      onChange: (v) => set({ budget: Number(v) || null }),
+    },
+    { label: "Room", crm: q.roomType ?? "", live: cap.roomType ?? "", onChange: (v) => set({ roomType: v }) },
+    {
+      label: "In Bangalore",
+      crm: q.inBangalore === null || q.inBangalore === undefined ? "" : q.inBangalore ? "Yes" : "No",
+      live: cap.inBangalore === null || cap.inBangalore === undefined ? "" : cap.inBangalore ? "Yes" : "No",
+      onChange: (v) => set({ inBangalore: /^y/i.test(v) ? true : /^n/i.test(v) ? false : null }),
+    },
+    {
+      label: "For whom",
+      crm: q.forSelf === null || q.forSelf === undefined ? "" : q.forSelf ? "Self" : "Someone else",
+      live: cap.forWhom ?? "",
+      onChange: (v) => set({ forWhom: (v as CallCapture["forWhom"]) || null }),
+    },
+  ];
+
+  return (
+    <div className="space-y-2 rounded-md border bg-muted/30 p-2.5">
+      <div className="flex items-center justify-between">
+        <Title>On the call — verify or correct</Title>
+        <span className="text-[10px] text-muted-foreground">
+          {verified.length}/{rows.length} verified
+        </span>
+      </div>
+      <div className="space-y-1">
+        {rows.map((r) => {
+          const value = r.live || r.crm;
+          const ok = verified.includes(r.label);
+          return (
+            <div key={r.label} className="flex items-center gap-2">
+              <span className="w-24 shrink-0 text-[10px] text-muted-foreground">{r.label}</span>
+              <Input
+                className={cn("h-7 flex-1 text-xs", ok && "border-primary/60 bg-primary/5")}
+                placeholder="Not known — fill it in"
+                value={value}
+                onChange={(e) => r.onChange(e.target.value)}
+              />
+              <button
+                type="button"
+                onClick={() => tick(r.label)}
+                title="Confirmed by the customer"
+                className={cn(
+                  "h-7 w-7 shrink-0 rounded border text-xs",
+                  ok ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground hover:bg-muted",
+                )}
+              >
+                ✓
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+const fmtDate = (iso?: string | null) => (iso ? new Date(iso).toISOString().slice(0, 10) : "");
 
 function blankPrice(c: CallCapture) {
   return c.price ?? { propertyName: "", roomType: "", listed: null, quoted: 0, deposit: null, maintenance: null, validity: "" };
