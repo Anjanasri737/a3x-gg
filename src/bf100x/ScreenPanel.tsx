@@ -1,7 +1,7 @@
 // Four or five questions on one screen. Same options, same rules, fewer clicks:
 // picking an option saves itself, and one button saves + moves to the next screen.
 import { useEffect, useMemo, useState } from "react";
-import { AlertTriangle, ArrowLeft, ArrowRight, Check, Lock } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ArrowRight, Check, History, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -70,9 +70,21 @@ export function ScreenPanel({
       if (source[k] !== undefined && source[k] !== f[k]) payload[k] = source[k]!;
     });
     if (Object.keys(payload).length === 0) return true;
-    if (isStepDone(f, st)) editFields(lead.id, payload, "corrected on the 100x screen");
+    if (isStepDone(f, st)) editFields(lead.id, payload, "corrected on the 100x screen", st.key);
     else answerStep(lead.id, st.key, payload);
     return true;
+  }
+
+  /** Typed answers save themselves — on Enter, or the moment focus leaves the box. */
+  function commitTyped(st: JStep) {
+    if (!fieldsOf(st).some((k) => draft[k] !== undefined && draft[k] !== f[k])) return;
+    if (!commit(st, draft, true)) return;
+    setDraft((s) => {
+      const copy = { ...s };
+      fieldsOf(st).forEach((k) => delete copy[k]);
+      return copy;
+    });
+    toast.success(`${st.title} saved`);
   }
 
   /** One click on an option is the answer — save it right away when nothing else is needed. */
@@ -176,6 +188,8 @@ export function ScreenPanel({
                     placeholder={st.placeholder}
                     value={val(st.field)}
                     onChange={(e) => put(st.field, e.target.value)}
+                    onBlur={() => commitTyped(st)}
+                    onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commitTyped(st); } }}
                   />
                 )}
 
@@ -189,10 +203,14 @@ export function ScreenPanel({
                         placeholder={x.placeholder}
                         value={val(x.field)}
                         onChange={(e) => put(x.field, e.target.value)}
+                        onBlur={() => commitTyped(st)}
+                        onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); commitTyped(st); } }}
                       />
                     </label>
                   ))}
                 </div>
+
+                <StepHistory lead={lead} stepKey={st.key} />
 
                 {!done && missingOn(merged, st).length > 0 && (
                   <p className="mt-1.5 flex items-center gap-1 text-[11px] text-destructive">
@@ -208,11 +226,39 @@ export function ScreenPanel({
             <Button size="sm" variant="ghost" onClick={() => setDraft({})} disabled={Object.keys(draft).length === 0}>Clear my edits</Button>
             {nav}
             <span className="text-[11px] text-muted-foreground">
-              Options save the moment you tap them; typed answers save with the button.
+              Options save the moment you tap them. Typed answers save on Enter or when you click away — the button saves everything at once.
             </span>
           </div>
         </div>
       )}
     </Card>
+  );
+}
+
+/** Who changed this answer, when, and what it was before. */
+function StepHistory({ lead, stepKey }: { lead: FlowLead; stepKey: string }) {
+  const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  const rows = (lead.events ?? []).filter((e) => e.stepKey === stepKey);
+  if (rows.length === 0) return null;
+  return (
+    <div className="mt-2">
+      <button type="button" onClick={() => setOpen((v) => !v)} className="flex items-center gap-1 text-[10px] text-muted-foreground underline-offset-2 hover:underline">
+        <History className="h-3 w-3" />{rows.length} change{rows.length === 1 ? "" : "s"} · last by {rows[rows.length - 1]!.actor}
+      </button>
+      {open && (
+        <ol className="mt-1 space-y-0.5 rounded-md border bg-muted/30 p-2 text-[10px]">
+          {[...rows].reverse().map((e, i) => (
+            <li key={i}>
+              <span className="font-medium">{e.actor}</span> · {mounted ? new Date(e.at).toLocaleString() : ""}
+              {e.changes?.length
+                ? ` — ${e.changes.map((c) => `${c.field}: ${c.from || "empty"} → ${c.to}`).join(", ")}`
+                : e.detail ? ` — ${e.detail}` : ""}
+            </li>
+          ))}
+        </ol>
+      )}
+    </div>
   );
 }
