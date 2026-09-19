@@ -538,7 +538,16 @@ export function AdminControl() {
                   </Card>
                 </div>
                 <div className="h-[70vh] overflow-hidden rounded-xl border bg-card">
-                  <SplitFlow panelOnly focus={{ name: openRow.name, phone: openRow.phone, key: openRow.id }} />
+                  <SplitFlow
+                    panelOnly
+                    focus={{
+                      name: openRow.name,
+                      phone: openRow.phone,
+                      canonicalId: canonicalCustomerId({ phone: openRow.phone, name: openRow.name }),
+                      key: openRow.id,
+                    }}
+                  />
+
                 </div>
               </div>
             )}

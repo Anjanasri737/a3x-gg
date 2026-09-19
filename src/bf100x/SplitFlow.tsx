@@ -66,7 +66,6 @@ const MENU: { to: string; label: string; group: string }[] = [
 /** A customer picked somewhere else (e.g. Movement OS) that this panel should open. */
 export interface SplitFocus { name?: string; phone?: string; key?: string; canonicalId?: string }
 
-const tenDigits = (p?: string) => (p ?? "").replace(/\D/g, "").slice(-10);
 
 export function SplitFlow({ embedded = false, focus, panelOnly = false }: { embedded?: boolean; focus?: SplitFocus; panelOnly?: boolean }) {
   const { leads, me, mode, setMode, claim, setNext, logActivity, escalate, batches, buildBatch, closeBatch, reopenBatch, ensureLead } = useBookingFlow();
