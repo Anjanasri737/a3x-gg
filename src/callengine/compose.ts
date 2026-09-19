@@ -287,23 +287,15 @@ export function buildOutputs(
   capture: CallCapture,
   outcome: OutcomeKind,
   noAnswerAsk?: string,
+  noAnswerNext?: string,
 ): CallOutputs {
   const movement = classifyMovement(capture, outcome);
-  const f = facts(lead, capture);
-  const now =
-    outcome === "connected"
-      ? connectedMessage(lead, agenda, capture)
-      : [
-          `Hi ${f.name}, I just tried calling regarding the ${f.area} accommodation options we discussed.`,
-          "",
-          "I'm sharing the best matching options here.",
-          "",
-          noAnswerAsk ?? "Are you currently in Bangalore?",
-        ].join("\n");
+  // Unanswered call → send the approved message for this condition, exactly as written.
+  const now = outcome === "connected" ? connectedMessage(lead, agenda, capture) : (noAnswerAsk ?? "");
 
   return {
     now,
-    followUp: followUpFor(lead, agenda, capture, outcome),
+    followUp: followUpFor(lead, agenda, capture, outcome, noAnswerNext),
     nextStep: nextStepFor(lead, agenda, capture, outcome),
     movement,
     mediaHint:
