@@ -19,7 +19,7 @@ import { pushCallRecord } from "./sync";
 import {
   ACTIVITIES, AGENDAS, DISLIKE_REASONS, MOVEMENT_LABEL, OUTCOMES, PRICE_REACTIONS, PROMISES, REACTIONS,
   TOUR_REFUSALS, agendaDef, emptyCapture,
-  type AgendaKey, type CallCapture, type CallOutputs, type OutcomeKind,
+  type AgendaKey, type CallCapture, type CallOutputs, type CallRecord, type OutcomeKind,
 } from "./types";
 
 const Chip = ({ on, children, onClick }: { on?: boolean; children: React.ReactNode; onClick: () => void }) => (
