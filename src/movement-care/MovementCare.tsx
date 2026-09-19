@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   AlertTriangle, ArrowRight, CheckCircle2, Clock3, Flag, Goal,
-  Handshake, History, Phone, ShieldCheck, Target, Trophy, Users,
+  Building2, Handshake, History, Phone, PhoneCall, PhoneOff, ShieldCheck, Target, Trophy, Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,10 +14,11 @@ import { seedMovement } from "@/movement/seed";
 import { useMovement } from "@/movement/store";
 import { DraftChip, JourneyTimeline, WorkPanel } from "@/movement/components";
 import { totals } from "@/movement/metrics";
-import { NEXT_ACTION_LABEL, OPERATORS, type NextActionKind } from "@/movement/types";
+import { NEXT_ACTION_LABEL, OPERATORS, type CallResult, type NextActionKind } from "@/movement/types";
 import { toast } from "sonner";
 import { CARE_GOALS, CARE_PLAYBOOKS, ROUND_COPY, type CareGoal, type CareRole, type CareRound } from "./playbooks";
-import { actualForGoal, queueForGoal, resultStatus } from "./results";
+import { actualForGoal, callStats, queueForGoal, resultStatus } from "./results";
+import { optionById, propertyOptions, propertyProgress, rankedForCustomer } from "./properties";
 import { todaysCommitment, useMovementCare } from "./store";
 
 const GOAL_TONE: Record<CareGoal, string> = {
@@ -61,6 +62,8 @@ export function MovementCare() {
   const [stuck, setStuck] = useState("");
   const [need, setNeed] = useState("");
   const [showPlaybook, setShowPlaybook] = useState(false);
+  const [aimProperties, setAimProperties] = useState<string[]>([]);
+  const [propertyQuery, setPropertyQuery] = useState("");
 
   const activeRole = commitment?.role ?? role;
   const activeGoal = commitment?.goal ?? goal;
@@ -69,6 +72,9 @@ export function MovementCare() {
   const queue = useMemo(() => queueForGoal(activeGoal, list), [activeGoal, list]);
   const actual = useMemo(() => actualForGoal(activeGoal, list, events), [activeGoal, list, events]);
   const total = useMemo(() => totals(list, events), [list, events]);
+  const calls = useMemo(() => callStats(events), [events]);
+  const aimed = commitment?.targetPropertyIds ?? aimProperties;
+  const aimProgress = useMemo(() => propertyProgress(aimed, list), [aimed, list]);
   const progress = commitment ? Math.min(100, Math.round((actual / Math.max(commitment.target, 1)) * 100)) : 0;
   const selectedState = selected ? list.find((item) => item.ulid === selected) : undefined;
   const selectedResult = selectedState ? resultStatus(selectedState) : null;
@@ -98,7 +104,7 @@ export function MovementCare() {
   };
 
   const startDay = () => {
-    commit({ role, goal, target: Math.max(1, target), supportNeeded: support.trim() });
+    commit({ role, goal, target: Math.max(1, target), supportNeeded: support.trim(), targetPropertyIds: aimProperties });
     toast.success(`${goal} result committed for today`);
   };
 
@@ -115,6 +121,43 @@ export function MovementCare() {
       note: `${activeGoal}: ${stage.outcome}`,
     });
     toast.success(`Draft tied to ${activeGoal} result, owner and deadline`);
+  };
+
+  const dial = () => {
+    if (!selectedState) return;
+    mv.startCall(selectedState.ulid);
+    toast.info("Call started — log the outcome when it ends");
+  };
+
+  const endCall = (result: CallResult) => {
+    if (!selectedState) return;
+    mv.logCall(selectedState.ulid, result);
+    if (result !== "connected" && result !== "wrong-number") {
+      mv.setNextAction(selectedState.ulid, {
+        kind: "call",
+        dueAt: new Date(Date.now() + 45 * 60_000).toISOString(),
+        ownerId: selectedState.primaryOwnerId || mv.actor.id,
+        ownerName: selectedState.primaryOwnerName || mv.actor.name,
+        note: `Retry call — ${result}`,
+      });
+    }
+    toast.success(result === "connected" ? "Connected call logged" : `Call logged as ${result}`);
+  };
+
+  const aimProperty = (propertyId: string) => {
+    if (!selectedState) return;
+    const option = optionById(propertyId);
+    if (!option) return;
+    mv.patch(selectedState.ulid, { tourProperty: option.name });
+    mv.log(selectedState.ulid, "note", `Closing target property: ${option.name} · ${option.area} · from ₹${option.fromPrice.toLocaleString("en-IN")}`);
+    mv.setNextAction(selectedState.ulid, {
+      kind: "send-property",
+      dueAt: dueForGoal(activeGoal),
+      ownerId: selectedState.primaryOwnerId || mv.actor.id,
+      ownerName: selectedState.primaryOwnerName || mv.actor.name,
+      note: `Send ${option.name} and lock the tour`,
+    });
+    toast.success(`${option.name} set as the closing target`);
   };
 
   const saveReport = () => {
@@ -174,6 +217,9 @@ export function MovementCare() {
               </div>
               <Progress value={progress} className="mt-1 h-1.5" />
             </div>
+            <Stat label="Calls" value={calls.dialled} />
+            <Stat label="Connected" value={calls.connected} />
+            <Stat label="Connect %" value={calls.rate} />
             <Stat label="Drafted" value={total.drafted} />
             <Stat label="Good leads" value={total.goodLeads} />
             <Stat label="Tours set" value={total.toursScheduled} />
@@ -186,6 +232,8 @@ export function MovementCare() {
 
       {!commitment ? (
         <CommitmentGate role={role} goal={goal} target={target} support={support}
+          aimProperties={aimProperties} onAimProperties={setAimProperties}
+          query={propertyQuery} onQuery={setPropertyQuery}
           onRole={chooseRole} onGoal={chooseGoal} onTarget={setTarget} onSupport={setSupport} onStart={startDay} />
       ) : (
         <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[320px_minmax(420px,1fr)_330px]">
@@ -252,6 +300,48 @@ export function MovementCare() {
                     </div>
                   )}
                 </div>
+                <div className="border bg-card p-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <PhoneCall className="h-3.5 w-3.5 text-primary" />
+                    <p className="text-[10px] font-semibold uppercase text-muted-foreground">Connected call — the result only counts when the customer talks</p>
+                    <span className="ml-auto text-[10px] text-muted-foreground">Today {calls.connected} connected of {calls.dialled} dialled · {calls.rate}%</span>
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    <Button size="sm" onClick={dial}><Phone className="h-3.5 w-3.5" /> Start call {selectedState.phone ? `· ${selectedState.phone}` : ""}</Button>
+                    <Button size="sm" variant="outline" className="border-success/50 text-success" onClick={() => endCall("connected")}><CheckCircle2 className="h-3.5 w-3.5" /> Connected</Button>
+                    {(["no-answer", "busy", "rejected", "wrong-number"] as CallResult[]).map((result) => (
+                      <Button key={result} size="sm" variant="outline" onClick={() => endCall(result)}>
+                        <PhoneOff className="h-3.5 w-3.5" /> {result.replace("-", " ")}
+                      </Button>
+                    ))}
+                  </div>
+                  <p className="mt-1.5 text-[10px] text-muted-foreground">
+                    Work state: {selectedState.work} · last outbound {selectedState.lastOutboundAt ? new Date(selectedState.lastOutboundAt).toLocaleTimeString() : "none today"}
+                  </p>
+                </div>
+
+                <div className="border bg-card p-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Building2 className="h-3.5 w-3.5 text-primary" />
+                    <p className="text-[10px] font-semibold uppercase text-muted-foreground">Property I am aiming to close for this customer</p>
+                    <span className="ml-auto text-[10px] font-medium">{selectedState.tourProperty ?? "No property locked yet"}</span>
+                  </div>
+                  <div className="mt-2 grid gap-1.5 sm:grid-cols-2 lg:grid-cols-3">
+                    {rankedForCustomer(selectedState, aimed).slice(0, 6).map((option) => (
+                      <Button key={option.id} variant="outline" onClick={() => aimProperty(option.id)}
+                        className={cn("h-auto justify-start whitespace-normal p-2 text-left", selectedState.tourProperty === option.name && "border-primary bg-primary/10")}>
+                        <span>
+                          <span className="block text-[11px] font-semibold">{option.name}</span>
+                          <span className="block text-[10px] font-normal text-muted-foreground">
+                            {option.area} · {option.bedsFree} beds free · from ₹{option.fromPrice.toLocaleString("en-IN")}
+                          </span>
+                          {aimed.includes(option.id) && <span className="mt-0.5 block text-[9px] font-semibold text-primary">On today’s closing list</span>}
+                        </span>
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+
                 <WorkPanel ulid={selected} meta={nameOf} />
               </div>
             ) : (
@@ -280,6 +370,23 @@ export function MovementCare() {
               {commitment.supportNeeded && <p className="mt-1 text-[10px]"><strong>Support:</strong> {commitment.supportNeeded}</p>}
             </div>
 
+            <div className="mt-2 border p-2">
+              <div className="flex items-center gap-1.5"><Building2 className="h-3.5 w-3.5 text-primary" /><p className="text-[10px] font-semibold uppercase text-muted-foreground">Properties I am closing today</p></div>
+              {aimProgress.length === 0 ? (
+                <p className="mt-1 text-[10px] text-muted-foreground">No property picked for today. Choose one on any customer to start the closing list.</p>
+              ) : (
+                <div className="mt-1.5 space-y-1.5">
+                  {aimProgress.map((row) => (
+                    <div key={row.id} className="border px-2 py-1.5">
+                      <p className="text-[11px] font-semibold">{row.name}</p>
+                      <p className="text-[9px] text-muted-foreground">{row.area} · {row.bedsFree} beds free</p>
+                      <p className="mt-0.5 text-[10px]">Aimed {row.aimed} · tours {row.toursSet} · done {row.toursDone} · booked <strong className={cn(row.booked > 0 && "text-success")}>{row.booked}</strong></p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div className="mt-2"><JourneyTimeline ulid={selected} /></div>
           </aside>
         </div>
@@ -290,11 +397,17 @@ export function MovementCare() {
   );
 }
 
-function CommitmentGate({ role, goal, target, support, onRole, onGoal, onTarget, onSupport, onStart }: {
+function CommitmentGate({ role, goal, target, support, aimProperties, onAimProperties, query, onQuery, onRole, onGoal, onTarget, onSupport, onStart }: {
   role: CareRole; goal: CareGoal; target: number; support: string;
+  aimProperties: string[]; onAimProperties: (ids: string[]) => void;
+  query: string; onQuery: (value: string) => void;
   onRole: (role: CareRole) => void; onGoal: (goal: CareGoal) => void;
   onTarget: (target: number) => void; onSupport: (support: string) => void; onStart: () => void;
 }) {
+  const toggleProperty = (id: string) =>
+    onAimProperties(aimProperties.includes(id) ? aimProperties.filter((item) => item !== id) : [...aimProperties, id]);
+  const shown = propertyOptions.filter((option) =>
+    `${option.name} ${option.area}`.toLowerCase().includes(query.trim().toLowerCase())).slice(0, 12);
   const playbook = CARE_PLAYBOOKS[role];
   const active = playbook.stages.find((item) => item.goal === goal) ?? playbook.stages[0];
   return (
@@ -329,6 +442,24 @@ function CommitmentGate({ role, goal, target, support, onRole, onGoal, onTarget,
               <label className="text-xs font-medium">Target result count<Input type="number" min={1} value={target} onChange={(event) => onTarget(Number(event.target.value) || 1)} className="mt-1" /></label>
               <label className="text-xs font-medium">Support needed today<Input value={support} onChange={(event) => onSupport(event.target.value)} placeholder="Inventory check, manager help, pricing approval…" className="mt-1" /></label>
             </div>
+            <div>
+              <div className="mb-2 flex flex-wrap items-center gap-2">
+                <p className="text-[10px] font-semibold uppercase text-muted-foreground">Properties I am aiming to close</p>
+                <span className="text-[10px] text-muted-foreground">{aimProperties.length} selected</span>
+                <Input value={query} onChange={(event) => onQuery(event.target.value)} placeholder="Search property or area" className="ml-auto h-8 w-48 text-xs" />
+              </div>
+              <div className="grid gap-1.5 sm:grid-cols-2 lg:grid-cols-3">
+                {shown.map((option) => (
+                  <Button key={option.id} variant="outline" onClick={() => toggleProperty(option.id)}
+                    className={cn("h-auto justify-start whitespace-normal p-2 text-left", aimProperties.includes(option.id) && "border-primary bg-primary/10")}>
+                    <span>
+                      <span className="block text-[11px] font-semibold">{option.name}</span>
+                      <span className="block text-[10px] font-normal text-muted-foreground">{option.area} · {option.bedsFree} beds free · from ₹{option.fromPrice.toLocaleString("en-IN")}</span>
+                    </span>
+                  </Button>
+                ))}
+              </div>
+            </div>
             <Button onClick={onStart} className="w-full sm:w-auto"><Target className="h-4 w-4" /> Commit result and open drafts</Button>
           </div>
           <div className="border bg-muted/30 p-3">
@@ -339,6 +470,7 @@ function CommitmentGate({ role, goal, target, support, onRole, onGoal, onTarget,
               <div><dt className="text-muted-foreground">Proof</dt><dd>{active.proof}</dd></div>
               <div><dt className="text-muted-foreground">Accepted by</dt><dd>{active.receiver}</dd></div>
               <div><dt className="text-muted-foreground">Required when</dt><dd>{active.requireWhen}</dd></div>
+              <div><dt className="text-muted-foreground">Closing these properties</dt><dd>{aimProperties.length ? aimProperties.map((id) => propertyOptions.find((option) => option.id === id)?.name).join(", ") : "Not chosen yet"}</dd></div>
             </dl>
           </div>
         </div>
