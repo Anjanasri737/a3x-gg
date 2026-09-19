@@ -349,7 +349,7 @@ export function MovementCare() {
           onRole={chooseRole} onGoal={chooseGoal} onCommitCount={setCommitCount} onSupport={setSupport} onStart={startDay} />
       ) : (
         <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[320px_minmax(420px,1fr)_330px]">
-          <section className="min-h-0 overflow-hidden border-r bg-card">
+          <section className="flex min-h-0 flex-col overflow-hidden border-r bg-card">
             <div className="border-b px-3 py-2">
               <div className="flex items-center justify-between gap-2">
                 <div>
@@ -373,7 +373,7 @@ export function MovementCare() {
                 )}
               </div>
             </div>
-            <div className="h-[calc(100%-53px)] divide-y overflow-y-auto">
+            <div className="min-h-0 flex-1 divide-y overflow-y-auto">
               {queue.map((item, index) => {
                 const info = nameOf.get(item.ulid);
                 const status = resultStatus(item.state);
@@ -554,6 +554,12 @@ export function MovementCare() {
           </aside>
         </div>
       )}
+
+      <ManualDraftPanel open={showManual} onClose={() => setShowManual(false)} candidates={candidates}
+        manualList={manualList} manualMode={manualMode} manualSize={manualSize}
+        onManualMode={setManualMode} onManualSize={setManualSize} onAdd={addToManual}
+        onRemove={removeFromManual} onReplace={replaceInManual} onClear={clearManual}
+        onCreateLead={createManualLead} onFillDemo={fillManualDemo} />
 
       {showPlaybook && <PlaybookDrawer playbook={playbook} onClose={() => setShowPlaybook(false)} />}
     </div>
