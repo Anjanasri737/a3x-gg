@@ -14,7 +14,22 @@ import { useBookingFlow } from "@/bookingflow/store";
 import { SCREENS, currentScreen, screenIndex, screenProgress } from "./screens";
 import { ScreenPanel } from "./ScreenPanel";
 import { CapturedPanel } from "./CapturedPanel";
+import { LabelConsole } from "./LabelConsole";
+import { PropertyMatch } from "./PropertyMatch";
+import { ClosingDesk } from "./ClosingDesk";
+import { ContactActions } from "@/components/common/ContactActions";
 import { CloseCommitButton } from "@/components/commitments/CloseCommitButton";
+
+type Pane = "WORK" | "CAPTURED" | "MATCH" | "LABELS" | "CLOSING" | "QUEUE";
+
+const PANES: { id: Pane; label: string }[] = [
+  { id: "WORK", label: "Questions" },
+  { id: "CAPTURED", label: "Captured" },
+  { id: "MATCH", label: "Property match" },
+  { id: "LABELS", label: "Labels" },
+  { id: "CLOSING", label: "Closing" },
+  { id: "QUEUE", label: "All customers" },
+];
 
 const startOfDay = () => new Date(new Date().toDateString()).getTime();
 
