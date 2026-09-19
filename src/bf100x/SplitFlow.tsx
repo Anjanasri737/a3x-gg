@@ -18,6 +18,28 @@ import { CloseCommitButton } from "@/components/commitments/CloseCommitButton";
 
 const startOfDay = () => new Date(new Date().toDateString()).getTime();
 
+// Everywhere you can jump without leaving the split screen.
+const MENU: { to: string; label: string; group: string }[] = [
+  { group: "This funnel", to: "/booking-flow", label: "Booking Flow — full screen" },
+  { group: "This funnel", to: "/booking-flow-100x", label: "Booking Flow 100x" },
+  { group: "This funnel", to: "/closing", label: "Closing desk" },
+  { group: "This funnel", to: "/final-moment", label: "Draft Vision (screenshots)" },
+  { group: "Lead OS", to: "/flow-os", label: "Flow OS — Lead OS" },
+  { group: "Lead OS", to: "/final-e2e-plus", label: "Final E2E Plus" },
+  { group: "Lead OS", to: "/mymoves", label: "My Moves" },
+  { group: "Lead OS", to: "/booking-os", label: "Booking OS" },
+  { group: "Lead OS", to: "/ways", label: "10 Ways" },
+  { group: "Lead OS", to: "/conversation-library", label: "Conversation Library" },
+  { group: "Everyday CRM", to: "/", label: "Dashboard" },
+  { group: "Everyday CRM", to: "/today", label: "Today" },
+  { group: "Everyday CRM", to: "/leads", label: "Leads" },
+  { group: "Everyday CRM", to: "/tours", label: "Tours" },
+  { group: "Everyday CRM", to: "/follow-ups", label: "Follow-ups" },
+  { group: "Everyday CRM", to: "/inventory", label: "Inventory" },
+  { group: "Everyday CRM", to: "/control-tower-team", label: "Control Tower" },
+  { group: "Everyday CRM", to: "/admin", label: "Admin" },
+];
+
 export function SplitFlow() {
   const { leads, me, mode, setMode, claim, setNext, escalate } = useBookingFlow();
   const [leadId, setLeadId] = useState<string>("");
