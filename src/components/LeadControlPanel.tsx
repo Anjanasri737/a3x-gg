@@ -254,8 +254,12 @@ export function LeadControlPanel() {
           <LeadCapturedStrip lead={lead} />
 
           <div className="flex flex-wrap items-center gap-2 pt-1">
-            <Button size="sm" className="h-8 flex-1 min-w-[140px]" onClick={openCallEngine}>
-              <Phone className="mr-1.5 h-3.5 w-3.5" /> Log call
+            <Button
+              size="sm"
+              onClick={openCallEngine}
+              className="h-9 flex-1 min-w-[170px] animate-pulse-none bg-gradient-to-r from-primary via-primary to-accent font-display text-[12px] font-bold uppercase tracking-[0.14em] text-primary-foreground shadow-lg shadow-primary/30 ring-1 ring-primary/40 transition-transform hover:scale-[1.02]"
+            >
+              <Zap className="mr-1.5 h-4 w-4" /> M-POWER CALL
             </Button>
             <Button size="sm" variant="secondary" className="h-8 flex-1 min-w-[140px]" onClick={() => setLogOpen(true)}>
               <ActivityIcon className="mr-1.5 h-3.5 w-3.5" /> + Log activity
