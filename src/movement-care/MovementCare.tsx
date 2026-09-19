@@ -445,6 +445,17 @@ export function MovementCare() {
                   </Button>
                 );
               })}
+              {manualMode && Array.from({ length: Math.max(0, manualSize - queue.length) }).map((_, index) => (
+                <Button key={`slot-${index}`} variant="ghost" onClick={() => setShowManual(true)}
+                  className="h-auto w-full justify-start rounded-none border-dashed px-3 py-2 text-left text-muted-foreground">
+                  <span className="w-5 shrink-0 font-mono text-[10px]">{queue.length + index + 1}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-xs font-medium">Empty row — add a lead</span>
+                    <span className="block text-[10px] font-normal">Fill it whenever you are ready. Work does not wait.</span>
+                  </span>
+                  <PlusCircle className="h-3.5 w-3.5" />
+                </Button>
+              ))}
             </div>
           </section>
 
