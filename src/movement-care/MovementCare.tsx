@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
-  AlertTriangle, ArrowRight, CheckCircle2, Clock3, Flag, Goal,
-  Building2, Handshake, History, Phone, PhoneCall, PhoneOff, ShieldCheck, Target, Trophy, Users,
+  AlertTriangle, CheckCircle2, ClipboardCopy, Clock3, Flag, Goal,
+  Building2, MessageCircle, Phone, PhoneCall, PhoneOff, ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,10 +16,11 @@ import { DraftChip, JourneyTimeline, WorkPanel } from "@/movement/components";
 import { totals } from "@/movement/metrics";
 import { NEXT_ACTION_LABEL, OPERATORS, type CallResult, type NextActionKind } from "@/movement/types";
 import { toast } from "sonner";
-import { CARE_GOALS, CARE_PLAYBOOKS, ROUND_COPY, type CareGoal, type CareRole, type CareRound } from "./playbooks";
+import { CARE_PLAYBOOKS, GOAL_TITLE, ROUND_COPY, type CareGoal, type CareRole, type CareRound } from "./playbooks";
 import { actualForGoal, callStats, queueForGoal, resultStatus } from "./results";
 import { optionById, propertyOptions, propertyProgress, rankedForCustomer } from "./properties";
 import { todaysCommitment, useMovementCare } from "./store";
+import { debriefMessage } from "./debrief";
 
 const GOAL_TONE: Record<CareGoal, string> = {
   FIND: "border-info/40 bg-info/10 text-info",
@@ -52,9 +53,12 @@ export function MovementCare() {
   const commit = useMovementCare((state) => state.commit);
   const report = useMovementCare((state) => state.report);
   const clearCommitment = useMovementCare((state) => state.clearCommitment);
+  const saveDebrief = useMovementCare((state) => state.saveDebrief);
+  const markDebriefSent = useMovementCare((state) => state.markDebriefSent);
+  const debriefs = useMovementCare((state) => state.debriefs);
   const [role, setRole] = useState<CareRole>(commitment?.role ?? "flow-ops");
   const [goal, setGoal] = useState<CareGoal>(commitment?.goal ?? "FIND");
-  const [target, setTarget] = useState(commitment?.target ?? CARE_PLAYBOOKS[role].stages[0].defaultTarget);
+  const [commitCount, setCommitCount] = useState(commitment?.commitCount ?? CARE_PLAYBOOKS[role].stages[0].dayCount);
   const [support, setSupport] = useState(commitment?.supportNeeded ?? "");
   const [selected, setSelected] = useState<string | null>(null);
   const [round, setRound] = useState<CareRound>("BUILD");
@@ -64,6 +68,7 @@ export function MovementCare() {
   const [showPlaybook, setShowPlaybook] = useState(false);
   const [aimProperties, setAimProperties] = useState<string[]>([]);
   const [propertyQuery, setPropertyQuery] = useState("");
+  const [debriefFor, setDebriefFor] = useState<{ ulid: string; code: string } | null>(null);
 
   const activeRole = commitment?.role ?? role;
   const activeGoal = commitment?.goal ?? goal;
@@ -73,13 +78,15 @@ export function MovementCare() {
   const actual = useMemo(() => actualForGoal(activeGoal, list, events), [activeGoal, list, events]);
   const total = useMemo(() => totals(list, events), [list, events]);
   const calls = useMemo(() => callStats(events), [events]);
-  const aimed = commitment?.targetPropertyIds ?? aimProperties;
+  const aimed = commitment?.closingPropertyIds ?? aimProperties;
   const aimProgress = useMemo(() => propertyProgress(aimed, list), [aimed, list]);
-  const progress = commitment ? Math.min(100, Math.round((actual / Math.max(commitment.target, 1)) * 100)) : 0;
+  const progress = commitment ? Math.min(100, Math.round((actual / Math.max(commitment.commitCount, 1)) * 100)) : 0;
   const selectedState = selected ? list.find((item) => item.ulid === selected) : undefined;
   const selectedResult = selectedState ? resultStatus(selectedState) : null;
-  const todaysReports = reports.filter((item) => item.date === new Date().toISOString().slice(0, 10));
-  const weakRounds = todaysReports.filter((item) => item.actual < item.target * 0.65).length;
+  const today = new Date().toISOString().slice(0, 10);
+  const todaysReports = reports.filter((item) => item.date === today);
+  const weakRounds = todaysReports.filter((item) => item.actual < item.committed * 0.65).length;
+  const todaysDebriefs = debriefs.filter((item) => item.date === today);
 
   useEffect(() => {
     const roleOperator = activeRole === "tcm" ? OPERATORS.find((operator) => operator.role === "tcm") : undefined;
