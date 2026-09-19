@@ -19,6 +19,18 @@ import { assignOwner, escalateToTower, resolveRow, setNextAction } from "@/lib/a
 import { useControlFilters, type DayWindow, type HealthFilter } from "./filters";
 import { derive, LEAKS, type CustomerRow } from "./derive";
 import { deepen, money } from "./deep";
+import { canonicalCustomerId } from "@/lib/canonical/customer-id";
+
+/** Rows whose stage, journey step or conversation type mentions this phase. */
+const phase = (rows: CustomerRow[], re: RegExp) =>
+  rows.filter((r) => re.test(`${r.stage} ${r.journeyStep} ${r.bucket} ${r.nextActionKind}`));
+
+const PHASES = {
+  tours: /tour|visit|site/i,
+  closing: /clos|negoti|quot|offer|decision/i,
+  booking: /book|payment|reserv|approv|token|advance/i,
+  checkin: /check.?in|move.?in|onboard/i,
+};
 
 const DAYS: Array<[DayWindow, string]> = [
   ["today", "Today"],
