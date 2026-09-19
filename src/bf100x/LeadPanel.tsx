@@ -116,6 +116,8 @@ export function LeadPanel({ lead, onBack, onNext }: { lead: FlowLead; onBack: ()
           </label>
           <Button size="sm" variant="secondary" onClick={() => { setNext(lead.id, nextAction, new Date(due).toISOString()); toast.success("Next step and deadline locked"); }}>Lock it</Button>
           <Button size="sm" variant="outline" onClick={() => { escalate(lead.id, "Operator asked for help"); toast.success("Control Tower notified"); }}>Send to Control Tower</Button>
+          {/* The same closing promise as the Closing board, on this customer. */}
+          <CloseCommitButton leadId={lead.id} leadName={lead.name} leadPhone={lead.phone} actorName={me} size="sm" />
           {expert && (
             <>
               <select className="h-8 rounded-md border bg-background px-2 text-xs" value={lead.owner ?? ""}
