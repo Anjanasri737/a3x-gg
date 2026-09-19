@@ -118,10 +118,47 @@ export function ScreenPanel({
     return true;
   }
 
-  function saveAndNext() {
+  const saveAndNext = useCallback(() => {
     if (Object.keys(draft).length > 0 && !saveAll(true)) return;
-    onNext?.();
+    if (canNext) onNext?.();
+    else toast.success("This is the last screen");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [draft, canNext, onNext]);
+
+  /** Enter moves to the next box, and from the last box to the next screen. */
+  function focusNextField(from: HTMLElement) {
+    const boxes = Array.from(rootRef.current?.querySelectorAll<HTMLInputElement>("input:not([disabled])") ?? []);
+    const i = boxes.indexOf(from as HTMLInputElement);
+    const next = i >= 0 ? boxes[i + 1] : undefined;
+    if (next) {
+      next.focus();
+      next.select?.();
+      return;
+    }
+    saveAndNext();
   }
+
+  // Keyboard on the whole screen: Enter or Ctrl/Cmd+Enter moves on, arrows walk screens.
+  useEffect(() => {
+    function onKey(e: KeyboardEvent) {
+      const el = document.activeElement as HTMLElement | null;
+      const typing = el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.tagName === "SELECT");
+      if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+        e.preventDefault();
+        saveAndNext();
+        return;
+      }
+      if (e.key === "Enter" && !typing && el?.tagName !== "BUTTON") {
+        e.preventDefault();
+        saveAndNext();
+        return;
+      }
+      if (!typing && (e.key === "ArrowRight" || e.key === "PageDown")) { e.preventDefault(); saveAndNext(); }
+      if (!typing && (e.key === "ArrowLeft" || e.key === "PageUp")) { e.preventDefault(); if (canPrev) onPrev?.(); }
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [saveAndNext, canPrev, onPrev]);
 
   const nav = (
     <div className="flex items-center gap-1.5">
