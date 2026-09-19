@@ -190,15 +190,7 @@ export function ClosingBoard() {
       </div>
 
       {/* Rows */}
-      {list.length === 0 && (
-        <Card className="space-y-1 p-8 text-center">
-          <ClipboardList className="mx-auto h-5 w-5 text-muted-foreground" />
-          <p className="text-sm font-medium">Nothing in this bucket</p>
-          <p className="text-xs text-muted-foreground">
-            Promises are made from the “Definitely Close” button on any lead. An empty board means nobody has committed yet.
-          </p>
-        </Card>
-      )}
+      {list.length === 0 && <ClosingCandidates />}
 
       {bucket === "settled"
         ? <div className="space-y-2">{settledRows.map((c) => <Row key={c.id} c={c} now={now} />)}</div>
