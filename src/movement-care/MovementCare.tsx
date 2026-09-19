@@ -17,6 +17,8 @@ import { totals } from "@/movement/metrics";
 import { NEXT_ACTION_LABEL, OPERATORS, type CallResult, type NextActionKind } from "@/movement/types";
 import { toast } from "sonner";
 import { CARE_PLAYBOOKS, GOAL_TITLE, ROUND_COPY, type CareGoal, type CareRole, type CareRound } from "./playbooks";
+import { ManualDraftPanel, type ManualCandidate, type NewLeadInput } from "./ManualDraft";
+import { useIdentityStore } from "@/lib/lead-identity/store";
 import { actualForGoal, callStats, queueForGoal, resultStatus } from "./results";
 import { optionById, propertyOptions, propertyProgress, rankedForCustomer } from "./properties";
 import { todaysCommitment, useMovementCare } from "./store";
