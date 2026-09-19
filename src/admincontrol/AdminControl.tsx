@@ -4,7 +4,8 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { AlertTriangle, Camera, Clock, Layers, RefreshCw, ShieldAlert, Users } from "lucide-react";
+import { toast } from "sonner";
+import { AlertTriangle, Camera, Clock, IndianRupee, Layers, RefreshCw, ShieldAlert, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,8 +15,10 @@ import { SplitFlow } from "@/bf100x/SplitFlow";
 import { Ingest } from "@/vision2/Ingest";
 import { cn } from "@/lib/utils";
 import { getAdminControlData } from "@/lib/admin-control/data.functions";
+import { assignOwner, escalateToTower, resolveRow, setNextAction } from "@/lib/admin-control/actions.functions";
 import { useControlFilters, type DayWindow, type HealthFilter } from "./filters";
 import { derive, LEAKS, type CustomerRow } from "./derive";
+import { deepen, money } from "./deep";
 
 const DAYS: Array<[DayWindow, string]> = [
   ["today", "Today"],
