@@ -254,7 +254,7 @@ export function LeadControlPanel() {
           <LeadCapturedStrip lead={lead} />
 
           <div className="flex flex-wrap items-center gap-2 pt-1">
-            <Button size="sm" className="h-8 flex-1 min-w-[140px]" onClick={() => setCallEngineOpen(true)}>
+            <Button size="sm" className="h-8 flex-1 min-w-[140px]" onClick={openCallEngine}>
               <Phone className="mr-1.5 h-3.5 w-3.5" /> Log call
             </Button>
             <Button size="sm" variant="secondary" className="h-8 flex-1 min-w-[140px]" onClick={() => setLogOpen(true)}>
