@@ -189,7 +189,9 @@ export function AdminControl() {
             </div>
 
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
-              <Kpi icon={IndianRupee} label="Money at risk" value={money(deep.value.atRisk)} tone="red" onClick={() => setTab("value")} />
+              {can.seeMoney
+                ? <Kpi icon={IndianRupee} label="Money at risk" value={money(deep.value.atRisk)} tone="red" onClick={() => setTab("value")} />
+                : <Kpi icon={ShieldAlert} label="Red customers" value={d.kpi.red} tone="red" onClick={() => f.set({ health: "RED" })} />}
               <Kpi icon={Clock} label="Due in 2 hours" value={deep.forecast.next2h} onClick={() => setTab("sla")} />
               <Kpi icon={Clock} label="No deadline" value={deep.forecast.missing} tone="amber" onClick={() => setTab("sla")} />
               <Kpi icon={AlertTriangle} label="Slowest stage" value={deep.bottlenecks[0]?.stage ?? "—"} hint={`${deep.bottlenecks[0]?.avgIdleH ?? 0}h average idle`} onClick={() => setTab("bottlenecks")} />
