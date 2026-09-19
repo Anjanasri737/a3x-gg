@@ -33,6 +33,9 @@ interface State {
   setMe: (name: string) => void;
   setRound: (r: number) => void;
 
+  /** bring a customer from another view (Movement OS etc.) into the booking flow */
+  ensureLead: (input: { name: string; phone: string; lastMessage?: string; source?: string }) => string;
+
   // capture
   addRow: (rowId: string) => void;
   mergeRow: (rowId: string) => void;
