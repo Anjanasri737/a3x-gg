@@ -161,7 +161,7 @@ export function calculateResults(role: CareRole, code: CheckpointCode, values: R
   });
 }
 
-const ids = (states: MovementState[], test: (state: MovementState) => boolean) => states.filter(test).map((state) => state.ulid);
+const ids = (states: MovementState[], test: (state: MovementState) => boolean) => states.filter(test).map((state) => state.canonicalId || state.ulid);
 
 export function diagnose(role: CareRole, values: Record<string, number>, results: MetricResult[], states: MovementState[]): ReasonResult | null {
   const behind = (key: string) => results.find((item) => item.key === key)?.status === "BEHIND" || results.find((item) => item.key === key)?.status === "CRITICAL";
