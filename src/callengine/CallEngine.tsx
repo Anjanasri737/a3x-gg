@@ -190,39 +190,81 @@ export function CallEngine({ lead, onLogged }: Props) {
         </div>
       </div>
 
-      {phase === "mission" && (
-        <>
-          <Separator />
-          <div className="rounded-md border bg-muted/40 p-2.5 space-y-2">
-            <div className="text-xs font-semibold">Call mission · {def.objective}</div>
-            <div>
-              <Title>Already known — do not ask again</Title>
-              <div className="mt-1 grid grid-cols-2 gap-x-3 gap-y-0.5">
-                {facts.map((f) => (
-                  <div key={f.label} className="flex justify-between gap-2 text-[11px]">
-                    <span className="text-muted-foreground">{f.label}</span>
-                    <span className={cn("truncate font-medium", !f.known && "text-muted-foreground/60")}>{f.value}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div>
-              <Title>Need from this call</Title>
-              <div className="mt-1 flex flex-wrap gap-1">
-                {def.needs.map((n) => (
-                  <Badge key={n} variant="outline" className="text-[10px]">○ {n}</Badge>
-                ))}
-              </div>
-            </div>
-            <div className="text-[11px]">
-              Primary CTA:{" "}
-              <span className="font-semibold">
-                {cta === "visit" ? "Schedule visit" : cta === "video-tour" ? "Video tour / pre-book" : "Future follow-up"}
-              </span>
-            </div>
+      {/* The mission stays on screen for the whole call and updates as the operator captures. */}
+      <Separator />
+      <div className="rounded-md border bg-muted/40 p-2.5 space-y-2">
+        <div className="flex items-start justify-between gap-2">
+          <div>
+            <div className="text-xs font-semibold">{mission.headline}</div>
+            <div className="text-[11px] text-muted-foreground">{mission.situation}</div>
           </div>
-          <Button className="w-full" onClick={startCall}>Call {lead.name ?? "customer"}</Button>
-        </>
+          <Badge variant="secondary" className="shrink-0 text-[9px]">{mission.scenario.split("-")[0]} · {mission.progress}%</Badge>
+        </div>
+
+        <div className="h-1 w-full overflow-hidden rounded bg-border">
+          <div className="h-full bg-primary transition-all" style={{ width: `${mission.progress}%` }} />
+        </div>
+
+        <div className="rounded border bg-background p-2 text-[11px]">
+          <span className="text-muted-foreground">Open with: </span>
+          <span className="font-medium">{mission.openWith}</span>
+        </div>
+
+        <div className="grid gap-2 sm:grid-cols-2">
+          <div>
+            <Title>Do</Title>
+            <ul className="mt-1 space-y-0.5">
+              {mission.dos.map((d) => (
+                <li key={d} className="text-[11px] leading-snug">✓ {d}</li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <Title>Don't</Title>
+            <ul className="mt-1 space-y-0.5">
+              {mission.donts.map((d) => (
+                <li key={d} className="text-[11px] leading-snug text-muted-foreground">✕ {d}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
+        <div>
+          <Title>Need from this call — ticks itself as you capture</Title>
+          <div className="mt-1 flex flex-wrap gap-1">
+            {mission.needs.map((n) => (
+              <Badge
+                key={n.label}
+                variant={n.done ? "secondary" : "outline"}
+                className={cn("text-[10px]", n.done && "text-primary")}
+              >
+                {n.done ? "✓" : "○"} {n.label}
+              </Badge>
+            ))}
+          </div>
+        </div>
+
+        <div className="rounded border border-primary/40 bg-primary/5 p-2 text-[11px]">
+          <span className="text-muted-foreground">Ask for: </span>
+          <span className="font-semibold">{mission.ctaLabel}</span>
+          <div className="text-[10px] text-muted-foreground">{mission.ctaHow}</div>
+        </div>
+
+        <div>
+          <Title>Already known — do not ask again</Title>
+          <div className="mt-1 grid grid-cols-2 gap-x-3 gap-y-0.5">
+            {facts.map((f) => (
+              <div key={f.label} className="flex justify-between gap-2 text-[11px]">
+                <span className="text-muted-foreground">{f.label}</span>
+                <span className={cn("truncate font-medium", !f.known && "text-muted-foreground/60")}>{f.value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {phase === "mission" && (
+        <Button className="w-full" onClick={startCall}>Call {lead.name ?? "customer"}</Button>
       )}
 
       {phase === "capture" && (
