@@ -76,7 +76,7 @@ export function LogActivity({ lead, onLogged }: Props) {
         onClick={() => setMode("engine")}
         className={cn("rounded-full border px-2.5 py-1 text-[10px]", mode === "engine" ? "border-primary bg-primary/10 text-primary" : "border-border text-muted-foreground")}
       >
-        Call engine
+        M-POWER CALL
       </button>
       <button
         onClick={() => setMode("quick")}

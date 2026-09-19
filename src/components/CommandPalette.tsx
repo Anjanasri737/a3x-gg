@@ -60,7 +60,7 @@ export function CommandPalette() {
         <CommandGroup heading="Quick actions on selected lead">
           {leads.slice(0, 5).map((l) => (
             <CommandItem key={`call-${l.id}`} value={`call ${l.name}`} onSelect={() => { logCall(l.id); setOpen(false); }}>
-              <Phone className="mr-2 h-4 w-4" /> Log call · {l.name}
+              <Phone className="mr-2 h-4 w-4" /> M-Power Call · {l.name}
             </CommandItem>
           ))}
           {leads.slice(0, 5).map((l) => (

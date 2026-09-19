@@ -167,7 +167,7 @@ export function CallEngine({ lead, onLogged }: Props) {
   return (
     <div className="space-y-3 rounded-lg border p-3">
       <div className="flex items-center justify-between gap-2">
-        <Title>Call conversation engine</Title>
+        <Title>M-POWER CALL · conversation engine</Title>
         {lead.nextAction && (
           <Badge variant="outline" className="text-[10px]">
             next: {NEXT_ACTION_LABEL[lead.nextAction.kind]} ·{" "}
