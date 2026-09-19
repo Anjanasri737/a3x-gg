@@ -67,14 +67,22 @@ const ago = (t: number) => {
 
 export function AdminControl() {
   const f = useControlFilters();
+  const viewer = useViewer();
+  const can = powersOf(viewer.role);
   const [tab, setTab] = useState("command");
   const [openRow, setOpenRow] = useState<CustomerRow | null>(null);
 
-  const { data, isLoading, refetch, isFetching } = useQuery({
+  const { data: raw, isLoading, refetch, isFetching } = useQuery({
     queryKey: ["admin-control-data"],
     queryFn: () => getAdminControlData(),
     staleTime: 60_000,
   });
+
+  const allOptions = useMemo(() => scopeOptions(raw), [raw]);
+  const data = useMemo(
+    () => (raw ? scopeControlData(raw, { role: viewer.role, zones: viewer.zones, accounts: viewer.accounts, person: viewer.person }) : undefined),
+    [raw, viewer.role, viewer.zones, viewer.accounts, viewer.person],
+  );
 
   const d = useMemo(() => (data ? derive(data, f) : null), [data, f]);
   const deep = useMemo(() => (data && d ? deepen(data, d) : null), [data, d]);
