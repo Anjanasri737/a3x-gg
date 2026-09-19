@@ -4,7 +4,8 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
-import { AlertTriangle, Camera, Clock, Layers, RefreshCw, ShieldAlert, Users } from "lucide-react";
+import { toast } from "sonner";
+import { AlertTriangle, Camera, Clock, IndianRupee, Layers, RefreshCw, ShieldAlert, Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,8 +15,10 @@ import { SplitFlow } from "@/bf100x/SplitFlow";
 import { Ingest } from "@/vision2/Ingest";
 import { cn } from "@/lib/utils";
 import { getAdminControlData } from "@/lib/admin-control/data.functions";
+import { assignOwner, escalateToTower, resolveRow, setNextAction } from "@/lib/admin-control/actions.functions";
 import { useControlFilters, type DayWindow, type HealthFilter } from "./filters";
 import { derive, LEAKS, type CustomerRow } from "./derive";
+import { deepen, money } from "./deep";
 
 const DAYS: Array<[DayWindow, string]> = [
   ["today", "Today"],
@@ -60,10 +63,21 @@ export function AdminControl() {
   });
 
   const d = useMemo(() => (data ? derive(data, f) : null), [data, f]);
+  const deep = useMemo(() => (data && d ? deepen(data, d) : null), [data, d]);
 
   const openCustomer = (row: CustomerRow) => {
     setOpenRow(row);
     setTab("customer");
+  };
+
+  const run = async (label: string, fn: () => Promise<unknown>) => {
+    try {
+      await fn();
+      toast.success(label);
+      await refetch();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not save that");
+    }
   };
 
   return (
@@ -104,7 +118,7 @@ export function AdminControl() {
         </div>
       </header>
 
-      {isLoading || !d ? (
+      {isLoading || !d || !deep ? (
         <div className="rounded-xl border bg-card p-8 text-center text-sm text-muted-foreground">
           Loading the company record…
         </div>
@@ -117,6 +131,16 @@ export function AdminControl() {
             <TabsTrigger value="batches">Work batches</TabsTrigger>
             <TabsTrigger value="ownership">Ownership</TabsTrigger>
             <TabsTrigger value="risk">Risk &amp; leakage</TabsTrigger>
+            <TabsTrigger value="sla">SLA clock</TabsTrigger>
+            <TabsTrigger value="aging">Aging</TabsTrigger>
+            <TabsTrigger value="bottlenecks">Bottlenecks</TabsTrigger>
+            <TabsTrigger value="zones">Zones</TabsTrigger>
+            <TabsTrigger value="accuracy">Reading quality</TabsTrigger>
+            <TabsTrigger value="compliance">Compliance</TabsTrigger>
+            <TabsTrigger value="balance">Workload</TabsTrigger>
+            <TabsTrigger value="value">Money at risk</TabsTrigger>
+            <TabsTrigger value="heat">When chats land</TabsTrigger>
+            <TabsTrigger value="anomalies">Alerts</TabsTrigger>
             <TabsTrigger value="people">People</TabsTrigger>
             <TabsTrigger value="history">History</TabsTrigger>
             <TabsTrigger value="upload">Add screenshots</TabsTrigger>
@@ -133,6 +157,29 @@ export function AdminControl() {
               <Kpi icon={ShieldAlert} label="Nobody owns" value={d.kpi.unownedActive} hint="active customers with no handler" tone="red" onClick={() => { f.set({ leak: "no_owner" }); setTab("risk"); }} />
               <Kpi icon={Clock} label="Overdue next actions" value={d.kpi.overdue} hint={`${d.kpi.red} red customers`} tone="red" onClick={() => { f.set({ leak: "overdue_action" }); setTab("risk"); }} />
             </div>
+
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+              <Kpi icon={IndianRupee} label="Money at risk" value={money(deep.value.atRisk)} tone="red" onClick={() => setTab("value")} />
+              <Kpi icon={Clock} label="Due in 2 hours" value={deep.forecast.next2h} onClick={() => setTab("sla")} />
+              <Kpi icon={Clock} label="No deadline" value={deep.forecast.missing} tone="amber" onClick={() => setTab("sla")} />
+              <Kpi icon={AlertTriangle} label="Slowest stage" value={deep.bottlenecks[0]?.stage ?? "—"} hint={`${deep.bottlenecks[0]?.avgIdleH ?? 0}h average idle`} onClick={() => setTab("bottlenecks")} />
+              <Kpi icon={Users} label="Numbers saved twice" value={deep.duplicatesCount} tone="amber" onClick={() => setTab("accuracy")} />
+              <Kpi icon={ShieldAlert} label="Alerts to decide" value={deep.anomalies.length} tone="red" onClick={() => setTab("anomalies")} />
+            </div>
+
+            {deep.anomalies.length > 0 && (
+              <Card title="Top alerts right now">
+                <ul className="space-y-1.5">
+                  {deep.anomalies.slice(0, 5).map((a, i) => (
+                    <li key={i} className={cn("rounded-md border p-2 text-xs",
+                      a.severity === "high" ? "border-destructive/40 bg-destructive/5" : "border-amber-500/40 bg-amber-500/5")}>
+                      <div className="font-semibold">{a.what}</div>
+                      <div className="text-muted-foreground">{a.detail}</div>
+                    </li>
+                  ))}
+                </ul>
+              </Card>
+            )}
 
             <div className="grid gap-3 lg:grid-cols-3">
               <Card title="Execution health">
@@ -187,6 +234,20 @@ export function AdminControl() {
               <Kpi icon={AlertTriangle} label="Silently dropped" value={d.kpi.silentDrops} tone="red" />
               <Kpi icon={ShieldAlert} label="Waiting for a decision" value={d.kpi.review} tone="amber" />
             </div>
+            <Card title="Decide these rows now — accept or reject each one">
+              <ResolveRows
+                rows={d.observations.filter((o) => o.state === "needs_review").slice(0, 25).map((o) => ({
+                  id: o.id,
+                  name: o.contactName ?? "Unknown",
+                  phone: o.phone ?? "",
+                  preview: (o.preview ?? "").slice(0, 70),
+                  reason: o.reason ?? "no reason recorded",
+                }))}
+                onDecide={(id, decision) =>
+                  run(decision === "reconciled" ? "Row accepted as a customer" : "Row marked not a customer",
+                    () => resolveRow({ data: { observationId: id, decision } }))}
+              />
+            </Card>
             <Card title="Why rows are stuck">
               <Table head={["Reason", "Rows"]} rows={d.reviewReasons.map(([r, c]) => [r, c])} />
             </Card>
@@ -258,6 +319,145 @@ export function AdminControl() {
             </Card>
           </TabsContent>
 
+          {/* SLA CLOCK ---------------------------------------------------- */}
+          <TabsContent value="sla" className="space-y-3 pt-3">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+              <Kpi icon={Clock} label="Due in 2 hours" value={deep.forecast.next2h} />
+              <Kpi icon={Clock} label="Due today" value={deep.forecast.today} />
+              <Kpi icon={Clock} label="Due tomorrow" value={deep.forecast.tomorrow} />
+              <Kpi icon={Clock} label="Later" value={deep.forecast.later} />
+              <Kpi icon={AlertTriangle} label="No deadline at all" value={deep.forecast.missing} tone="red"
+                onClick={() => f.set({ leak: "no_next_action" })} />
+            </div>
+            <Card title="How late are we — every customer with a deadline">
+              <Table head={["Lateness", "Customers", "Value sitting there"]}
+                rows={deep.sla.map((s) => [s.band, s.count, money(s.value)])} />
+            </Card>
+            <Card title="Worst lateness first">
+              <CustomerTable rows={[...d.rows].sort((a, b) => b.overdueMins - a.overdueMins).slice(0, 50)} onOpen={openCustomer} />
+            </Card>
+          </TabsContent>
+
+          {/* AGING -------------------------------------------------------- */}
+          <TabsContent value="aging" className="space-y-3 pt-3">
+            <Card title="How long since anything happened">
+              <Table head={["Since last touch", "Customers", "Red", "Nobody owns"]}
+                rows={deep.aging.map((a) => [a.band, a.count, a.red, a.unowned])} />
+            </Card>
+            <Card title="Oldest untouched customers">
+              <CustomerTable
+                rows={[...d.rows].sort((a, b) => Math.max(a.lastActionAt, a.lastObsAt) - Math.max(b.lastActionAt, b.lastObsAt)).slice(0, 50)}
+                onOpen={openCustomer} />
+            </Card>
+          </TabsContent>
+
+          {/* BOTTLENECKS -------------------------------------------------- */}
+          <TabsContent value="bottlenecks" className="space-y-3 pt-3">
+            <Card title="Where the journey jams — slowest stage first">
+              <Table head={["Stage", "Customers", "Average idle (hours)", "Worst idle (hours)", "Overdue", "No owner"]}
+                rows={deep.bottlenecks.map((b) => [b.stage, b.customers, b.avgIdleH, b.worstIdleH, b.overdue, b.unowned])}
+                onPick={(i) => f.set({ stage: deep.bottlenecks[i]?.stage ?? "all" })} />
+            </Card>
+            <Card title="Conversation type vs trouble">
+              <Table head={["Conversation type", "Customers", "Red"]}
+                rows={deep.mix.slice(0, 30).map((m) => [m.bucket, m.count, m.red])} />
+            </Card>
+          </TabsContent>
+
+          {/* ZONES -------------------------------------------------------- */}
+          <TabsContent value="zones" className="space-y-3 pt-3">
+            <Card title="Area by area">
+              <Table head={["Area", "Customers", "Red", "Overdue", "No owner", "Average lateness (min)", "Chat rows", "Value"]}
+                rows={deep.zones.slice(0, 40).map((z) => [z.zone, z.customers, z.red, z.overdue, z.unowned, z.avgOverdue, z.rows, money(z.value)])}
+                onPick={(i) => f.set({ zone: deep.zones[i]?.zone ?? "all" })} />
+            </Card>
+          </TabsContent>
+
+          {/* READING QUALITY ---------------------------------------------- */}
+          <TabsContent value="accuracy" className="space-y-3 pt-3">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <Kpi icon={Layers} label="Average confidence" value={`${d.kpi.avgConfidence}%`} />
+              <Kpi icon={AlertTriangle} label="Rows read below 70%" value={d.kpi.lowConfidence} tone="amber" />
+              <Kpi icon={ShieldAlert} label="Rows with no number" value={deep.accuracy.missingPhone} tone="amber" />
+              <Kpi icon={Users} label="Numbers saved twice" value={deep.duplicatesCount} tone="red" />
+            </div>
+            <Card title="Confidence bands">
+              <Table head={["Band", "Chat rows"]} rows={deep.accuracy.bands.map((b) => [b.band, b.rows])} />
+            </Card>
+            <Card title="Labelled vs unlabelled, incoming vs outgoing">
+              <Table head={["Measure", "Rows"]} rows={[
+                ["Labelled by WhatsApp", deep.accuracy.labelled],
+                ["No label visible", deep.accuracy.unlabelled],
+                ["Customer wrote last", deep.accuracy.incoming],
+                ["We wrote last", deep.accuracy.outgoing],
+              ]} />
+            </Card>
+            <Card title="Same number, different names — merge these">
+              <Table head={["Number", "Names seen"]}
+                rows={deep.accuracy.duplicatePhones.map((p) => [p.phone, p.names.join(" / ")])} />
+            </Card>
+          </TabsContent>
+
+          {/* COMPLIANCE --------------------------------------------------- */}
+          <TabsContent value="compliance" className="space-y-3 pt-3">
+            <Card title="Every active customer must carry these — nothing may be blank">
+              <Bars rows={deep.compliance.map((c) => [`${c.field} — ${c.pct}% filled, ${c.missing} missing`, c.pct, c.pct === 100 ? "bg-emerald-500" : c.pct > 80 ? "bg-amber-500" : "bg-destructive"])} />
+            </Card>
+            <Card title="Customers breaking the rules right now">
+              <CustomerTable rows={d.rows.filter((r) => !r.owned || !r.nextActionKind || !r.nextActionAt).slice(0, 60)} onOpen={openCustomer} />
+            </Card>
+          </TabsContent>
+
+          {/* WORKLOAD ----------------------------------------------------- */}
+          <TabsContent value="balance" className="space-y-3 pt-3">
+            <Card title="Who is carrying how much">
+              <Table head={["Person", "Holding", "Share %", "Red", "Overdue", "Unread", "Load"]}
+                rows={deep.balance.map((b) => [b.person, b.holding, `${b.share}%`, b.red, b.overdue, b.unread, b.load])}
+                onPick={(i) => f.set({ operator: deep.balance[i]?.person ?? "all" })} />
+            </Card>
+          </TabsContent>
+
+          {/* MONEY -------------------------------------------------------- */}
+          <TabsContent value="value" className="space-y-3 pt-3">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              <Kpi icon={IndianRupee} label="At risk right now" value={money(deep.value.atRisk)} tone="red" />
+              <Kpi icon={IndianRupee} label="Healthy pipeline" value={money(deep.value.safe)} />
+              <Kpi icon={AlertTriangle} label="Red + amber customers" value={d.kpi.red + d.kpi.amber} tone="amber" />
+            </div>
+            <Card title="Biggest money slipping first">
+              <CustomerTable rows={deep.value.topRisk} onOpen={openCustomer} />
+            </Card>
+          </TabsContent>
+
+          {/* HEAT --------------------------------------------------------- */}
+          <TabsContent value="heat" className="space-y-3 pt-3">
+            <Card title="When customers actually message us">
+              <Heat weekdays={deep.heat.weekdays} />
+            </Card>
+            <Card title="Busiest hours across the week">
+              <Bars rows={deep.heat.hours.map((n, h) => [`${String(h).padStart(2, "0")}:00`, n, "bg-primary"])} />
+            </Card>
+          </TabsContent>
+
+          {/* ALERTS ------------------------------------------------------- */}
+          <TabsContent value="anomalies" className="space-y-3 pt-3">
+            <Card title="What needs a decision from you today">
+              {deep.anomalies.length === 0 ? (
+                <p className="text-xs text-muted-foreground">No alert for these filters.</p>
+              ) : (
+                <ul className="space-y-1.5">
+                  {deep.anomalies.map((a, i) => (
+                    <li key={i} className={cn("rounded-md border p-2 text-xs",
+                      a.severity === "high" ? "border-destructive/40 bg-destructive/5" : "border-amber-500/40 bg-amber-500/5")}>
+                      <div className="font-semibold">{a.what}</div>
+                      <div className="text-muted-foreground">{a.detail}</div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Card>
+          </TabsContent>
+
           {/* PEOPLE ------------------------------------------------------- */}
           <TabsContent value="people" className="space-y-3 pt-3">
             <Card title="Quality per person">
@@ -314,6 +514,12 @@ export function AdminControl() {
                           </ul>
                         </div>
                       )}
+                      <FixNow
+                        row={openRow}
+                        onAssign={(handler) => run(`${openRow.name} given to ${handler}`, () => assignOwner({ data: { leadId: openRow.id, handler } }))}
+                        onNext={(kind, mins2) => run("Next action set", () => setNextAction({ data: { leadId: openRow.id, kind, dueInMinutes: mins2 } }))}
+                        onEscalate={() => run("Sent to Control Tower", () => escalateToTower({ data: { leadId: openRow.id, reason: openRow.reasons[0] ?? "Nobody moved this in time" } }))}
+                      />
                       <div className="flex flex-wrap gap-2 pt-1">
                         <Button asChild size="sm" variant="outline">
                           <Link to="/tower/leads/$id" params={{ id: openRow.id }}>Full story</Link>
@@ -478,5 +684,100 @@ function CustomerTable({ rows, onOpen }: { rows: CustomerRow[]; onOpen: (r: Cust
         </tbody>
       </table>
     </div>
+  );
+}
+
+function Heat({ weekdays }: { weekdays: Array<{ day: string; counts: number[]; total: number }> }) {
+  const max = Math.max(1, ...weekdays.flatMap((w) => w.counts));
+  return (
+    <div className="overflow-x-auto">
+      <table className="text-[10px]">
+        <thead>
+          <tr>
+            <th />
+            {Array.from({ length: 24 }, (_, h) => (
+              <th key={h} className="px-0.5 text-muted-foreground">{h}</th>
+            ))}
+            <th className="px-1 text-muted-foreground">All</th>
+          </tr>
+        </thead>
+        <tbody>
+          {weekdays.map((w) => (
+            <tr key={w.day}>
+              <td className="pr-1 text-muted-foreground">{w.day}</td>
+              {w.counts.map((n, h) => (
+                <td key={h} className="p-0.5">
+                  <div title={`${w.day} ${h}:00 — ${n} rows`} className="h-4 w-4 rounded-sm bg-primary"
+                    style={{ opacity: n === 0 ? 0.06 : 0.15 + (n / max) * 0.85 }} />
+                </td>
+              ))}
+              <td className="px-1 font-semibold">{w.total}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+const QUICK: Array<[string, number]> = [
+  ["Call now", 30],
+  ["WhatsApp follow-up", 120],
+  ["Share options", 240],
+  ["Fix tour date", 1440],
+];
+
+function FixNow({ row, onAssign, onNext, onEscalate }: {
+  row: CustomerRow;
+  onAssign: (handler: string) => void;
+  onNext: (kind: string, dueInMinutes: number) => void;
+  onEscalate: () => void;
+}) {
+  const [who, setWho] = useState("");
+  const [what, setWhat] = useState("");
+  return (
+    <div className="space-y-2 rounded-md border bg-muted/30 p-2">
+      <div className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">Fix it from here</div>
+      <div className="flex flex-wrap items-center gap-1.5">
+        <Input value={who} onChange={(e) => setWho(e.target.value)} placeholder={row.owned ? `Move from ${row.handler}` : "Who takes this?"}
+          className="h-7 w-40 text-xs" />
+        <Button size="sm" className="h-7 px-2 text-[11px]" disabled={!who.trim()} onClick={() => { onAssign(who.trim()); setWho(""); }}>
+          Give owner
+        </Button>
+        <Button size="sm" variant="outline" className="h-7 px-2 text-[11px]" onClick={onEscalate}>Send to Control Tower</Button>
+      </div>
+      <div className="flex flex-wrap items-center gap-1.5">
+        <Input value={what} onChange={(e) => setWhat(e.target.value)} placeholder="What must happen next?" className="h-7 w-48 text-xs" />
+        {QUICK.map(([label, mins2]) => (
+          <Button key={label} size="sm" variant="outline" className="h-7 px-2 text-[11px]"
+            onClick={() => { onNext(what.trim() || label, mins2); setWhat(""); }}>
+            {label} · {mins2 < 60 ? `${mins2}m` : `${Math.round(mins2 / 60)}h`}
+          </Button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ResolveRows({ rows, onDecide }: {
+  rows: Array<{ id: string; name: string; phone: string; preview: string; reason: string }>;
+  onDecide: (id: string, decision: "reconciled" | "non_customer") => void;
+}) {
+  if (rows.length === 0) return <p className="text-xs text-muted-foreground">Nothing waiting for a decision.</p>;
+  return (
+    <ul className="space-y-1.5">
+      {rows.map((r) => (
+        <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 rounded-md border p-2 text-xs">
+          <div className="min-w-0">
+            <div className="font-medium">{r.name} · {r.phone || "no number"}</div>
+            <div className="truncate text-muted-foreground">{r.preview || "no message read"} — {r.reason}</div>
+          </div>
+          <div className="flex gap-1.5">
+            <Button size="sm" className="h-7 px-2 text-[11px]" onClick={() => onDecide(r.id, "reconciled")}>It is a customer</Button>
+            <Button size="sm" variant="outline" className="h-7 px-2 text-[11px]" onClick={() => onDecide(r.id, "non_customer")}>Not a customer</Button>
+          </div>
+        </li>
+      ))}
+    </ul>
   );
 }
