@@ -87,7 +87,7 @@ export const useMovementCare = create<MovementCareStore>()(
       startRollingDraft: (size) =>
         set({
           manualMode: true,
-          manualSize: Math.max(1, Math.min(200, Math.round(size) || 1)),
+          manualSize: 30,
           manualList: [],
           draftStartedAt: new Date().toISOString(),
         }),

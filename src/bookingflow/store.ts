@@ -5,6 +5,7 @@ import { BATCH_SIZE, HANDLERS, ROUNDS } from "./types";
 import type { Batch, CapturedRow, FlowLead, Mode, Qualification, Temp } from "./types";
 import { seedCapturedRows, seedLeads } from "./seed";
 import { JOURNEY, currentStep } from "./journey";
+import { canonicalCustomerId } from "@/lib/canonical/customer-id";
 
 const now = () => new Date().toISOString();
 const DAY = 86_400_000;
@@ -88,15 +89,19 @@ export const useBookingFlow = create<State>()(
       setRound: (round) => set({ round }),
 
       ensureLead: ({ name, phone, lastMessage, source }) => {
-        const digits = (p: string) => p.replace(/\D/g, "").slice(-10);
         const s = get();
-        const d = digits(phone || "");
-        const found =
-          (d ? s.leads.find((l) => digits(l.phone) === d) : undefined) ??
-          s.leads.find((l) => l.name.toLowerCase() === name.toLowerCase());
-        if (found) return found.id;
+        const canonicalId = canonicalCustomerId({ phone, name });
+        const found = s.leads.find((lead) =>
+          (lead.canonicalId || canonicalCustomerId({ phone: lead.phone, name: lead.name })) === canonicalId,
+        );
+        if (found) {
+          if (!found.canonicalId) set({ leads: s.leads.map((lead) => lead.id === found.id ? { ...lead, canonicalId } : lead) });
+          return found.id;
+        }
+        if (!canonicalId) return "";
         const lead: FlowLead = {
-          id: `bf-link-${d || name.toLowerCase().replace(/\s+/g, "-")}`,
+          id: canonicalId,
+          canonicalId,
           name: name || phone,
           phone,
           waAccount: "Gharpayy Sales 01",
@@ -119,7 +124,8 @@ export const useBookingFlow = create<State>()(
           const row = s.rows.find((r) => r.id === rowId);
           if (!row || row.status !== "NEW") return s;
           const lead: FlowLead = {
-            id: `bf-new-${row.id}`,
+            id: canonicalCustomerId({ phone: row.phone, name: row.name }) || `bf-new-${row.id}`,
+            canonicalId: canonicalCustomerId({ phone: row.phone, name: row.name }) || undefined,
             name: row.name,
             phone: row.phone,
             waAccount: "Gharpayy Sales 01",

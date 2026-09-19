@@ -48,6 +48,8 @@ export interface Qualification {
 
 export interface FlowLead {
   id: string;
+  /** Shared identity used by Draft Vision, Movement, Admin and Booking Flow. */
+  canonicalId?: string;
   name: string;
   phone: string;
   waAccount: string;

@@ -68,7 +68,7 @@ export interface SplitFocus { name?: string; phone?: string; key?: string; canon
 
 
 export function SplitFlow({ embedded = false, focus, panelOnly = false }: { embedded?: boolean; focus?: SplitFocus; panelOnly?: boolean }) {
-  const { leads, me, mode, setMode, claim, setNext, logActivity, escalate, batches, buildBatch, closeBatch, reopenBatch, ensureLead } = useBookingFlow();
+  const { leads, me, mode, setMode, claim, setNext, logActivity, escalate, batches, buildBatch, closeBatch, reopenBatch } = useBookingFlow();
   const [widthPct, setWidthPct] = useState(40);
   const [dragging, setDragging] = useState(false);
   const [closeNote, setCloseNote] = useState("");
@@ -124,12 +124,15 @@ export function SplitFlow({ embedded = false, focus, panelOnly = false }: { embe
   useEffect(() => {
     if (!focus || leads.length === 0) return;
     const want = focus.canonicalId || canonicalCustomerId({ phone: focus.phone, name: focus.name });
-    const match = want ? leads.find((l) => canonicalCustomerId({ phone: l.phone, name: l.name }) === want) : undefined;
-    const id = match?.id ?? ensureLead({ name: focus.name || focus.phone || "Unknown", phone: focus.phone || "", source: "Movement OS" });
-    setLeadId(id);
+    const match = want ? leads.find((l) => (l.canonicalId || canonicalCustomerId({ phone: l.phone, name: l.name })) === want) : undefined;
+    if (!match) {
+      setLeadId("");
+      toast.error("This customer is not linked to Booking Flow yet. No duplicate was created.");
+      return;
+    }
+    setLeadId(match.id);
     setPane("WORK");
-    if (match) setScreenId(currentScreen(match.f ?? {}).id);
-    if (!match) toast.success(`${focus.name || focus.phone} added to the booking flow`);
+    setScreenId(currentScreen(match.f ?? {}).id);
   }, [focus?.key, focus?.phone, focus?.name, focus?.canonicalId, leads.length]);
 
   const screen = SCREENS.find((s) => s.id === screenId) ?? (lead ? currentScreen(lead.f ?? {}) : SCREENS[0]!);

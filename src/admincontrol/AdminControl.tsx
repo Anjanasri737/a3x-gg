@@ -373,7 +373,11 @@ export function AdminControl() {
           </TabsContent>
 
           <TabsContent value="checkpoints" className="pt-3">
-            <CheckpointControl managerName={viewer.name || "Manager"} />
+            <CheckpointControl managerName={viewer.name || "Manager"} onOpenCustomer={(canonicalId) => {
+              const row = d.rows.find((item) => canonicalCustomerId({ phone: item.phone, name: item.name }) === canonicalId || item.id === canonicalId);
+              if (row) openCustomer(row);
+              else toast.error("This affected customer is not inside the current admin scope.");
+            }} />
           </TabsContent>
 
           {/* BOOKING FLOW — where customers sit in the journey -------------- */}

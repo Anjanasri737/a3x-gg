@@ -89,9 +89,7 @@ export function ManualDraftPanel({
           <Button size="sm" variant={!manualMode ? "default" : "outline"} className="h-7 text-[10px]" onClick={() => onManualMode(false)}>
             System picks for me
           </Button>
-          <span className="ml-2 text-[10px] text-muted-foreground">How many in my draft</span>
-          <Input type="number" min={1} max={200} value={manualSize} className="h-7 w-16 text-xs"
-            onChange={(event) => onManualSize(Number(event.target.value))} />
+          <span className="ml-2 text-[10px] font-semibold text-muted-foreground">30-row rolling draft</span>
           <Badge variant={picked.length >= manualSize ? "default" : "outline"} className="text-[10px]">
             {picked.length} of {manualSize} picked
           </Badge>
