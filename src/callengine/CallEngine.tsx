@@ -391,8 +391,9 @@ export function CallEngine({ lead, onLogged }: Props) {
           ) : (
             <div className="space-y-2 rounded-md border bg-muted/40 p-2.5">
               <div className="text-xs font-semibold">{plan.title} · attempt #{plan.attempt}</div>
-              <div className="text-[11px] text-muted-foreground">Condition {plan.condition} — the system picked this message.</div>
+              <div className="text-[11px] text-muted-foreground">Condition {plan.condition} — approved message, sent exactly as written.</div>
               <div className="rounded border bg-background p-2 text-[11px] whitespace-pre-wrap">{plan.ask}</div>
+              <div className="text-[10px] text-muted-foreground">Next attempt if still silent: {nextPlan.ask}</div>
               <div className="flex flex-wrap gap-1">
                 {plan.options.map((o) => (
                   <Badge key={o} variant="outline" className="text-[10px]">{o}</Badge>
