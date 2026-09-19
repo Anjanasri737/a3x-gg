@@ -187,8 +187,15 @@ export function SplitFlow() {
               </Badge>
             </div>
           )}
+          {/* Copy the number, dial it, or open the WhatsApp chat — always labelled */}
+          <div className="mt-1.5">
+            <ContactActions phone={lead.phone} name={lead.name} />
+          </div>
         </div>
       )}
+
+      {/* What is already filled — pinned, readable while answering */}
+      {lead && <KnownStrip lead={lead} />}
 
       {/* Pane tabs — every tool of the funnel, inside the split panel */}
       <div className="shrink-0 overflow-x-auto border-b px-3 py-1.5">
