@@ -47,7 +47,7 @@ export function CheckpointPanel({ role, operatorId, operatorName, states, events
     <section className="border bg-card">
       <div className="flex flex-wrap items-center gap-2 border-b p-2">
         <Clock3 className="h-3.5 w-3.5 text-primary" /><p className="text-[10px] font-semibold uppercase text-muted-foreground">Four-checkpoint scorecard</p>
-        <div className="ml-auto flex gap-1">{codes.map((item) => <Button key={item} size="sm" variant={code === item ? "default" : mine.some((snapshot) => snapshot.code === item) ? "secondary" : "outline"} className="h-6 px-2 text-[9px]" onClick={() => setCode(item)}>{item}</Button>)}</div>
+        <div className="ml-auto flex gap-1">{codes.map((item) => <Button key={item} size="sm" variant={code === item ? "default" : mine.some((snapshot) => snapshot.code === item) ? "secondary" : "outline"} className="h-auto min-h-7 px-2 py-1 text-[9px]" onClick={() => setCode(item)}>{CHECKPOINTS[item].label}</Button>)}</div>
       </div>
       <div className="p-2">
         <div className="flex items-center justify-between gap-2"><div><p className="text-xs font-semibold">{CHECKPOINTS[code].label}</p><p className="text-[10px] text-muted-foreground">{CHECKPOINTS[code].question}</p></div><Badge variant={saved ? "secondary" : "outline"}>{saved ? "Submitted" : "Due"}</Badge></div>
