@@ -448,6 +448,27 @@ export function MovementCare() {
               )}
             </div>
 
+            <div className="mt-2 border p-2">
+              <div className="flex items-center gap-1.5"><MessageCircle className="h-3.5 w-3.5 text-primary" /><p className="text-[10px] font-semibold uppercase text-muted-foreground">Wrap-ups sent today</p></div>
+              {todaysDebriefs.length === 0 ? (
+                <p className="mt-1 text-[10px] text-muted-foreground">After each draft, write the wrap-up and paste it in the team group.</p>
+              ) : (
+                <div className="mt-1.5 space-y-1.5">
+                  {todaysDebriefs.slice(0, 6).map((item) => (
+                    <div key={item.id} className="border px-2 py-1.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="truncate text-[11px] font-semibold">{item.draftCode} · {item.customerName}</p>
+                        <Button size="sm" variant="ghost" className="h-6 px-1 text-[9px]" onClick={() => copyMessage(item.id, item.message)}>
+                          <ClipboardCopy className="h-3 w-3" /> Copy
+                        </Button>
+                      </div>
+                      <p className="text-[9px] text-muted-foreground">{item.sentOnWhatsapp ? "Copied for WhatsApp" : "Not sent yet"} · {new Date(item.createdAt).toLocaleTimeString()}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             <div className="mt-2"><JourneyTimeline ulid={selected} /></div>
           </aside>
         </div>
