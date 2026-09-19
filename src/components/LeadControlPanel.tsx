@@ -127,6 +127,28 @@ export function LeadControlPanel() {
   }, [mvStates, lead]);
   const actionEngineRef = useRef<HTMLDivElement>(null);
 
+  // Log call never blocks: if the customer isn't in Movement yet, link them on the spot.
+  const openCallEngine = () => {
+    if (!lead) return;
+    const cid = canonicalCustomerId({ phone: lead.phone, name: lead.name });
+    const mv = useMovement.getState();
+    const existing = Object.values(mv.states).find((s) => s.canonicalId === cid || s.canonicalId === lead.id);
+    if (!existing) {
+      mv.ensureShadow({
+        ulid: lead.id,
+        name: lead.name,
+        phone: lead.phone,
+        zone: lead.preferredArea,
+        ownerName: tcm?.name,
+        budget: lead.budget,
+        location: lead.preferredArea,
+        checkInDate: lead.moveInDate,
+      });
+      toast.success("Linked to Movement", { description: `${lead.name} is now tracked in Movement OS.` });
+    }
+    setCallEngineOpen(true);
+  };
+
   const pendingPostTour = leadTours.find(
     (t) => t.status === "completed" && !t.postTour.filledAt,
   );
@@ -232,7 +254,7 @@ export function LeadControlPanel() {
           <LeadCapturedStrip lead={lead} />
 
           <div className="flex flex-wrap items-center gap-2 pt-1">
-            <Button size="sm" className="h-8 flex-1 min-w-[140px]" onClick={() => setCallEngineOpen(true)}>
+            <Button size="sm" className="h-8 flex-1 min-w-[140px]" onClick={openCallEngine}>
               <Phone className="mr-1.5 h-3.5 w-3.5" /> Log call
             </Button>
             <Button size="sm" variant="secondary" className="h-8 flex-1 min-w-[140px]" onClick={() => setLogOpen(true)}>
@@ -827,9 +849,7 @@ export function LeadControlPanel() {
             {movementLead ? (
               <CallEngine lead={movementLead} onLogged={() => setCallEngineOpen(false)} />
             ) : (
-              <p className="text-sm text-muted-foreground">
-                This customer is not linked to Movement yet, so the call engine cannot run for them here. No duplicate was created.
-              </p>
+              <p className="text-sm text-muted-foreground">Preparing the call engine…</p>
             )}
           </DialogContent>
         </Dialog>
