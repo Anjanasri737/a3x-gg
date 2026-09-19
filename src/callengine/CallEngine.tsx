@@ -236,6 +236,7 @@ export function CallEngine({ lead, onLogged }: Props) {
 
           {outcome === "connected" ? (
             <div className="space-y-3">
+              <VerifyPanel lead={lead} cap={cap} set={set} />
               {(agenda === "qualification" || agenda === "follow-up") && (
                 <>
                   <div>
