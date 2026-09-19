@@ -149,6 +149,11 @@ export function CallEngine({ lead, onLogged }: Props) {
       nextStep: outputs.nextStep,
       stageAfter: lead.stage,
       waste,
+    } satisfies CallRecord;
+
+    engine.save(record);
+    void pushCallRecord(record).then((res) => {
+      if (!res.ok) toast.warning(`Saved on this device — not synced yet: ${res.error}`);
     });
 
     toast.success(`${def.label} logged · ${MOVEMENT_LABEL[outputs.movement]} · next: ${outputs.nextStep.label}`);
