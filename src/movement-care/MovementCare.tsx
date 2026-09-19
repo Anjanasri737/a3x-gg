@@ -257,7 +257,7 @@ export function MovementCare() {
           <div className="mt-2 grid grid-cols-[minmax(180px,1fr)_repeat(6,minmax(70px,auto))] gap-1.5 overflow-x-auto">
             <div className="min-w-[180px] rounded-md border bg-background px-2 py-1.5">
               <div className="flex items-center justify-between gap-2 text-[10px] font-semibold">
-                <span>MY RESULT · {activeGoal}</span><span>{actual}/{commitment.target}</span>
+                <span>MY RESULT · {activeGoal}</span><span>{actual}/{commitment.commitCount}</span>
               </div>
               <Progress value={progress} className="mt-1 h-1.5" />
             </div>
@@ -269,16 +269,17 @@ export function MovementCare() {
             <Stat label="Tours set" value={total.toursScheduled} />
             <Stat label="Tours done" value={total.toursDone} />
             <Stat label="Bookings" value={total.booked} />
+            <Stat label="Wrap-ups sent" value={todaysDebriefs.filter((item) => item.sentOnWhatsapp).length} />
             <Stat label="At risk" value={total.breached + total.p0} danger={total.breached + total.p0 > 0} />
           </div>
         )}
       </header>
 
       {!commitment ? (
-        <CommitmentGate role={role} goal={goal} target={target} support={support}
+        <CommitmentGate role={role} goal={goal} commitCount={commitCount} support={support}
           aimProperties={aimProperties} onAimProperties={setAimProperties}
           query={propertyQuery} onQuery={setPropertyQuery}
-          onRole={chooseRole} onGoal={chooseGoal} onTarget={setTarget} onSupport={setSupport} onStart={startDay} />
+          onRole={chooseRole} onGoal={chooseGoal} onCommitCount={setCommitCount} onSupport={setSupport} onStart={startDay} />
       ) : (
         <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[320px_minmax(420px,1fr)_330px]">
           <section className="min-h-0 overflow-hidden border-r bg-card">
