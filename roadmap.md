@@ -20,3 +20,5 @@
 - [x] Require a daily FIND / SCHEDULE / COMPLETE / CLOSE goal before drafting starts
 - [x] Show periodic goal-versus-actual progress and accountable updates for Flow Ops and TCM
 - [x] Integrate the uploaded 4-checkpoint scorecard, auto-reason, recovery, and carry-forward system into Movement CARE and Admin, alongside Movement OS and Booking Flow Split
+
+- [x] Call Conversation Engine: agenda inference, agenda-specific capture, auto WhatsApp message + conditional follow-up + next step, movement classification, admin Calls dashboard
