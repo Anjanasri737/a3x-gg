@@ -345,8 +345,21 @@ export function MovementCare() {
               </Button>
             ))}
           </div>
+          {elapsed ? (
+            <Badge variant="outline" className="h-7 gap-1 border-primary/50 px-2 text-[10px] font-semibold text-primary">
+              <Timer className="h-3 w-3" /> Draft running {elapsed} · {manualList.length}/{manualSize} filled
+              <button type="button" className="ml-1 underline" onClick={stopDraftClock}>stop</button>
+            </Badge>
+          ) : (
+            <Button size="sm" variant="outline" className="h-7 text-[10px]" onClick={startEmptyDraft}>
+              <PlayCircle className="h-3 w-3" /> Start draft · {manualSize} empty rows
+            </Button>
+          )}
           <Button size="sm" variant={manualMode ? "default" : "outline"} className="h-7 text-[10px]" onClick={() => setShowManual(true)}>
             <Hand className="h-3 w-3" /> Draft by hand{manualMode ? ` · ${manualList.length}/${manualSize}` : ""}
+          </Button>
+          <Button size="sm" variant="outline" className="h-7 text-[10px]" onClick={() => setShowFormat((value) => !value)}>
+            <MessageCircle className="h-3 w-3" /> WhatsApp update format
           </Button>
           <Button size="sm" variant="outline" className="h-7 text-[10px]" onClick={() => setShowPlaybook((value) => !value)}>
             <ShieldCheck className="h-3 w-3" /> Playbook
