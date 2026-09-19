@@ -167,8 +167,8 @@ export function SplitFlow({ embedded = false, focus, panelOnly = false }: { embe
   }
 
   return (
-    <div className={cn("flex w-full overflow-hidden", embedded ? "h-[calc(100vh-10rem)]" : "h-screen")}>
-    <div className="flex min-w-0 flex-col overflow-hidden bg-background" style={{ width: `${widthPct}%` }}>
+    <div className={cn("flex w-full overflow-hidden", panelOnly ? "h-full" : embedded ? "h-[calc(100vh-10rem)]" : "h-screen")}>
+    <div className="flex min-w-0 flex-col overflow-hidden bg-background" style={{ width: panelOnly ? "100%" : `${widthPct}%` }}>
       {/* Result header — never scrolls away */}
       <header className="shrink-0 border-b px-2 py-1">
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
