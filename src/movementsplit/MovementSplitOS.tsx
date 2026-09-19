@@ -42,7 +42,7 @@ export function MovementSplitOS() {
         </div>
       </div>
 
-      <Tabs defaultValue="split">
+      <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
           <TabsTrigger value="split">Booking flow (split)</TabsTrigger>
           <TabsTrigger value="work">Work</TabsTrigger>
