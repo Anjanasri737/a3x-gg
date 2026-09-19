@@ -76,6 +76,9 @@ export const useMovementCare = create<MovementCareStore>()(
       commitment: null,
       reports: [],
       debriefs: [],
+      manualMode: false,
+      manualSize: 30,
+      manualList: [],
       commit: (input) => {
         const commitment: DailyCommitment = {
           ...input,
