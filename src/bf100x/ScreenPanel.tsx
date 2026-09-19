@@ -1,6 +1,6 @@
 // Four or five questions on one screen. Same options, same rules, fewer clicks:
 // picking an option saves itself, and one button saves + moves to the next screen.
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { AlertTriangle, ArrowLeft, ArrowRight, Check, History, Lock } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
