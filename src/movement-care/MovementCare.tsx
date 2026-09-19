@@ -329,7 +329,7 @@ export function MovementCare() {
                       <h2 className="truncate text-base font-semibold">{nameOf.get(selectedState.ulid)?.name ?? selectedState.ulid}</h2>
                       <p className="text-xs text-muted-foreground">{selectedState.lastCustomerMsg ?? "Latest WhatsApp message is waiting to be captured."}</p>
                     </div>
-                    <Button size="sm" onClick={acceptDraft}><Target className="h-3.5 w-3.5" /> Accept draft + result</Button>
+                    <Button size="sm" onClick={acceptDraft}><CheckCircle2 className="h-3.5 w-3.5" /> Draft done · write wrap-up</Button>
                   </div>
                   <div className="mt-3 grid grid-cols-2 gap-1.5 sm:grid-cols-3">
                     <ContractCell label="Expected result" value={stage.outcome} />
@@ -344,6 +344,17 @@ export function MovementCare() {
                       <AlertTriangle className="h-3.5 w-3.5" /> Not under control: add {selectedResult.missing.join(", ")}.
                     </div>
                   )}
+                  <div className="mt-2 border-t pt-2">
+                    <p className="text-[10px] font-semibold uppercase text-muted-foreground">How this result is produced</p>
+                    <ol className="mt-1 grid gap-0.5 sm:grid-cols-2">
+                      {stage.steps.map((step, index) => (
+                        <li key={step} className="flex gap-1.5 text-[11px] leading-snug">
+                          <span className="font-mono text-[10px] text-muted-foreground">{index + 1}.</span>{step}
+                        </li>
+                      ))}
+                    </ol>
+                    <p className="mt-1 text-[10px] text-destructive">Does not count: {stage.doesNotCount}</p>
+                  </div>
                 </div>
                 <div className="border bg-card p-3">
                   <div className="flex flex-wrap items-center gap-2">
@@ -387,6 +398,11 @@ export function MovementCare() {
                   </div>
                 </div>
 
+                {debriefFor?.ulid === selectedState.ulid && (
+                  <DebriefCard code={debriefFor.code} customer={nameOf.get(selectedState.ulid)?.name ?? selectedState.ulid}
+                    onSave={finishDebrief} onCopy={copyMessage} onClose={() => setDebriefFor(null)} />
+                )}
+
                 <WorkPanel ulid={selected} meta={nameOf} />
               </div>
             ) : (
@@ -395,7 +411,7 @@ export function MovementCare() {
           </main>
 
           <aside className="min-h-0 overflow-y-auto border-l bg-card p-2">
-            <ProgressReporter round={round} onRound={setRound} actual={actual} target={commitment.target}
+            <ProgressReporter round={round} onRound={setRound} actual={actual} committed={commitment.commitCount}
               moved={moved} stuck={stuck} need={need} onMoved={setMoved} onStuck={setStuck} onNeed={setNeed} onSave={saveReport} />
 
             {weakRounds >= 2 && (
@@ -410,7 +426,7 @@ export function MovementCare() {
                 <p className="text-[10px] font-semibold uppercase text-muted-foreground">Today’s promise</p>
                 <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[9px]" onClick={clearCommitment}>Reset</Button>
               </div>
-              <p className="mt-1 text-xs font-semibold">I will achieve {commitment.target} {activeGoal.toLowerCase()} results today.</p>
+              <p className="mt-1 text-xs font-semibold">I will deliver {commitment.commitCount} {stage.unit} today.</p>
               <p className="mt-1 text-[10px] text-muted-foreground">{stage.outcome}</p>
               {commitment.supportNeeded && <p className="mt-1 text-[10px]"><strong>Support:</strong> {commitment.supportNeeded}</p>}
             </div>
