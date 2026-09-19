@@ -88,7 +88,23 @@ export function MovementCare() {
   const activeGoal = commitment?.goal ?? goal;
   const playbook = CARE_PLAYBOOKS[activeRole];
   const stage = playbook.stages.find((item) => item.goal === activeGoal) ?? playbook.stages[0];
-  const queue = useMemo(() => queueForGoal(activeGoal, list), [activeGoal, list]);
+  const systemQueue = useMemo(() => queueForGoal(activeGoal, list), [activeGoal, list]);
+  const queue = useMemo(() => {
+    if (!manualMode) return systemQueue;
+    const byId = new Map(systemQueue.map((item) => [item.ulid, item]));
+    return manualList.map((ulid) => byId.get(ulid)).filter(Boolean) as typeof systemQueue;
+  }, [manualMode, manualList, systemQueue]);
+  const candidates = useMemo<ManualCandidate[]>(() => systemQueue.map((item) => {
+    const info = nameOf.get(item.ulid);
+    return {
+      ulid: item.ulid,
+      name: info?.name ?? item.ulid,
+      phone: info?.phone ?? item.state.phone ?? "",
+      area: info?.area ?? "—",
+      note: item.reason,
+      bucket: item.bucket,
+    };
+  }), [systemQueue, nameOf]);
   const actual = useMemo(() => actualForGoal(activeGoal, list, events), [activeGoal, list, events]);
   const total = useMemo(() => totals(list, events), [list, events]);
   const calls = useMemo(() => callStats(events), [events]);
