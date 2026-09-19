@@ -353,10 +353,24 @@ export function MovementCare() {
             <div className="border-b px-3 py-2">
               <div className="flex items-center justify-between gap-2">
                 <div>
-                  <p className="text-[10px] font-semibold uppercase text-muted-foreground">Result queue</p>
-                  <p className="text-xs font-medium">{stage.meaning} · {queue.length} open</p>
+                  <p className="text-[10px] font-semibold uppercase text-muted-foreground">
+                    {manualMode ? "My hand-picked draft" : "Result queue"}
+                  </p>
+                  <p className="text-xs font-medium">
+                    {manualMode ? `${queue.length} of ${manualSize} picked` : `${stage.meaning} · ${queue.length} open`}
+                  </p>
                 </div>
                 <Badge className={cn("border text-[9px]", GOAL_TONE[activeGoal])}>{activeGoal}</Badge>
+              </div>
+              <div className="mt-1.5 flex flex-wrap gap-1">
+                <Button size="sm" variant="outline" className="h-6 px-2 text-[10px]" onClick={() => setShowManual(true)}>
+                  <Hand className="h-3 w-3" /> Add · remove · replace
+                </Button>
+                {manualMode && (
+                  <Button size="sm" variant="ghost" className="h-6 px-2 text-[10px]" onClick={() => setManualMode(false)}>
+                    Back to system picks
+                  </Button>
+                )}
               </div>
             </div>
             <div className="h-[calc(100%-53px)] divide-y overflow-y-auto">
