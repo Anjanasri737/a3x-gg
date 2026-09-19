@@ -53,6 +53,10 @@ interface MovementCareStore {
   manualSize: number;
   /** Hand-picked customers, in the order the person wants to work them. */
   manualList: string[];
+  /** When the rolling draft clock was started. Empty rows get filled while working. */
+  draftStartedAt: string | null;
+  startRollingDraft: (size: number) => void;
+  stopDraftClock: () => void;
   commit: (input: Omit<DailyCommitment, "date" | "committedAt">) => DailyCommitment;
   setClosingProperties: (ids: string[]) => void;
   report: (input: Omit<RoundReport, "id" | "date" | "reportedAt">) => RoundReport;
