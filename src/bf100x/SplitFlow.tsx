@@ -162,7 +162,16 @@ export function SplitFlow({ embedded = false }: { embedded?: boolean }) {
               </div>
             )}
           </div>
-          <div className="flex shrink-0 gap-1">
+          <div className="flex shrink-0 items-center gap-1">
+            <div className="flex items-center gap-0.5 rounded-md border px-1 py-0.5">
+              <span className="text-[9px] text-muted-foreground">W</span>
+              {WIDTH_PRESETS.map((p) => (
+                <button key={p} type="button" onClick={() => setWidthPct(p)}
+                  className={cn("rounded px-1 text-[9px]", widthPct === p ? "bg-primary/15 text-primary" : "text-muted-foreground")}>
+                  {p}%
+                </button>
+              ))}
+            </div>
             <Button size="sm" variant={mode === "GUIDED" ? "default" : "outline"} className="h-6 px-2 text-[10px]" onClick={() => setMode("GUIDED")}>Understand</Button>
             <Button size="sm" variant={mode === "EXPERT" ? "default" : "outline"} className="h-6 px-2 text-[10px]" onClick={() => setMode("EXPERT")}>Expert</Button>
             <div className="relative">
