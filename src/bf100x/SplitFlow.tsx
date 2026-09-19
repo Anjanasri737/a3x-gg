@@ -383,5 +383,23 @@ export function SplitFlow({ embedded = false }: { embedded?: boolean }) {
         </Dialog>
       )}
     </div>
+
+      {/* Drag this edge to set the panel width, exactly like a sheet column */}
+      {widthPct < 100 && (
+        <>
+          <div
+            role="separator"
+            aria-label="Drag to resize the panel"
+            onPointerDown={() => setDragging(true)}
+            className={cn("w-1.5 shrink-0 cursor-col-resize bg-border transition-colors hover:bg-primary", dragging && "bg-primary")}
+          />
+          <div className="flex min-w-0 flex-1 items-center justify-center bg-muted/30 p-4 text-center">
+            <p className="text-[11px] text-muted-foreground">
+              Keep WhatsApp Web open in this space.<br />Drag the grey bar, or use the width buttons, to set the sizes you want.
+            </p>
+          </div>
+        </>
+      )}
+    </div>
   );
 }
