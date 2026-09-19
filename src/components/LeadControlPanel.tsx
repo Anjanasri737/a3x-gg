@@ -845,7 +845,7 @@ export function LeadControlPanel() {
         <Dialog open={callEngineOpen} onOpenChange={setCallEngineOpen}>
           <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg">
             <DialogHeader>
-              <DialogTitle className="font-display">Log call — {lead.name}</DialogTitle>
+              <DialogTitle className="font-display uppercase tracking-wide">M-Power Call — {lead.name}</DialogTitle>
               <DialogDescription className="text-xs">
                 The call engine picks the purpose, captures what happened, and writes the WhatsApp message, follow-up and next step for you.
               </DialogDescription>
