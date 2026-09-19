@@ -282,6 +282,145 @@ export function AdminControl() {
             </Card>
           </TabsContent>
 
+          {/* SLA CLOCK ---------------------------------------------------- */}
+          <TabsContent value="sla" className="space-y-3 pt-3">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+              <Kpi icon={Clock} label="Due in 2 hours" value={deep.forecast.next2h} />
+              <Kpi icon={Clock} label="Due today" value={deep.forecast.today} />
+              <Kpi icon={Clock} label="Due tomorrow" value={deep.forecast.tomorrow} />
+              <Kpi icon={Clock} label="Later" value={deep.forecast.later} />
+              <Kpi icon={AlertTriangle} label="No deadline at all" value={deep.forecast.missing} tone="red"
+                onClick={() => f.set({ leak: "no_next_action" })} />
+            </div>
+            <Card title="How late are we — every customer with a deadline">
+              <Table head={["Lateness", "Customers", "Value sitting there"]}
+                rows={deep.sla.map((s) => [s.band, s.count, money(s.value)])} />
+            </Card>
+            <Card title="Worst lateness first">
+              <CustomerTable rows={[...d.rows].sort((a, b) => b.overdueMins - a.overdueMins).slice(0, 50)} onOpen={openCustomer} />
+            </Card>
+          </TabsContent>
+
+          {/* AGING -------------------------------------------------------- */}
+          <TabsContent value="aging" className="space-y-3 pt-3">
+            <Card title="How long since anything happened">
+              <Table head={["Since last touch", "Customers", "Red", "Nobody owns"]}
+                rows={deep.aging.map((a) => [a.band, a.count, a.red, a.unowned])} />
+            </Card>
+            <Card title="Oldest untouched customers">
+              <CustomerTable
+                rows={[...d.rows].sort((a, b) => Math.max(a.lastActionAt, a.lastObsAt) - Math.max(b.lastActionAt, b.lastObsAt)).slice(0, 50)}
+                onOpen={openCustomer} />
+            </Card>
+          </TabsContent>
+
+          {/* BOTTLENECKS -------------------------------------------------- */}
+          <TabsContent value="bottlenecks" className="space-y-3 pt-3">
+            <Card title="Where the journey jams — slowest stage first">
+              <Table head={["Stage", "Customers", "Average idle (hours)", "Worst idle (hours)", "Overdue", "No owner"]}
+                rows={deep.bottlenecks.map((b) => [b.stage, b.customers, b.avgIdleH, b.worstIdleH, b.overdue, b.unowned])}
+                onPick={(i) => f.set({ stage: deep.bottlenecks[i]?.stage ?? "all" })} />
+            </Card>
+            <Card title="Conversation type vs trouble">
+              <Table head={["Conversation type", "Customers", "Red"]}
+                rows={deep.mix.slice(0, 30).map((m) => [m.bucket, m.count, m.red])} />
+            </Card>
+          </TabsContent>
+
+          {/* ZONES -------------------------------------------------------- */}
+          <TabsContent value="zones" className="space-y-3 pt-3">
+            <Card title="Area by area">
+              <Table head={["Area", "Customers", "Red", "Overdue", "No owner", "Average lateness (min)", "Chat rows", "Value"]}
+                rows={deep.zones.slice(0, 40).map((z) => [z.zone, z.customers, z.red, z.overdue, z.unowned, z.avgOverdue, z.rows, money(z.value)])}
+                onPick={(i) => f.set({ zone: deep.zones[i]?.zone ?? "all" })} />
+            </Card>
+          </TabsContent>
+
+          {/* READING QUALITY ---------------------------------------------- */}
+          <TabsContent value="accuracy" className="space-y-3 pt-3">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <Kpi icon={Layers} label="Average confidence" value={`${d.kpi.avgConfidence}%`} />
+              <Kpi icon={AlertTriangle} label="Rows read below 70%" value={d.kpi.lowConfidence} tone="amber" />
+              <Kpi icon={ShieldAlert} label="Rows with no number" value={deep.accuracy.missingPhone} tone="amber" />
+              <Kpi icon={Users} label="Numbers saved twice" value={deep.duplicatesCount} tone="red" />
+            </div>
+            <Card title="Confidence bands">
+              <Table head={["Band", "Chat rows"]} rows={deep.accuracy.bands.map((b) => [b.band, b.rows])} />
+            </Card>
+            <Card title="Labelled vs unlabelled, incoming vs outgoing">
+              <Table head={["Measure", "Rows"]} rows={[
+                ["Labelled by WhatsApp", deep.accuracy.labelled],
+                ["No label visible", deep.accuracy.unlabelled],
+                ["Customer wrote last", deep.accuracy.incoming],
+                ["We wrote last", deep.accuracy.outgoing],
+              ]} />
+            </Card>
+            <Card title="Same number, different names — merge these">
+              <Table head={["Number", "Names seen"]}
+                rows={deep.accuracy.duplicatePhones.map((p) => [p.phone, p.names.join(" / ")])} />
+            </Card>
+          </TabsContent>
+
+          {/* COMPLIANCE --------------------------------------------------- */}
+          <TabsContent value="compliance" className="space-y-3 pt-3">
+            <Card title="Every active customer must carry these — nothing may be blank">
+              <Bars rows={deep.compliance.map((c) => [`${c.field} — ${c.pct}% filled, ${c.missing} missing`, c.pct, c.pct === 100 ? "bg-emerald-500" : c.pct > 80 ? "bg-amber-500" : "bg-destructive"])} />
+            </Card>
+            <Card title="Customers breaking the rules right now">
+              <CustomerTable rows={d.rows.filter((r) => !r.owned || !r.nextActionKind || !r.nextActionAt).slice(0, 60)} onOpen={openCustomer} />
+            </Card>
+          </TabsContent>
+
+          {/* WORKLOAD ----------------------------------------------------- */}
+          <TabsContent value="balance" className="space-y-3 pt-3">
+            <Card title="Who is carrying how much">
+              <Table head={["Person", "Holding", "Share %", "Red", "Overdue", "Unread", "Load"]}
+                rows={deep.balance.map((b) => [b.person, b.holding, `${b.share}%`, b.red, b.overdue, b.unread, b.load])}
+                onPick={(i) => f.set({ operator: deep.balance[i]?.person ?? "all" })} />
+            </Card>
+          </TabsContent>
+
+          {/* MONEY -------------------------------------------------------- */}
+          <TabsContent value="value" className="space-y-3 pt-3">
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              <Kpi icon={IndianRupee} label="At risk right now" value={money(deep.value.atRisk)} tone="red" />
+              <Kpi icon={IndianRupee} label="Healthy pipeline" value={money(deep.value.safe)} />
+              <Kpi icon={AlertTriangle} label="Red + amber customers" value={d.kpi.red + d.kpi.amber} tone="amber" />
+            </div>
+            <Card title="Biggest money slipping first">
+              <CustomerTable rows={deep.value.topRisk} onOpen={openCustomer} />
+            </Card>
+          </TabsContent>
+
+          {/* HEAT --------------------------------------------------------- */}
+          <TabsContent value="heat" className="space-y-3 pt-3">
+            <Card title="When customers actually message us">
+              <Heat weekdays={deep.heat.weekdays} />
+            </Card>
+            <Card title="Busiest hours across the week">
+              <Bars rows={deep.heat.hours.map((n, h) => [`${String(h).padStart(2, "0")}:00`, n, "bg-primary"])} />
+            </Card>
+          </TabsContent>
+
+          {/* ALERTS ------------------------------------------------------- */}
+          <TabsContent value="anomalies" className="space-y-3 pt-3">
+            <Card title="What needs a decision from you today">
+              {deep.anomalies.length === 0 ? (
+                <p className="text-xs text-muted-foreground">No alert for these filters.</p>
+              ) : (
+                <ul className="space-y-1.5">
+                  {deep.anomalies.map((a, i) => (
+                    <li key={i} className={cn("rounded-md border p-2 text-xs",
+                      a.severity === "high" ? "border-destructive/40 bg-destructive/5" : "border-amber-500/40 bg-amber-500/5")}>
+                      <div className="font-semibold">{a.what}</div>
+                      <div className="text-muted-foreground">{a.detail}</div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </Card>
+          </TabsContent>
+
           {/* PEOPLE ------------------------------------------------------- */}
           <TabsContent value="people" className="space-y-3 pt-3">
             <Card title="Quality per person">
