@@ -2,11 +2,12 @@
 // other 60%. One screen, nothing to scroll except the questions themselves.
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "@tanstack/react-router";
-import { ArrowLeft, ArrowRight, ListChecks, Menu, PhoneCall, ShieldAlert, UserCheck } from "lucide-react";
+import { Activity, ArrowLeft, ArrowRight, BellRing, ListChecks, Menu, PhoneCall, ShieldAlert, UserCheck } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { health, fmtMins } from "@/bookingflow/engine";
 import { NEXT_ACTIONS } from "@/bookingflow/journey";
@@ -57,7 +58,7 @@ const MENU: { to: string; label: string; group: string }[] = [
 ];
 
 export function SplitFlow() {
-  const { leads, me, mode, setMode, claim, setNext, escalate } = useBookingFlow();
+  const { leads, me, mode, setMode, claim, setNext, logActivity, escalate } = useBookingFlow();
   const [leadId, setLeadId] = useState<string>("");
   const [screenId, setScreenId] = useState<string>("");
   const [pane, setPane] = useState<Pane>("WORK");
@@ -65,6 +66,9 @@ export function SplitFlow() {
   const [due, setDue] = useState(() => new Date(Date.now() + 2 * 3_600_000).toISOString().slice(0, 16));
   const [mounted, setMounted] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [activityOpen, setActivityOpen] = useState(false);
+  const [activityType, setActivityType] = useState("Call completed");
+  const [activityNote, setActivityNote] = useState("");
   useEffect(() => setMounted(true), []);
 
   // the queue: everyone who still needs a decision, worst first
@@ -119,11 +123,17 @@ export function SplitFlow() {
   return (
     <div className="flex h-screen flex-col overflow-hidden bg-background">
       {/* Result header — never scrolls away */}
-      <header className="shrink-0 border-b px-3 py-2">
+      <header className="shrink-0 border-b px-2 py-1">
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
-          <div className="min-w-0">
-            <h1 className="truncate text-sm font-semibold">Booking Flow 100x — split screen</h1>
-            <p className="truncate text-[10px] text-muted-foreground">Keep WhatsApp on 60%, work this on 40%.</p>
+          <div className="flex min-w-0 items-center gap-1 overflow-hidden">
+            <h1 className="shrink-0 text-xs font-semibold">Booking Flow</h1>
+            {mounted && (
+              <div className="flex min-w-0 gap-1 overflow-x-auto">
+                <Badge variant="outline" className="shrink-0 px-1 text-[9px]"><PhoneCall className="mr-0.5 h-2.5 w-2.5" />{stats.calls} calls</Badge>
+                <Badge variant="outline" className="shrink-0 px-1 text-[9px]"><ListChecks className="mr-0.5 h-2.5 w-2.5" />{stats.saved} saved</Badge>
+                {stats.late > 0 && <Badge variant="destructive" className="shrink-0 px-1 text-[9px]">{stats.late} late</Badge>}
+              </div>
+            )}
           </div>
           <div className="flex shrink-0 gap-1">
             <Button size="sm" variant={mode === "GUIDED" ? "default" : "outline"} className="h-6 px-2 text-[10px]" onClick={() => setMode("GUIDED")}>Understand</Button>
@@ -154,20 +164,11 @@ export function SplitFlow() {
             </div>
           </div>
         </div>
-        {mounted && (
-          <div className="mt-1.5 flex flex-wrap gap-1">
-            <Badge variant="outline" className="text-[10px]"><PhoneCall className="mr-1 h-3 w-3" />{stats.calls} calls done today</Badge>
-            <Badge variant="outline" className="text-[10px]"><ListChecks className="mr-1 h-3 w-3" />{stats.saved} answers captured</Badge>
-            <Badge variant={stats.left ? "destructive" : "outline"} className="text-[10px]">{stats.left} customers left to fix</Badge>
-            {stats.late > 0 && <Badge variant="destructive" className="text-[10px]">{stats.late} late</Badge>}
-            {stats.tower > 0 && <Badge variant="destructive" className="text-[10px]"><ShieldAlert className="mr-1 h-3 w-3" />{stats.tower} tower</Badge>}
-          </div>
-        )}
       </header>
 
       {/* Customer line + the five answers, compact */}
       {lead && (
-        <div className="shrink-0 border-b px-3 py-2">
+        <div className="shrink-0 border-b px-2 py-1">
           <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
             <div className="min-w-0">
               <p className="truncate text-sm font-semibold">{lead.name} <span className="text-[11px] font-normal text-muted-foreground">{lead.phone}</span></p>
@@ -189,8 +190,20 @@ export function SplitFlow() {
             </div>
           )}
           {/* Copy the number, dial it, or open the WhatsApp chat — always labelled */}
-          <div className="mt-1.5">
+          <div className="mt-1 flex flex-wrap items-center gap-1">
             <ContactActions phone={lead.phone} name={lead.name} />
+            <Button size="sm" className="h-7 px-2 text-[10px]" onClick={() => setActivityOpen(true)}>
+              <Activity className="mr-1 h-3 w-3" />Log activity
+            </Button>
+            <Button size="sm" variant="outline" className="h-7 px-2 text-[10px]" onClick={() => {
+              const at = new Date(Date.now() + 2 * 3_600_000).toISOString();
+              setNext(lead.id, "Follow up on decision", at);
+              setNextAction("Follow up on decision");
+              setDue(at.slice(0, 16));
+              toast.success("Follow-up set for 2 hours");
+            }}>
+              <BellRing className="mr-1 h-3 w-3" />Follow
+            </Button>
           </div>
         </div>
       )}
@@ -277,8 +290,8 @@ export function SplitFlow() {
 
       {/* Action bar — always on screen */}
       {lead && (
-        <footer className="shrink-0 space-y-1.5 border-t px-3 py-2">
-          <div className="flex flex-wrap items-center gap-1">
+        <footer className="shrink-0 border-t px-2 py-1">
+          <div className="flex items-center gap-1 overflow-x-auto">
             <Button size="sm" variant="outline" className="h-7 px-2 text-[10px]" disabled={idx === 0} onClick={() => step(-1)}><ArrowLeft className="h-3 w-3" /></Button>
             <Button size="sm" variant="outline" className="h-7 px-2 text-[10px]" disabled={idx >= SCREENS.length - 1} onClick={() => step(1)}><ArrowRight className="h-3 w-3" /></Button>
             {!lead.owner && (
@@ -288,19 +301,59 @@ export function SplitFlow() {
             )}
             <CloseCommitButton leadId={lead.id} leadName={lead.name} leadPhone={lead.phone} actorName={me} size="xs" />
             <Button size="sm" variant="outline" className="h-7 px-2 text-[10px]" onClick={() => { escalate(lead.id, "Operator asked for help"); toast.success("Control Tower notified"); }}>Tower</Button>
-            <span className="ml-auto"><ContactActions phone={lead.phone} name={lead.name} compact /></span>
-          </div>
-          <div className="flex items-center gap-1">
-            <select className="h-7 min-w-0 flex-1 rounded-md border bg-background px-1 text-[10px]" value={nextAction} onChange={(e) => setNextAction(e.target.value)}>
+            <select className="h-7 min-w-[8rem] flex-1 rounded-md border bg-background px-1 text-[10px]" value={nextAction} onChange={(e) => setNextAction(e.target.value)}>
               {NEXT_ACTIONS.map((a) => <option key={a} value={a}>{a}</option>)}
             </select>
-            <Input type="datetime-local" className="h-7 w-[9.5rem] shrink-0 text-[10px]" value={due} onChange={(e) => setDue(e.target.value)} />
+            <Input type="datetime-local" className="h-7 w-[8.8rem] shrink-0 text-[10px]" value={due} onChange={(e) => setDue(e.target.value)} />
             <Button size="sm" variant="secondary" className="h-7 shrink-0 px-2 text-[10px]"
               onClick={() => { setNext(lead.id, nextAction, new Date(due).toISOString()); toast.success("Next step and deadline locked"); }}>
               Lock
             </Button>
           </div>
         </footer>
+      )}
+
+      {lead && (
+        <Dialog open={activityOpen} onOpenChange={setActivityOpen}>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle>Log activity · {lead.name}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3">
+              <label className="block text-xs font-medium">
+                Activity
+                <select className="mt-1 h-9 w-full rounded-md border bg-background px-2 text-sm" value={activityType} onChange={(e) => setActivityType(e.target.value)}>
+                  <option>Call completed</option>
+                  <option>WhatsApp message sent</option>
+                  <option>Customer replied</option>
+                  <option>Property options shared</option>
+                  <option>Tour discussed</option>
+                  <option>Internal note</option>
+                </select>
+              </label>
+              <label className="block text-xs font-medium">
+                What happened?
+                <Input className="mt-1" autoFocus placeholder="Outcome, promise, blocker or detail…" value={activityNote} onChange={(e) => setActivityNote(e.target.value)} onKeyDown={(e) => {
+                  if (e.key === "Enter" && activityNote.trim()) {
+                    logActivity(lead.id, activityType, activityNote);
+                    setActivityNote("");
+                    setActivityOpen(false);
+                    toast.success("Activity added to the customer story");
+                  }
+                }} />
+              </label>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setActivityOpen(false)}>Cancel</Button>
+              <Button disabled={!activityNote.trim()} onClick={() => {
+                logActivity(lead.id, activityType, activityNote);
+                setActivityNote("");
+                setActivityOpen(false);
+                toast.success("Activity added to the customer story");
+              }}>Save activity</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );
