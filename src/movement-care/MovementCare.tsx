@@ -127,7 +127,44 @@ export function MovementCare() {
       ownerName: selectedState.primaryOwnerId ? selectedState.primaryOwnerName : mv.actor.name,
       note: `${activeGoal}: ${stage.outcome}`,
     });
-    toast.success(`Draft tied to ${activeGoal} result, owner and deadline`);
+    setDebriefFor({ ulid: selectedState.ulid, code });
+    toast.success(`${code} done — write the wrap-up and send it on WhatsApp`);
+  };
+
+  const finishDebrief = (input: { done: string; wentWell: string; wentBadly: string; problems: string }) => {
+    if (!commitment || !selectedState || !debriefFor) return;
+    const message = debriefMessage({
+      ...input,
+      customerName: nameOf.get(selectedState.ulid)?.name ?? selectedState.ulid,
+      draftCode: debriefFor.code,
+      goal: activeGoal,
+      operatorName: mv.actor.name,
+      resultNow: actual,
+      commitCount: commitment.commitCount,
+      property: selectedState.tourProperty ?? undefined,
+      nextStep: selectedState.nextAction ? NEXT_ACTION_LABEL[selectedState.nextAction.kind] : undefined,
+      dueAt: selectedState.nextAction?.dueAt,
+    });
+    const saved = saveDebrief({
+      ulid: selectedState.ulid,
+      customerName: nameOf.get(selectedState.ulid)?.name ?? selectedState.ulid,
+      draftCode: debriefFor.code,
+      goal: activeGoal,
+      message,
+      ...input,
+    });
+    mv.log(selectedState.ulid, "note", `${debriefFor.code} wrap-up · done: ${input.done || "—"} · well: ${input.wentWell || "—"} · badly: ${input.wentBadly || "—"} · problem: ${input.problems || "none"}`);
+    return saved;
+  };
+
+  const copyMessage = async (id: string, message: string) => {
+    try {
+      await navigator.clipboard.writeText(message);
+      markDebriefSent(id);
+      toast.success("Copied — paste it in the team WhatsApp group");
+    } catch {
+      toast.error("Could not copy. Select the text and copy it manually.");
+    }
   };
 
   const dial = () => {
