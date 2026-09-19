@@ -15,6 +15,6 @@
 - [x] Admin split drill-down: customer story beside the live Booking Flow panel
 - [ ] Fix naming collision: intent class vs G1-G4 work batches vs agreement queue
 - [ ] Route every surface through one canonical customer id; stop selection from creating new leads
-- [ ] Build Movement CARE as a shared Draft Vision + Movement OS result workspace
-- [ ] Require a daily FIND / SCHEDULE / COMPLETE / CLOSE goal before drafting starts
-- [ ] Show periodic goal-versus-actual progress and accountable updates for Flow Ops and TCM
+- [x] Build Movement CARE as a shared Draft Vision + Movement OS result workspace
+- [x] Require a daily FIND / SCHEDULE / COMPLETE / CLOSE goal before drafting starts
+- [x] Show periodic goal-versus-actual progress and accountable updates for Flow Ops and TCM
