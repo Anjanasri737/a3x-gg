@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { health, fmtMins } from "@/bookingflow/engine";
 import { useBookingFlow } from "@/bookingflow/store";
 import { useHydrated } from "@/bookingflow/useHydrated";
+import { CloseCommitButton } from "@/components/commitments/CloseCommitButton";
 
 type Tab = "CLOSING" | "BOOKED" | "MONEY_PENDING" | "CHECKIN";
 
@@ -96,6 +97,7 @@ export function ClosingDesk({ onOpenLead }: { onOpenLead: (id: string) => void }
               onClick={() => { setNext(l.id, "Follow up on decision", new Date(Date.now() + 3_600_000).toISOString()); toast.success("Follow-up set for the next hour"); }}>
               Chase in 1 hour
             </Button>
+            <CloseCommitButton leadId={l.id} leadName={l.name} leadPhone={l.phone} actorName={l.owner ?? "You"} size="sm" />
             <Button size="sm" variant="ghost" className="h-7 px-2 text-[11px]" onClick={() => onOpenLead(l.id)}>Open the customer</Button>
           </div>
         </Card>
