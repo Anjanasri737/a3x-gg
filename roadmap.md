@@ -19,3 +19,4 @@
 - [x] Build Movement CARE as a shared Draft Vision + Movement OS result workspace
 - [x] Require a daily FIND / SCHEDULE / COMPLETE / CLOSE goal before drafting starts
 - [x] Show periodic goal-versus-actual progress and accountable updates for Flow Ops and TCM
+- [ ] Integrate the uploaded 4-checkpoint scorecard, auto-reason, recovery, and carry-forward system into Movement CARE, Movement OS, Booking Flow Split, and Admin
