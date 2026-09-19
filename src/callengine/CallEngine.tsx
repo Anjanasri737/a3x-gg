@@ -172,15 +172,30 @@ export function CallEngine({ lead, onLogged }: Props) {
 
   return (
     <div className="space-y-3 rounded-lg border p-3">
-      <div className="flex items-center justify-between gap-2">
-        <Title>M-POWER CALL · conversation engine</Title>
-        {lead.nextAction && (
-          <Badge variant="outline" className="text-[10px]">
-            next: {NEXT_ACTION_LABEL[lead.nextAction.kind]} ·{" "}
-            {new Date(lead.nextAction.dueAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-          </Badge>
-        )}
+      {/* Fixed header — the lead's details stay visible for the whole call, never scroll away. */}
+      <div className="sticky top-0 z-20 -mx-3 -mt-3 mb-1 space-y-1.5 border-b bg-background/95 px-3 py-2 backdrop-blur supports-[backdrop-filter]:bg-background/80">
+        <div className="flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <div className="truncate text-sm font-semibold">{lead.name ?? "Customer"}</div>
+            <div className="text-[10px] text-muted-foreground">M-POWER CALL · {def.label}</div>
+          </div>
+          {lead.nextAction && (
+            <Badge variant="outline" className="shrink-0 text-[10px]">
+              next: {NEXT_ACTION_LABEL[lead.nextAction.kind]} ·{" "}
+              {new Date(lead.nextAction.dueAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+            </Badge>
+          )}
+        </div>
+        <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">
+          {facts.map((f) => (
+            <div key={f.label} className="flex justify-between gap-2 text-[11px]">
+              <span className="text-muted-foreground">{f.label}</span>
+              <span className={cn("truncate font-medium", !f.known && "text-muted-foreground/60")}>{f.value}</span>
+            </div>
+          ))}
+        </div>
       </div>
+
 
       {/* Agenda */}
       <div className="space-y-1.5">
@@ -257,17 +272,6 @@ export function CallEngine({ lead, onLogged }: Props) {
           <div className="text-[10px] text-muted-foreground">{mission.ctaHow}</div>
         </div>
 
-        <div>
-          <Title>Already known — do not ask again</Title>
-          <div className="mt-1 grid grid-cols-2 gap-x-3 gap-y-0.5">
-            {facts.map((f) => (
-              <div key={f.label} className="flex justify-between gap-2 text-[11px]">
-                <span className="text-muted-foreground">{f.label}</span>
-                <span className={cn("truncate font-medium", !f.known && "text-muted-foreground/60")}>{f.value}</span>
-              </div>
-            ))}
-          </div>
-        </div>
       </div>
 
       {phase === "mission" && (
