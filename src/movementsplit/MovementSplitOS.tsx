@@ -10,6 +10,7 @@ import {
   ActiveList, Dashboards, DraftingPanel, JourneyTimeline, UnmatchedQueue, WorkPanel,
 } from "@/movement/components";
 import { SplitFlow, type SplitFocus } from "@/bf100x/SplitFlow";
+import { canonicalCustomerId } from "@/lib/canonical/customer-id";
 
 const WIDTH_KEY = "gharpayy-movement-split-width-pct";
 const PRESETS = [40, 50, 60];
@@ -41,11 +42,17 @@ export function MovementSplitOS() {
     if (!selected && list.length) openInBookingFlow(list[0].ulid);
   }, [list, selected]);
 
-  // Click a customer anywhere on the left → they open in the booking flow on the right.
+  // Click a customer anywhere on the left → they open in the booking flow on the
+  // right, resolved by the single canonical customer id.
   function openInBookingFlow(ulid: string) {
     setSelected(ulid);
     const m = nameOf.get(ulid);
-    setFocus({ name: m?.name, phone: m?.phone, key: `${ulid}-${Date.now()}` });
+    setFocus({
+      name: m?.name,
+      phone: m?.phone,
+      canonicalId: canonicalCustomerId({ phone: m?.phone, name: m?.name }),
+      key: `${ulid}-${Date.now()}`,
+    });
   }
 
   return (
