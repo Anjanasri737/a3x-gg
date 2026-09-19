@@ -61,8 +61,30 @@ const MENU: { to: string; label: string; group: string }[] = [
   { group: "Everyday CRM", to: "/admin", label: "Admin" },
 ];
 
-export function SplitFlow() {
-  const { leads, me, mode, setMode, claim, setNext, logActivity, escalate } = useBookingFlow();
+export function SplitFlow({ embedded = false }: { embedded?: boolean }) {
+  const { leads, me, mode, setMode, claim, setNext, logActivity, escalate, batches, buildBatch, closeBatch, reopenBatch } = useBookingFlow();
+  const [widthPct, setWidthPct] = useState(40);
+  const [dragging, setDragging] = useState(false);
+  const [closeNote, setCloseNote] = useState("");
+  const [closingId, setClosingId] = useState<string | null>(null);
+
+  // remember the width the operator picked, like a column width in a sheet
+  useEffect(() => {
+    const saved = Number(localStorage.getItem(WIDTH_KEY));
+    if (saved >= 20 && saved <= 100) setWidthPct(saved);
+  }, []);
+  useEffect(() => { localStorage.setItem(WIDTH_KEY, String(widthPct)); }, [widthPct]);
+  useEffect(() => {
+    if (!dragging) return;
+    const move = (e: PointerEvent) => {
+      const pct = Math.min(100, Math.max(25, Math.round((e.clientX / window.innerWidth) * 100)));
+      setWidthPct(pct);
+    };
+    const up = () => setDragging(false);
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+    return () => { window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", up); };
+  }, [dragging]);
   const [leadId, setLeadId] = useState<string>("");
   const [screenId, setScreenId] = useState<string>("");
   const [pane, setPane] = useState<Pane>("WORK");
