@@ -1,7 +1,8 @@
 // The 100x funnel squeezed into 40% of the screen, so WhatsApp can live in the
 // other 60%. One screen, nothing to scroll except the questions themselves.
 import { useEffect, useMemo, useState } from "react";
-import { ArrowLeft, ArrowRight, ListChecks, PhoneCall, ShieldAlert, UserCheck } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { ArrowLeft, ArrowRight, ListChecks, Menu, PhoneCall, ShieldAlert, UserCheck } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
