@@ -172,8 +172,9 @@ export function SplitFlow() {
               <p className="truncate text-sm font-semibold">{lead.name} <span className="text-[11px] font-normal text-muted-foreground">{lead.phone}</span></p>
               <p className="truncate text-[10px] text-muted-foreground">“{lead.lastMessage}”</p>
             </div>
-            <div className="flex shrink-0 gap-1">
-              <Button size="sm" variant="ghost" className="h-6 px-2 text-[10px]" onClick={nextCustomer}>Next customer<ArrowRight className="ml-1 h-3 w-3" /></Button>
+            <div className="flex shrink-0 items-center gap-1">
+              <ContactActions phone={lead.phone} name={lead.name} compact />
+              <Button size="sm" variant="ghost" className="h-6 px-2 text-[10px]" onClick={nextCustomer}>Next<ArrowRight className="ml-1 h-3 w-3" /></Button>
             </div>
           </div>
           {mounted && h && (
