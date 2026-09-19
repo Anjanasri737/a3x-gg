@@ -193,7 +193,7 @@ export function MovementCare() {
     const option = optionById(propertyId);
     if (!option) return;
     mv.patch(selectedState.ulid, { tourProperty: option.name });
-    mv.log(selectedState.ulid, "note", `Closing target property: ${option.name} · ${option.area} · from ₹${option.fromPrice.toLocaleString("en-IN")}`);
+    mv.log(selectedState.ulid, "note", `Property to close: ${option.name} · ${option.area} · from ₹${option.fromPrice.toLocaleString("en-IN")}`);
     mv.setNextAction(selectedState.ulid, {
       kind: "send-property",
       dueAt: dueForGoal(activeGoal),
@@ -201,7 +201,7 @@ export function MovementCare() {
       ownerName: selectedState.primaryOwnerName || mv.actor.name,
       note: `Send ${option.name} and lock the tour`,
     });
-    toast.success(`${option.name} set as the closing target`);
+    toast.success(`${option.name} locked as the property to close`);
   };
 
   const saveReport = () => {
@@ -211,7 +211,7 @@ export function MovementCare() {
       role: commitment.role,
       goal: commitment.goal,
       actual,
-      target: commitment.target,
+      committed: commitment.commitCount,
       moved: moved.trim(),
       stuck: stuck.trim(),
       need: need.trim(),
@@ -220,10 +220,10 @@ export function MovementCare() {
       label: round === "BUILD" ? "1PM" : round === "MOVE" ? "5PM" : "EOD",
       operatorId: mv.actor.id,
       totals: total as unknown as Record<string, number>,
-      required: { [commitment.goal.toLowerCase()]: commitment.target },
-      status: actual >= commitment.target ? "ON TRACK" : "BEHIND",
+      required: { [commitment.goal.toLowerCase()]: commitment.commitCount },
+      status: actual >= commitment.commitCount ? "ON TRACK" : "BEHIND",
       mainLeak: stuck.trim() || "No blocker reported",
-      inference: `${commitment.goal} ${actual}/${commitment.target} · ${moved.trim() || "movement pending"}`,
+      inference: `${commitment.goal} ${actual}/${commitment.commitCount} · ${moved.trim() || "movement pending"}`,
     });
     setMoved("");
     setStuck("");
