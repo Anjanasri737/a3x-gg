@@ -618,7 +618,17 @@ export function MovementCare() {
         manualList={manualList} manualMode={manualMode} manualSize={manualSize}
         onManualMode={setManualMode} onManualSize={setManualSize} onAdd={addToManual}
         onRemove={removeFromManual} onReplace={replaceInManual} onClear={clearManual}
-        onCreateLead={createManualLead} onFillDemo={fillManualDemo} />
+        onCreateLead={createManualLead} onFillDemo={fillManualDemo} onStartEmpty={startEmptyDraft} runningFor={elapsed} />
+
+      {showFormat && (
+        <FormatDrawer onClose={() => setShowFormat(false)}
+          sample={previewMessage({
+            done: "Called, qualified, shared 2 properties",
+            wentWell: "Customer picked Saturday 11 AM",
+            wentBadly: "Budget ₹1,000 below our price",
+            problems: "Need inventory truth for Sobha Dream Acres",
+          }) || SAMPLE_FALLBACK} />
+      )}
 
       {showPlaybook && <PlaybookDrawer playbook={playbook} onClose={() => setShowPlaybook(false)} />}
     </div>
