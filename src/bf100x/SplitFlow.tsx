@@ -14,6 +14,7 @@ import { useBookingFlow } from "@/bookingflow/store";
 import { SCREENS, currentScreen, screenIndex, screenProgress } from "./screens";
 import { ScreenPanel } from "./ScreenPanel";
 import { CapturedPanel } from "./CapturedPanel";
+import { KnownStrip } from "./KnownStrip";
 import { LabelConsole } from "./LabelConsole";
 import { PropertyMatch } from "./PropertyMatch";
 import { ClosingDesk } from "./ClosingDesk";
