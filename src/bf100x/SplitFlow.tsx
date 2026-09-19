@@ -67,7 +67,7 @@ export interface SplitFocus { name?: string; phone?: string; key?: string }
 
 const tenDigits = (p?: string) => (p ?? "").replace(/\D/g, "").slice(-10);
 
-export function SplitFlow({ embedded = false, focus }: { embedded?: boolean; focus?: SplitFocus }) {
+export function SplitFlow({ embedded = false, focus, panelOnly = false }: { embedded?: boolean; focus?: SplitFocus; panelOnly?: boolean }) {
   const { leads, me, mode, setMode, claim, setNext, logActivity, escalate, batches, buildBatch, closeBatch, reopenBatch, ensureLead } = useBookingFlow();
   const [widthPct, setWidthPct] = useState(40);
   const [dragging, setDragging] = useState(false);
@@ -167,8 +167,8 @@ export function SplitFlow({ embedded = false, focus }: { embedded?: boolean; foc
   }
 
   return (
-    <div className={cn("flex w-full overflow-hidden", embedded ? "h-[calc(100vh-10rem)]" : "h-screen")}>
-    <div className="flex min-w-0 flex-col overflow-hidden bg-background" style={{ width: `${widthPct}%` }}>
+    <div className={cn("flex w-full overflow-hidden", panelOnly ? "h-full" : embedded ? "h-[calc(100vh-10rem)]" : "h-screen")}>
+    <div className="flex min-w-0 flex-col overflow-hidden bg-background" style={{ width: panelOnly ? "100%" : `${widthPct}%` }}>
       {/* Result header — never scrolls away */}
       <header className="shrink-0 border-b px-2 py-1">
         <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
@@ -183,15 +183,17 @@ export function SplitFlow({ embedded = false, focus }: { embedded?: boolean; foc
             )}
           </div>
           <div className="flex shrink-0 items-center gap-1">
-            <div className="flex items-center gap-0.5 rounded-md border px-1 py-0.5">
-              <span className="text-[9px] text-muted-foreground">W</span>
-              {WIDTH_PRESETS.map((p) => (
-                <button key={p} type="button" onClick={() => setWidthPct(p)}
-                  className={cn("rounded px-1 text-[9px]", widthPct === p ? "bg-primary/15 text-primary" : "text-muted-foreground")}>
-                  {p}%
-                </button>
-              ))}
-            </div>
+            {!panelOnly && (
+              <div className="flex items-center gap-0.5 rounded-md border px-1 py-0.5">
+                <span className="text-[9px] text-muted-foreground">W</span>
+                {WIDTH_PRESETS.map((p) => (
+                  <button key={p} type="button" onClick={() => setWidthPct(p)}
+                    className={cn("rounded px-1 text-[9px]", widthPct === p ? "bg-primary/15 text-primary" : "text-muted-foreground")}>
+                    {p}%
+                  </button>
+                ))}
+              </div>
+            )}
             <Button size="sm" variant={mode === "GUIDED" ? "default" : "outline"} className="h-6 px-2 text-[10px]" onClick={() => setMode("GUIDED")}>Understand</Button>
             <Button size="sm" variant={mode === "EXPERT" ? "default" : "outline"} className="h-6 px-2 text-[10px]" onClick={() => setMode("EXPERT")}>Expert</Button>
             <div className="relative">
@@ -475,7 +477,7 @@ export function SplitFlow({ embedded = false, focus }: { embedded?: boolean; foc
 
 
       {/* Drag this edge to set the panel width, exactly like a sheet column */}
-      {widthPct < 100 && (
+      {!panelOnly && widthPct < 100 && (
         <>
           <div
             role="separator"
