@@ -849,9 +849,7 @@ export function LeadControlPanel() {
             {movementLead ? (
               <CallEngine lead={movementLead} onLogged={() => setCallEngineOpen(false)} />
             ) : (
-              <p className="text-sm text-muted-foreground">
-                This customer is not linked to Movement yet, so the call engine cannot run for them here. No duplicate was created.
-              </p>
+              <p className="text-sm text-muted-foreground">Preparing the call engine…</p>
             )}
           </DialogContent>
         </Dialog>
