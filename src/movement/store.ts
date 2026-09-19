@@ -455,7 +455,7 @@ export const movementCreator: StateCreator<MovementStore> = (set, get) => ({
     });
     const keys = Object.keys(q).join(", ");
     get().log(ulid, "qualified", `Captured: ${keys}`, { meta: q as Record<string, unknown> });
-    if (gl.good && !wasGood) get().log(ulid, "good-lead", `GOOD LEAD — system flag (${gl.reasons.join(" · ")})`, { actorId: "system", actorName: "System" });
+    if (gl.good && !wasGood) get().log(ulid, "good-lead", `DEFINITELY CLOSE — system flag (${gl.reasons.join(" · ")})`, { actorId: "system", actorName: "System" });
     get().touchLock(ulid);
   },
 
@@ -466,8 +466,8 @@ export const movementCreator: StateCreator<MovementStore> = (set, get) => ({
       goodLeadReasons: good ? (st?.goodLeadReasons.length ? st.goodLeadReasons : ["operator confirmed"]) : [],
       checkInDate: checkInDate ?? st?.checkInDate ?? null,
     });
-    get().log(ulid, "qualified", good ? "Qualified — GOOD LEAD" : "Qualified — not a good lead");
-    if (good) get().log(ulid, "good-lead", "Good Lead flag set", { actorId: "system", actorName: "System" });
+    get().log(ulid, "qualified", good ? "Qualified — DEFINITELY CLOSE" : "Qualified — not ready to close");
+    if (good) get().log(ulid, "good-lead", "Definitely close flag set", { actorId: "system", actorName: "System" });
   },
 
   setStage: (ulid, stage, text) => {
