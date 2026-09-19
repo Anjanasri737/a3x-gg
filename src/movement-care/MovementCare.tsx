@@ -403,7 +403,9 @@ export function MovementCare() {
                     {manualMode ? "My hand-picked draft" : "Result queue"}
                   </p>
                   <p className="text-xs font-medium">
-                    {manualMode ? `${queue.length} of ${manualSize} picked` : `${stage.meaning} · ${queue.length} open`}
+                    {manualMode
+                      ? `${queue.length} filled · ${Math.max(0, manualSize - queue.length)} empty rows left`
+                      : `${stage.meaning} · ${queue.length} open`}
                   </p>
                 </div>
                 <Badge className={cn("border text-[9px]", GOAL_TONE[activeGoal])}>{activeGoal}</Badge>
