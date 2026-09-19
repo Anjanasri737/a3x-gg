@@ -119,6 +119,22 @@ export function SplitFlow({ embedded = false, focus }: { embedded?: boolean; foc
     if (lead) setScreenId(currentScreen(lead.f ?? {}).id);
   }, [lead?.id]);
 
+  // A customer clicked in another view (Movement OS) opens right here.
+  useEffect(() => {
+    if (!focus || leads.length === 0) return;
+    const d = tenDigits(focus.phone);
+    const match =
+      (d ? leads.find((l) => tenDigits(l.phone) === d) : undefined) ??
+      (focus.name ? leads.find((l) => l.name.toLowerCase() === focus.name!.toLowerCase()) : undefined);
+    if (match) {
+      setLeadId(match.id);
+      setPane("WORK");
+      setScreenId(currentScreen(match.f ?? {}).id);
+    } else {
+      toast.info(`${focus.name || focus.phone || "This customer"} is not in the booking flow yet`);
+    }
+  }, [focus?.key, focus?.phone, focus?.name, leads.length]);
+
   const screen = SCREENS.find((s) => s.id === screenId) ?? (lead ? currentScreen(lead.f ?? {}) : SCREENS[0]!);
   const idx = screenIndex(screen.id);
   const h = mounted && lead ? health(lead) : undefined;
