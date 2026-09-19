@@ -10,8 +10,8 @@
 - [ ] Add and run compiler fixtures and integration tests
 - [ ] Verify Flow OS, Vision, work queue, and Control Tower in the browser
 - [ ] Confirm all content routes include required social metadata
-- [ ] Build Admin Draft Control room over Vision, Movement OS and Booking Flow Split (Command, Vision, Reconciliation, Batches G1-G4, Claims, Risk & Leakage)
-- [ ] Shared admin command bar with day / person / zone / WhatsApp / priority / health filters that persist across tabs
-- [ ] Admin split drill-down: customer story beside the live Booking Flow panel
+- [x] Build Admin Draft Control room over Vision, Movement OS and Booking Flow Split (Command, Vision, Reconciliation, Batches G1-G4, Claims, Risk & Leakage)
+- [x] Shared admin command bar with day / person / zone / WhatsApp / priority / health filters that persist across tabs
+- [x] Admin split drill-down: customer story beside the live Booking Flow panel
 - [ ] Fix naming collision: intent class vs G1-G4 work batches vs agreement queue
 - [ ] Route every surface through one canonical customer id; stop selection from creating new leads
