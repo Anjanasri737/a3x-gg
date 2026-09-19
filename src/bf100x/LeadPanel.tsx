@@ -14,10 +14,12 @@ import { NEXT_ACTIONS } from "@/bookingflow/journey";
 import { HANDLERS } from "@/bookingflow/types";
 import type { FlowLead } from "@/bookingflow/types";
 import { useBookingFlow } from "@/bookingflow/store";
-import { SCREENS, currentScreen, screenProgress } from "./screens";
+import { SCREENS, currentScreen, screenIndex, screenProgress } from "./screens";
 import { ScreenPanel } from "./ScreenPanel";
 import { LabelConsole } from "./LabelConsole";
 import { PropertyMatch } from "./PropertyMatch";
+import { CapturedPanel } from "./CapturedPanel";
+import { CloseCommitButton } from "@/components/commitments/CloseCommitButton";
 
 type Tab = "JOURNEY" | "LABELS" | "PROPERTY" | "MONEY" | "STORY";
 
@@ -46,11 +48,13 @@ export function LeadPanel({ lead, onBack, onNext }: { lead: FlowLead; onBack: ()
   const h = useMemo(() => (mounted ? health(lead) : undefined), [lead, mounted]);
   const nowScreen = currentScreen(f);
 
-  useEffect(() => setScreenId(nowScreen.id), [nowScreen.id, lead.id]);
+  // Land on the screen to work, then respect wherever the operator navigates.
+  useEffect(() => setScreenId(currentScreen(lead.f ?? {}).id), [lead.id]);
   const screen = SCREENS.find((s) => s.id === screenId) ?? nowScreen;
 
   return (
-    <div className="space-y-3">
+    <div className="grid items-start gap-3 lg:grid-cols-[minmax(0,1fr)_20rem]">
+      <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
         <Button size="sm" variant="ghost" onClick={onBack}><ArrowLeft className="mr-1 h-4 w-4" />Back to the board</Button>
         <Button size="sm" variant="outline" onClick={onNext}>Next customer</Button>
@@ -154,7 +158,15 @@ export function LeadPanel({ lead, onBack, onNext }: { lead: FlowLead; onBack: ()
               })}
             </div>
           </Card>
-          <ScreenPanel lead={lead} screen={screen} expert={expert} />
+          <ScreenPanel
+            lead={lead}
+            screen={screen}
+            expert={expert}
+            canPrev={screenIndex(screen.id) > 0}
+            canNext={screenIndex(screen.id) < SCREENS.length - 1}
+            onPrev={() => { const i = screenIndex(screen.id); if (i > 0) setScreenId(SCREENS[i - 1]!.id); }}
+            onNext={() => { const i = screenIndex(screen.id); if (i < SCREENS.length - 1) setScreenId(SCREENS[i + 1]!.id); }}
+          />
         </>
       )}
 
@@ -206,6 +218,9 @@ export function LeadPanel({ lead, onBack, onNext }: { lead: FlowLead; onBack: ()
           </Card>
         </div>
       )}
+      </div>
+
+      <CapturedPanel lead={lead} />
     </div>
   );
 }
