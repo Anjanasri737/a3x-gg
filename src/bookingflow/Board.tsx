@@ -1,6 +1,7 @@
 // Every lead, with filters an operator and an admin actually use.
 import { useMemo, useState } from "react";
 import { AlertTriangle, Search, ShieldAlert } from "lucide-react";
+import { ContactActions } from "@/components/common/ContactActions";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";

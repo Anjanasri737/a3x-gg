@@ -6,6 +6,7 @@ import { AlertTriangle, ArrowLeft, Clock, ExternalLink, ShieldAlert, UserCheck }
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { ContactActions } from "@/components/common/ContactActions";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
