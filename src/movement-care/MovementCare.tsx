@@ -82,7 +82,27 @@ export function MovementCare() {
   const removeFromManual = useMovementCare((state) => state.removeFromManual);
   const replaceInManual = useMovementCare((state) => state.replaceInManual);
   const clearManual = useMovementCare((state) => state.clearManual);
+  const draftStartedAt = useMovementCare((state) => state.draftStartedAt);
+  const startRollingDraft = useMovementCare((state) => state.startRollingDraft);
+  const stopDraftClock = useMovementCare((state) => state.stopDraftClock);
+  const [showFormat, setShowFormat] = useState(false);
+  const [clockTick, setClockTick] = useState(0);
   const createLead = useIdentityStore((state) => state.createLead);
+
+  useEffect(() => {
+    if (!draftStartedAt) return;
+    const timer = window.setInterval(() => setClockTick((value) => value + 1), 1000);
+    return () => window.clearInterval(timer);
+  }, [draftStartedAt]);
+
+  const elapsed = useMemo(() => {
+    if (!draftStartedAt) return null;
+    void clockTick;
+    const seconds = Math.max(0, Math.floor((Date.now() - new Date(draftStartedAt).getTime()) / 1000));
+    const mm = String(Math.floor(seconds / 60)).padStart(2, "0");
+    const ss = String(seconds % 60).padStart(2, "0");
+    return `${mm}:${ss}`;
+  }, [draftStartedAt, clockTick]);
 
   const activeRole = commitment?.role ?? role;
   const activeGoal = commitment?.goal ?? goal;
