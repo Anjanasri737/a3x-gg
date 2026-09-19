@@ -47,11 +47,24 @@ interface MovementCareStore {
   commitment: DailyCommitment | null;
   reports: RoundReport[];
   debriefs: DraftDebrief[];
+  /** When on, the person picks every customer in the draft by hand. */
+  manualMode: boolean;
+  /** How many customers the hand-picked draft should hold (30 by default). */
+  manualSize: number;
+  /** Hand-picked customers, in the order the person wants to work them. */
+  manualList: string[];
   commit: (input: Omit<DailyCommitment, "date" | "committedAt">) => DailyCommitment;
   setClosingProperties: (ids: string[]) => void;
   report: (input: Omit<RoundReport, "id" | "date" | "reportedAt">) => RoundReport;
   saveDebrief: (input: Omit<DraftDebrief, "id" | "date" | "createdAt" | "sentOnWhatsapp">) => DraftDebrief;
   markDebriefSent: (id: string) => void;
+  setManualMode: (on: boolean) => void;
+  setManualSize: (size: number) => void;
+  setManualList: (ulids: string[]) => void;
+  addToManual: (ulid: string) => void;
+  removeFromManual: (ulid: string) => void;
+  replaceInManual: (outUlid: string, inUlid: string) => void;
+  clearManual: () => void;
   clearCommitment: () => void;
 }
 
