@@ -479,12 +479,12 @@ export function MovementCare() {
   );
 }
 
-function CommitmentGate({ role, goal, target, support, aimProperties, onAimProperties, query, onQuery, onRole, onGoal, onTarget, onSupport, onStart }: {
-  role: CareRole; goal: CareGoal; target: number; support: string;
+function CommitmentGate({ role, goal, commitCount, support, aimProperties, onAimProperties, query, onQuery, onRole, onGoal, onCommitCount, onSupport, onStart }: {
+  role: CareRole; goal: CareGoal; commitCount: number; support: string;
   aimProperties: string[]; onAimProperties: (ids: string[]) => void;
   query: string; onQuery: (value: string) => void;
   onRole: (role: CareRole) => void; onGoal: (goal: CareGoal) => void;
-  onTarget: (target: number) => void; onSupport: (support: string) => void; onStart: () => void;
+  onCommitCount: (value: number) => void; onSupport: (support: string) => void; onStart: () => void;
 }) {
   const toggleProperty = (id: string) =>
     onAimProperties(aimProperties.includes(id) ? aimProperties.filter((item) => item !== id) : [...aimProperties, id]);
@@ -515,13 +515,17 @@ function CommitmentGate({ role, goal, target, support, aimProperties, onAimPrope
                 {playbook.stages.map((item) => (
                   <Button key={item.goal} variant="outline" onClick={() => onGoal(item.goal)}
                     className={cn("h-auto min-h-20 justify-start whitespace-normal p-3 text-left", goal === item.goal && GOAL_TONE[item.goal])}>
-                    <span><span className="block text-xs font-bold">{item.goal} · {item.meaning}</span><span className="mt-1 block text-[10px] font-normal">{item.outcome}</span></span>
+                    <span>
+                      <span className="block text-xs font-bold">{GOAL_TITLE[item.goal]}</span>
+                      <span className="mt-1 block text-[10px] font-normal">{item.outcome}</span>
+                      <span className="mt-1 block text-[10px] font-semibold">Usual day: {item.dayCount} {item.unit}</span>
+                    </span>
                   </Button>
                 ))}
               </div>
             </div>
-            <div className="grid gap-3 sm:grid-cols-[160px_1fr]">
-              <label className="text-xs font-medium">Target result count<Input type="number" min={1} value={target} onChange={(event) => onTarget(Number(event.target.value) || 1)} className="mt-1" /></label>
+            <div className="grid gap-3 sm:grid-cols-[200px_1fr]">
+              <label className="text-xs font-medium">How many {active.unit} today<Input type="number" min={1} value={commitCount} onChange={(event) => onCommitCount(Number(event.target.value) || 1)} className="mt-1" /></label>
               <label className="text-xs font-medium">Support needed today<Input value={support} onChange={(event) => onSupport(event.target.value)} placeholder="Inventory check, manager help, pricing approval…" className="mt-1" /></label>
             </div>
             <div>
@@ -542,14 +546,20 @@ function CommitmentGate({ role, goal, target, support, aimProperties, onAimPrope
                 ))}
               </div>
             </div>
-            <Button onClick={onStart} className="w-full sm:w-auto"><Target className="h-4 w-4" /> Commit result and open drafts</Button>
+            <Button onClick={onStart} className="w-full sm:w-auto"><Flag className="h-4 w-4" /> Commit this result and open drafts</Button>
           </div>
           <div className="border bg-muted/30 p-3">
             <p className="text-[10px] font-semibold uppercase text-muted-foreground">Your contract</p>
-            <p className="mt-2 text-sm font-semibold">I will deliver {target} accepted {goal.toLowerCase()} results today.</p>
+            <p className="mt-2 text-sm font-semibold">I will deliver {commitCount} {active.unit} today.</p>
             <p className="mt-2 text-xs text-muted-foreground">{active.outcome}</p>
+            <ol className="mt-3 space-y-1 text-[11px]">
+              {active.steps.map((step, index) => (
+                <li key={step} className="flex gap-1.5"><span className="font-mono text-muted-foreground">{index + 1}.</span>{step}</li>
+              ))}
+            </ol>
             <dl className="mt-3 space-y-2 text-xs">
               <div><dt className="text-muted-foreground">Proof</dt><dd>{active.proof}</dd></div>
+              <div><dt className="text-muted-foreground">Does not count</dt><dd className="text-destructive">{active.doesNotCount}</dd></div>
               <div><dt className="text-muted-foreground">Accepted by</dt><dd>{active.receiver}</dd></div>
               <div><dt className="text-muted-foreground">Required when</dt><dd>{active.requireWhen}</dd></div>
               <div><dt className="text-muted-foreground">Closing these properties</dt><dd>{aimProperties.length ? aimProperties.map((id) => propertyOptions.find((option) => option.id === id)?.name).join(", ") : "Not chosen yet"}</dd></div>
