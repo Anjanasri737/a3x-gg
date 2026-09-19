@@ -118,7 +118,7 @@ export function AdminControl() {
         </div>
       </header>
 
-      {isLoading || !d ? (
+      {isLoading || !d || !deep ? (
         <div className="rounded-xl border bg-card p-8 text-center text-sm text-muted-foreground">
           Loading the company record…
         </div>
@@ -131,6 +131,16 @@ export function AdminControl() {
             <TabsTrigger value="batches">Work batches</TabsTrigger>
             <TabsTrigger value="ownership">Ownership</TabsTrigger>
             <TabsTrigger value="risk">Risk &amp; leakage</TabsTrigger>
+            <TabsTrigger value="sla">SLA clock</TabsTrigger>
+            <TabsTrigger value="aging">Aging</TabsTrigger>
+            <TabsTrigger value="bottlenecks">Bottlenecks</TabsTrigger>
+            <TabsTrigger value="zones">Zones</TabsTrigger>
+            <TabsTrigger value="accuracy">Reading quality</TabsTrigger>
+            <TabsTrigger value="compliance">Compliance</TabsTrigger>
+            <TabsTrigger value="balance">Workload</TabsTrigger>
+            <TabsTrigger value="value">Money at risk</TabsTrigger>
+            <TabsTrigger value="heat">When chats land</TabsTrigger>
+            <TabsTrigger value="anomalies">Alerts</TabsTrigger>
             <TabsTrigger value="people">People</TabsTrigger>
             <TabsTrigger value="history">History</TabsTrigger>
             <TabsTrigger value="upload">Add screenshots</TabsTrigger>
