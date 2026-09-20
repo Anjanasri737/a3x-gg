@@ -56,6 +56,7 @@ import { Route as BookingOsRouteImport } from './routes/booking-os'
 import { Route as BookingFlowSplitRouteImport } from './routes/booking-flow-split'
 import { Route as BookingFlow100xRouteImport } from './routes/booking-flow-100x'
 import { Route as BookingFlowRouteImport } from './routes/booking-flow'
+import { Route as AssignmentRouteImport } from './routes/assignment'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as ActivityRouteImport } from './routes/activity'
 import { Route as AcademyRouteImport } from './routes/academy'
@@ -379,6 +380,11 @@ const BookingFlow100xRoute = BookingFlow100xRouteImport.update({
 const BookingFlowRoute = BookingFlowRouteImport.update({
   id: '/booking-flow',
   path: '/booking-flow',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AssignmentRoute = AssignmentRouteImport.update({
+  id: '/assignment',
+  path: '/assignment',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRoute = AdminRouteImport.update({
@@ -832,6 +838,7 @@ export interface FileRoutesByFullPath {
   '/academy': typeof AcademyRoute
   '/activity': typeof ActivityRoute
   '/admin': typeof AdminRouteWithChildren
+  '/assignment': typeof AssignmentRoute
   '/booking-flow': typeof BookingFlowRoute
   '/booking-flow-100x': typeof BookingFlow100xRoute
   '/booking-flow-split': typeof BookingFlowSplitRoute
@@ -969,6 +976,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/academy': typeof AcademyRoute
   '/activity': typeof ActivityRoute
+  '/assignment': typeof AssignmentRoute
   '/booking-flow': typeof BookingFlowRoute
   '/booking-flow-100x': typeof BookingFlow100xRoute
   '/booking-flow-split': typeof BookingFlowSplitRoute
@@ -1107,6 +1115,7 @@ export interface FileRoutesById {
   '/academy': typeof AcademyRoute
   '/activity': typeof ActivityRoute
   '/admin': typeof AdminRouteWithChildren
+  '/assignment': typeof AssignmentRoute
   '/booking-flow': typeof BookingFlowRoute
   '/booking-flow-100x': typeof BookingFlow100xRoute
   '/booking-flow-split': typeof BookingFlowSplitRoute
@@ -1247,6 +1256,7 @@ export interface FileRouteTypes {
     | '/academy'
     | '/activity'
     | '/admin'
+    | '/assignment'
     | '/booking-flow'
     | '/booking-flow-100x'
     | '/booking-flow-split'
@@ -1384,6 +1394,7 @@ export interface FileRouteTypes {
     | '/'
     | '/academy'
     | '/activity'
+    | '/assignment'
     | '/booking-flow'
     | '/booking-flow-100x'
     | '/booking-flow-split'
@@ -1521,6 +1532,7 @@ export interface FileRouteTypes {
     | '/academy'
     | '/activity'
     | '/admin'
+    | '/assignment'
     | '/booking-flow'
     | '/booking-flow-100x'
     | '/booking-flow-split'
@@ -1660,6 +1672,7 @@ export interface RootRouteChildren {
   AcademyRoute: typeof AcademyRoute
   ActivityRoute: typeof ActivityRoute
   AdminRoute: typeof AdminRouteWithChildren
+  AssignmentRoute: typeof AssignmentRoute
   BookingFlowRoute: typeof BookingFlowRoute
   BookingFlow100xRoute: typeof BookingFlow100xRoute
   BookingFlowSplitRoute: typeof BookingFlowSplitRoute
@@ -2082,6 +2095,13 @@ declare module '@tanstack/react-router' {
       path: '/booking-flow'
       fullPath: '/booking-flow'
       preLoaderRoute: typeof BookingFlowRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/assignment': {
+      id: '/assignment'
+      path: '/assignment'
+      fullPath: '/assignment'
+      preLoaderRoute: typeof AssignmentRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/admin': {
@@ -2849,6 +2869,7 @@ const rootRouteChildren: RootRouteChildren = {
   AcademyRoute: AcademyRoute,
   ActivityRoute: ActivityRoute,
   AdminRoute: AdminRouteWithChildren,
+  AssignmentRoute: AssignmentRoute,
   BookingFlowRoute: BookingFlowRoute,
   BookingFlow100xRoute: BookingFlow100xRoute,
   BookingFlowSplitRoute: BookingFlowSplitRoute,
